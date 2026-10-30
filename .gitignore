@@ -1,0 +1,20 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+data/
+tmp/
+
+# Local deployment settings and collected logs
+/config/local/
+/deploy/local/
+/logs/
+*.log.*

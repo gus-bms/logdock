@@ -1,0 +1,94 @@
+:root {
+  font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #142d40;
+  background: #f5f7f8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { font: inherit; }
+button:focus-visible, a:focus-visible { outline: 3px solid #197a8b; outline-offset: 5px; }
+
+.app-shell { max-width: 1240px; padding: 0 48px; margin: 0 auto; }
+.site-header { height: 102px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #dfe6e9; }
+.brand { display: inline-flex; align-items: center; gap: 11px; color: #102b40; text-decoration: none; font-size: 23px; font-weight: 760; letter-spacing: -1px; }
+.brand-mark { display: flex; align-items: flex-end; gap: 3px; width: 32px; height: 30px; padding: 5px; background: #102b40; border-radius: 7px; }
+.brand-mark span { width: 5px; background: #b9e5e7; border-radius: 1px; }
+.brand-mark span:nth-child(1) { height: 10px; }
+.brand-mark span:nth-child(2) { height: 17px; }
+.brand-mark span:nth-child(3) { height: 13px; }
+.header-note { font-size: 13px; color: #71818b; letter-spacing: .02em; }
+.intro { position: relative; padding: 68px 0 44px; }
+.eyebrow { display: flex; align-items: center; gap: 9px; color: #367383; font-size: 12px; font-weight: 650; letter-spacing: .03em; }
+.eyebrow-line { width: 23px; height: 2px; background: #4b9caa; }
+h1 { margin: 23px 0 20px; font-size: clamp(36px, 4.7vw, 57px); letter-spacing: -.075em; line-height: 1.27; font-weight: 730; }
+.intro-description { font-size: 15px; line-height: 1.9; color: #74848e; letter-spacing: -.025em; margin: 0; }
+.stage-badge { position: absolute; right: 0; bottom: 49px; font-size: 12px; color: #70838e; padding: 7px 11px; border: 1px solid #d8e2e7; border-radius: 5px; }
+.status-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 17px; }
+.status-card { display: flex; flex-direction: column; min-height: 202px; padding: 25px 24px 23px; border: 1px solid #dfe6e9; background: #fff; border-radius: 10px; }
+.api-card { border-top: 3px solid #287e8d; padding-top: 23px; }
+.card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.card-heading h2 { margin: 0; font-size: 14px; font-weight: 650; letter-spacing: -.025em; }
+.status-pill { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; border-radius: 4px; font-size: 10px; font-weight: 650; padding: 5px 7px; }
+.status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.status-connected { background: #e7f5ef; color: #257054; }
+.status-checking { background: #e9f2f7; color: #41738b; }
+.status-failed { background: #fcefeb; color: #a34d38; }
+.status-pending { color: #84919a; background: #f0f3f5; }
+.health-detail, .card-description { margin: 24px 0 18px; min-height: 38px; color: #74848e; font-size: 12px; line-height: 1.75; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.retry-button { display: inline-flex; justify-content: space-between; align-items: center; align-self: flex-start; gap: 30px; margin-top: auto; padding: 0; border: 0; background: none; cursor: pointer; color: #287c8c; font-size: 11px; font-weight: 650; }
+.retry-button:disabled { color: #91a3ac; cursor: wait; }
+.retry-button:not(:disabled):hover { color: #102b40; }
+.retry-button span { font-size: 16px; font-weight: 400; }
+.card-footnote { color: #9ba8af; font-size: 11px; margin-top: auto; }
+.empty-state { display: flex; align-items: center; justify-content: center; gap: 38px; min-height: 234px; margin-top: 24px; padding: 38px; border: 1px dashed #ccdce2; border-radius: 10px; background: #f1f5f6; }
+.section-label { font-size: 10px; color: #64909b; letter-spacing: .06em; font-weight: 650; }
+.empty-copy h2 { margin: 11px 0 11px; font-size: 19px; font-weight: 650; letter-spacing: -.04em; }
+.empty-copy p { margin: 0; color: #81939c; font-size: 12px; line-height: 1.9; letter-spacing: -.015em; }
+.dock-illustration { position: relative; flex: 0 0 90px; width: 90px; height: 82px; }
+.dock-post { position: absolute; top: 6px; width: 7px; height: 46px; border-radius: 3px; background: #7faab3; }
+.post-left { left: 24px; }.post-right { right: 24px; }
+.dock-deck { position: absolute; top: 32px; left: 9px; right: 9px; height: 9px; background: #afcbd1; border: 1px solid #7faab3; border-radius: 2px; }
+.dock-water { position: absolute; height: 6px; border-bottom: 2px solid #bed3d8; border-radius: 50%; }
+.water-first { top: 55px; left: 0; width: 90px; }
+.water-second { top: 69px; left: 18px; width: 54px; }
+.site-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 31px 0 35px; font-size: 10px; color: #9aa7ae; }
+.site-footer span:first-child { font-weight: 700; letter-spacing: -.03em; }
+
+@media (max-width: 900px) {
+  .app-shell { padding: 0 28px; }
+  .status-grid { gap: 12px; }
+  .status-card { padding: 22px 17px; }
+  .api-card { padding-top: 20px; }
+  .card-heading { flex-wrap: wrap; gap: 10px; }
+  .empty-state { gap: 25px; padding: 30px; }
+}
+
+@media (max-width: 680px) {
+  .app-shell { padding: 0 22px; }
+  .site-header { height: 80px; }
+  .brand { font-size: 21px; }
+  .header-note { font-size: 11px; }
+  .intro { padding: 46px 0 33px; }
+  .intro-description { font-size: 13px; }
+  .stage-badge { position: static; display: inline-block; margin-top: 23px; font-size: 10px; }
+  .status-grid { grid-template-columns: 1fr; gap: 12px; }
+  .status-card { min-height: 160px; padding: 21px 22px; }
+  .api-card { padding-top: 19px; }
+  .health-detail, .card-description { min-height: 0; margin: 17px 0 20px; }
+  .empty-state { flex-direction: column; text-align: center; gap: 18px; padding: 30px 18px; }
+  .dock-illustration { flex-basis: 82px; }
+  .empty-copy h2 { font-size: 17px; line-height: 1.5; }
+  .empty-copy p { font-size: 11px; }
+  .site-footer { padding: 25px 0; font-size: 9px; }
+}
+
+@media (max-width: 370px) {
+  .desktop-break { display: none; }
+  .site-footer { align-items: flex-start; flex-direction: column; gap: 8px; }
+}

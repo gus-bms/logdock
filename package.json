@@ -1,0 +1,26 @@
+{
+  "name": "logdock",
+  "version": "0.1.0",
+  "private": true,
+  "description": "여러 서비스의 로그를 한곳에서 수집·검색하는 통합 로그 관리 시스템",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "engines": {
+    "node": ">=24.22.2 <25",
+    "npm": ">=11 <12"
+  },
+  "packageManager": "npm@11.12.1",
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@logdock/api",
+    "dev:web": "npm run dev --workspace=@logdock/web",
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gus-bms/logdock.git"
+  }
+}
