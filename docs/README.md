@@ -6,15 +6,17 @@
 
 1. [handoff](HANDOFF.md)에서 현재 상태와 다음 작업을 읽는다.
 2. [결정 기록](decisions.md)에서 합의·보류·미결정을 확인한다.
-3. [제품 기능 후보](specs/product-features-v0.1.md)와 [수집·에이전트 명세](specs/collection-agent-v0.1.md)를 검토한다.
-4. 기술 판단의 근거는 [상용 서비스 조사](research/commercial-services-2026-10-30.md)와 공식 출처로 확인한다.
-5. [아키텍처 검토 상태](architecture.md)에서 현재 scaffold와 미확정 설계를 구분한다.
+3. [기획 리뷰와 사용자 협의 목록](planning/user-decisions-v0.1.md)에서 Q01~Q16의 합의 상태와 남은 선택, 측정/설계 작업을 확인한다. Q03 기본/사용 불가 처리 원칙은 합의했고 다음 안건은 Q04 중앙 전달 완료의 보존 수준이다.
+4. [제품 기능 후보](specs/product-features-v0.1.md)와 [수집·에이전트 명세](specs/collection-agent-v0.1.md)를 검토한다.
+5. 기술 판단의 근거는 [상용 서비스 조사](research/commercial-services-2026-10-30.md)와 공식 출처로 확인한다.
+6. [아키텍처 검토 상태](architecture.md)에서 현재 scaffold와 미확정 설계를 구분한다.
 
 ## 문서별 역할
 
 | 문서 | 역할 |
 | --- | --- |
-| [결정 기록](decisions.md) | 제품 정책과 D01~D08의 현재 결정 상태 |
+| [결정 기록](decisions.md) | 제품 정책과 D01~D09의 현재 결정 상태 |
+| [기획 리뷰와 사용자 협의 목록](planning/user-decisions-v0.1.md) | 두 작업 공간의 기획 재검토, 기존 합의, Q01~Q16 협의 상태와 남은 선택, 사용자 입력과 설계/측정의 구분, P01~P18 대응표 |
 | [제품 기능 명세 v0.1](specs/product-features-v0.1.md) | 제품 정의·사용 흐름·F01~F10 채택 후보 |
 | [수집·에이전트 명세 v0.1](specs/collection-agent-v0.1.md) | 자원 보호·전달·장애·보안·18개 검증 시나리오 |
 | [상용 서비스 조사](research/commercial-services-2026-10-30.md) | 7개 제품의 문서·화면·공개 데모·가격 비교 |
