@@ -19,21 +19,26 @@ LogDock은 여러 서비스와 서버의 로그를 한곳에서 수집·검색�
 
 ## 문서와 세션 이어가기
 
-다른 환경에서 이어갈 때는 [handoff](docs/HANDOFF.md)와 [결정 기록](docs/decisions.md)을 먼저 읽으세요. 기능 후보·수집 명세·상용 서비스 조사·검토용 PDF는 [문서 안내](docs/README.md)에 모았습니다. 문서의 추천안과 검증 시나리오는 구현 승인이나 시험 완료를 뜻하지 않습니다.
+다른 환경에서 이어갈 때는 [handoff](docs/HANDOFF.md)와 [결정 기록](docs/decisions.md)을 먼저 읽으세요. 다음 협의는 [Q01~Q16 목록](docs/planning/user-decisions-v0.1.md), 잔여 범위·출시 제안·상세 초안 통합 내역은 [잔여 기획](docs/planning/remaining-plan-v0.1.md)에 있습니다. 제품·수집·검색/조사·관리/운영 명세와 조사 자료는 [문서 안내](docs/README.md)에 모았습니다. 추천안과 검증 시나리오는 구현 승인이나 시험 완료를 뜻하지 않습니다.
 
 ## 시작하기
 
 - Node.js 24.22.2 LTS (`.node-version` 기준, 지원 범위 `>=24.22.2 <25`)
 - npm 11.x
 
-fnm을 사용한다면 저장소 루트에서 프로젝트 버전을 선택할 수 있습니다.
+fnm을 사용한다면 저장소 루트에서 프로젝트 버전을 설치하고 선택합니다. `fnm use`는 현재 터미널 세션에만 적용되며 다른 프로젝트나 전역 기본 버전을 바꾸지 않습니다.
 
 ```sh
 fnm install
 fnm use
+node -v # v24.22.2
 ```
 
-디렉터리 이동 시 자동 전환 여부는 각 사용자의 fnm 셸 설정에 따릅니다.
+저장소에서 터미널을 열거나 디렉터리를 이동할 때 자동으로 전환하려면 셸 설정(zsh는 `~/.zshrc`)에 다음 줄을 추가하고 새 터미널을 엽니다. nvm을 함께 쓴다면 nvm 초기화보다 뒤에 둡니다.
+
+```sh
+eval "$(fnm env --use-on-cd --version-file-strategy=recursive --shell zsh)"
+```
 
 의존성을 설치합니다.
 

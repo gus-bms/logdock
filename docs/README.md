@@ -6,8 +6,8 @@
 
 1. [handoff](HANDOFF.md)에서 현재 상태와 다음 작업을 읽는다.
 2. [결정 기록](decisions.md)에서 합의·보류·미결정을 확인한다.
-3. [기획 리뷰와 사용자 협의 목록](planning/user-decisions-v0.1.md)에서 Q01~Q16의 합의 상태와 남은 선택, 측정/설계 작업을 확인한다. Q03 기본/사용 불가 처리 원칙은 합의했고 다음 안건은 Q04 중앙 전달 완료의 보존 수준이다.
-4. [제품 기능 후보](specs/product-features-v0.1.md)와 [수집·에이전트 명세](specs/collection-agent-v0.1.md)를 검토한다.
+3. [기획 리뷰와 사용자 협의 목록](planning/user-decisions-v0.1.md)과 [잔여 전체 범위](planning/remaining-plan-v0.1.md#9-남은-기획-요약)를 확인한다. Q02·Q16의 합의·환경 입력·현재 다음 질문은 [전용 인계서](planning/q02-q16-handoff-v0.1.md#현재-세션-재개-기준)를 기준으로 읽는다. 사용자 합의와 설계·측정·실행 검증을 구분한다.
+4. [잔여 기획](planning/remaining-plan-v0.1.md)에서 P01~P18·출시 제안·완료 기준·초안 통합 기록을 확인하고, 관련 [제품](specs/product-features-v0.1.md)·[수집](specs/collection-agent-v0.1.md)·[검색/조사](specs/investigation-workflows-v0.1.md)·[관리/운영](specs/platform-operations-v0.1.md) 상세 초안을 검토한다.
 5. 기술 판단의 근거는 [상용 서비스 조사](research/commercial-services-2026-10-30.md)와 공식 출처로 확인한다.
 6. [아키텍처 검토 상태](architecture.md)에서 현재 scaffold와 미확정 설계를 구분한다.
 
@@ -15,10 +15,22 @@
 
 | 문서 | 역할 |
 | --- | --- |
-| [결정 기록](decisions.md) | 제품 정책과 D01~D09의 현재 결정 상태 |
+| [결정 기록](decisions.md) | 제품 정책과 D01~D09 합의/후속 상태, D10~D18 검토 추적표 |
 | [기획 리뷰와 사용자 협의 목록](planning/user-decisions-v0.1.md) | 두 작업 공간의 기획 재검토, 기존 합의, Q01~Q16 협의 상태와 남은 선택, 사용자 입력과 설계/측정의 구분, P01~P18 대응표 |
+| [잔여 기획](planning/remaining-plan-v0.1.md) | P01~P18 범위·R1~R3 제안·의존 관계·기획 종료 기준·상세 초안/stash 통합 기록 |
+| [Q02·Q16 협의 인계서](planning/q02-q16-handoff-v0.1.md) | 지원 입력/환경과 설치/운영 협의를 전달할 확정 전제·질문 18개·ID/편집 경계·입력/산출물·미실행 검증·시작 문구 |
+| [Q05·Q07·Q10 기획안과 전체 선택표](planning/q05-q07-q10-plan-v0.1.md) | Q05·Q07·Q10 사용자 항목 정리. Q10 감사 일괄 질문 6개도 합의해 검토 25개 중 미완료 사용자 선택은 0개. MFA·전용 대기 폐기 등 후속과 실제 환경/수치/설계·미실행 검증 구분 |
+| [Q05·Q07·Q10 공식 근거 조사](research/q05-q07-q10-evidence-2026-11-01.md) | 2026-11-01 확인한 공식 자료 15건과 적용 범위·해석·미확인 증거. 정책 채택/실제 보안 검증과 구분 |
+| [Q08 기획안과 사용자 결정표](planning/q08-search-plan-v0.1.md) | 사용자 결정 8개(모두 A안 합의)·실제 로그 형식 확인·설계 확정 36개·문서 불일치 정리·다른 Q와의 경계·엔진 평가 입력 |
+| [Q08 공식 근거 조사](research/q08-search-evidence-2026-11-02.md) | 2026-11-02 확인한 공식 자료 23건과 적용 범위·미확인 항목. 정책 채택/엔진 선정/실제 동작 검증과 구분 |
+| [Q12 기획안과 합의 결과](planning/q12-plan-v0.1.md) | 사용자 합의 11개·설계값 5개·설계 확정 21개·상태 전이·메일 전달·조사 링크·실패 시나리오·미실행 검증 |
+| [Q12 공식 근거 조사](research/q12-evidence-2026-11-02.md) | 2026-11-02 확인한 공식 자료 20건과 적용 범위·해석·미확인 증거. 정책 채택/실제 동작 검증과 구분 |
+| [D17 기술 선정안과 사용자 결정표](planning/d17-tech-selection-v0.1.md) | 수집기·저장소 비교, 연결별 순번 전달 설계, 사용자 결정 6개 모두 합의(Go 에이전트·ClickHouse·Go 수신 서버·PostgreSQL·실제 중앙 서버 측정·중앙 서버 디스크 저장), 측정 계획과 남는 위험 |
+| [D17 공식 근거 조사](research/d17-tech-evidence-2026-11-03.md) | 2026-11-03 확인한 공식 자료 37건(로그 저장 위치·PostgreSQL 트랜잭션 DDL·Docker json-file·journald 설정 포함)과 후보 버전·라이선스·미확인 항목. 채택/실제 동작 검증과 구분 |
 | [제품 기능 명세 v0.1](specs/product-features-v0.1.md) | 제품 정의·사용 흐름·F01~F10 채택 후보 |
 | [수집·에이전트 명세 v0.1](specs/collection-agent-v0.1.md) | 자원 보호·전달·장애·보안·18개 검증 시나리오 |
+| [검색·조사 상세 v0.1](specs/investigation-workflows-v0.1.md) | 검색·문맥·실시간·저장/공유/export·화면/조회 계약·IT-01~IT-25 |
+| [관리·운영 상세 v0.1](specs/platform-operations-v0.1.md) | 수집원 수명·중앙 전달·진단·인증/권한·보존·알림·수치 입력·복구·OT-01~OT-10 |
 | [상용 서비스 조사](research/commercial-services-2026-10-30.md) | 7개 제품의 문서·화면·공개 데모·가격 비교 |
 | [handoff](HANDOFF.md) | 다음 세션의 읽기 순서·실행 경계·검토할 작업 |
 | [아키텍처 검토 상태](architecture.md) | 현재 구현과 후속 설계 책임·선택 미확정 범위 |
