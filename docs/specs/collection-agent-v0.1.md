@@ -5,7 +5,7 @@
 - [제품 기능 후보](product-features-v0.1.md)
 - [결정 기록](../decisions.md)
 - [기획 리뷰와 사용자 협의 목록](../planning/user-decisions-v0.1.md) — D05는 Q03, 전달 보장은 Q04, 인증/권한 변경 queue는 Q05, 보류 해제는 Q06에서 검토한다.
-- [다른 환경에서 이어가기](../HANDOFF.md)
+- [다른 환경에서 이어가기](../agent/README.md)
 - [당시 검토용 PDF](../artifacts/logdock-agent-spec-v0.1-2026-10-30.pdf)
 - [잔여 범위와 통합 기록](../planning/remaining-plan-v0.1.md)
 - [중앙 전달·관리·운영 상세 초안](platform-operations-v0.1.md)

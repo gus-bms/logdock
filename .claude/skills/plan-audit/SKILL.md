@@ -63,7 +63,7 @@ node .claude/skills/plan-audit/scripts/check-docs.mjs
 답변 대기 선택표: docs/planning/d17-tech-selection-v0.1.md (5건)
 
 고칠 것 (결정 기록이 기준이라 답이 분명함)
-- docs/HANDOFF.md:20 Q12를 협의 중으로 표기. 결정 기록은 합의 완료.
+- docs/specs/platform-operations-v0.1.md:192 Q12를 협의 중으로 표기. 결정 기록은 합의 완료.
 
 협의 필요 (문서만으로 정할 수 없음)
 - ...

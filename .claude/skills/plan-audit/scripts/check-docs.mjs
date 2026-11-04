@@ -182,6 +182,7 @@ for (const doc of planDocs) {
       const after = prose.slice(m.index + m[0].length, m.index + m[0].length + 8);
       if (!before.includes('잔여') && !after.includes('남')) continue;
       if (Number(m[1]) === remaining.length) continue;
+      if (doc.rel.startsWith('docs/agent/done/')) continue;
       if (doc.rel === 'docs/decisions.md' && DATED_LINE_RE.test(line)) {
         datedCountLines += 1;
         continue;
@@ -190,7 +191,7 @@ for (const doc of planDocs) {
     }
 
     for (const m of prose.matchAll(PENDING_RE)) {
-      if (doc.rel.startsWith('docs/research/')) continue;
+      if (doc.rel.startsWith('docs/research/') || doc.rel.startsWith('docs/agent/')) continue;
       const window = prose.slice(Math.max(0, m.index - 70), m.index + 70);
       const qs = [...window.matchAll(/(?<![A-Za-z0-9-])Q\d{2}/g)].map((q) => q[0]);
       if (qs.length > 0 && !qs.some((q) => remaining.includes(q))) {
@@ -210,6 +211,8 @@ for (const { id, where, text } of references) {
 }
 
 for (const doc of planDocs) {
+  // docs/agent 작업 폴더는 폴더가 곧 목록이라 docs/README.md 등록을 요구하지 않는다.
+  if (doc.rel.startsWith('docs/agent/') && doc.rel !== 'docs/agent/README.md') continue;
   if (doc.rel.startsWith('docs/') && doc !== docsIndex && !indexTargets.has(doc.full)) {
     problems['문서 안내 누락'].push(`${doc.rel}이(가) docs/README.md에 없습니다`);
   }

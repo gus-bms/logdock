@@ -4,7 +4,7 @@
 
 ## 다른 환경에서 이어가기
 
-1. [handoff](HANDOFF.md)에서 현재 상태와 다음 작업을 읽는다.
+1. [에이전트 작업 문서](agent/README.md)에서 현재 단계와 작업 상태(진행·보류·할 일)를 읽는다.
 2. [결정 기록](decisions.md)에서 합의·보류·미결정을 확인한다.
 3. [기획 리뷰와 사용자 협의 목록](planning/user-decisions-v0.1.md)과 [잔여 전체 범위](planning/remaining-plan-v0.1.md#9-남은-기획-요약)를 확인한다. Q02·Q16의 합의·환경 입력·현재 다음 질문은 [전용 인계서](planning/q02-q16-handoff-v0.1.md#현재-세션-재개-기준)를 기준으로 읽는다. 사용자 합의와 설계·측정·실행 검증을 구분한다.
 4. [잔여 기획](planning/remaining-plan-v0.1.md)에서 P01~P18·출시 제안·완료 기준·초안 통합 기록을 확인하고, 관련 [제품](specs/product-features-v0.1.md)·[수집](specs/collection-agent-v0.1.md)·[검색/조사](specs/investigation-workflows-v0.1.md)·[관리/운영](specs/platform-operations-v0.1.md) 상세 초안과 [화면 흐름 명세](specs/screen-flows-v0.1.md)를 검토한다.
@@ -33,7 +33,8 @@
 | [관리·운영 상세 v0.1](specs/platform-operations-v0.1.md) | 수집원 수명·중앙 전달·진단·인증/권한·보존·알림·수치 입력·복구·OT-01~OT-10 |
 | [화면 흐름 명세 v0.1](specs/screen-flows-v0.1.md) | 첫 출시 화면 16개와 공통 요소 7개의 흐름·상태·합의 연결, 수치 표기, 와이어프레임 분담 기준. 2026-11-04 와이어프레임 기준으로 확정 |
 | [상용 서비스 조사](research/commercial-services-2026-10-30.md) | 7개 제품의 문서·화면·공개 데모·가격 비교 |
-| [handoff](HANDOFF.md) | 다음 세션의 읽기 순서·실행 경계·검토할 작업 |
+| [에이전트 작업 문서](agent/README.md) | 세션 시작점. 현재 단계, 작업 폴더(todo·progress·hold·done)와 작업 파일 규칙, 고정 안내(refs) |
+| [handoff (이전 위치)](HANDOFF.md) | 2026-11-04 에이전트 작업 문서로 옮겼다는 안내만 남김 |
 | [아키텍처 검토 상태](architecture.md) | 현재 구현과 후속 설계 책임·선택 미확정 범위 |
 
 Markdown 문서와 문서 간 상대 링크가 환경을 옮길 때의 기본 자료다. `artifacts/`의 PDF는 2026-10-30 당시 검토본으로, 이후 Markdown 변경이 자동 반영되지 않는다.
