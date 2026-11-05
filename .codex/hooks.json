@@ -1,0 +1,18 @@
+{
+  "description": "LogDock 세션 시작 작업 보드",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$(git rev-parse --show-toplevel)/.claude/skills/session-start/scripts/board.sh\" --hook",
+            "timeout": 10,
+            "statusMessage": "LogDock 작업 보드 읽는 중"
+          }
+        ]
+      }
+    ]
+  }
+}

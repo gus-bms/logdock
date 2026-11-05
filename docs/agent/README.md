@@ -4,7 +4,9 @@
 
 ## 세션 시작
 
-Claude Code에서는 루트 `CLAUDE.md`가 `AGENTS.md`를 불러오고, SessionStart hook이 작업 보드를 붙인 뒤 `session-start` 스킬로 시작 보고를 한다. 다른 에이전트는 [session-start 절차](../../.claude/skills/session-start/SKILL.md)를 읽고 같은 순서로 진행한다. 보드는 `sh .claude/skills/session-start/scripts/board.sh`로도 볼 수 있다.
+Claude Code에서는 루트 `CLAUDE.md`가 `AGENTS.md`를 불러오고, Codex는 `AGENTS.md`를 읽는다. 두 도구 모두 새 세션 시작과 `/clear` 때 SessionStart hook으로 같은 작업 보드를 붙인 뒤 [session-start 절차](../../.claude/skills/session-start/SKILL.md)에 따라 시작 보고를 한다. 설정은 각각 [Claude Code 설정](../../.claude/settings.json)과 [Codex 훅 설정](../../.codex/hooks.json)에 있다. 다른 에이전트도 같은 절차를 읽고 진행한다. 보드는 `sh .claude/skills/session-start/scripts/board.sh`로도 볼 수 있다.
+
+Codex에서 처음 사용하거나 훅 정의가 바뀌면 프로젝트를 신뢰한 상태에서 `/hooks`를 열어 해당 훅을 검토하고 신뢰해야 한다. 검토 전에는 훅 실행이 생략된다. 검토 후 새 세션을 시작하거나 `/clear`로 작업 보드가 컨텍스트에 들어오는지 확인한다. 이 설정은 로컬 Codex 실행용이며 클라우드 실행 환경의 셸 훅 지원은 별도로 확인한다. 동작과 신뢰 절차는 [OpenAI 공식 훅 문서](https://learn.chatgpt.com/docs/hooks)가 기준이다.
 
 ## 읽는 순서
 

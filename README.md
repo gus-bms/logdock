@@ -19,7 +19,7 @@ LogDock은 여러 서비스와 서버의 로그를 한곳에서 수집·검색�
 
 ## 문서와 세션 이어가기
 
-다른 환경이나 새 세션에서 이어갈 때는 [에이전트 작업 문서](docs/agent/README.md)와 [결정 기록](docs/decisions.md)을 먼저 읽으세요. Claude Code는 루트 `CLAUDE.md`와 SessionStart hook으로 작업 상태를 읽고 시작 보고를 합니다. 다음 협의는 [Q01~Q16 목록](docs/planning/user-decisions-v0.1.md), 잔여 범위·출시 제안·상세 초안 통합 내역은 [잔여 기획](docs/planning/remaining-plan-v0.1.md)에 있습니다. 제품·수집·검색/조사·관리/운영 명세와 조사 자료는 [문서 안내](docs/README.md)에 모았습니다. 추천안과 검증 시나리오는 구현 승인이나 시험 완료를 뜻하지 않습니다.
+다른 환경이나 새 세션에서 이어갈 때는 [에이전트 작업 문서](docs/agent/README.md)와 [결정 기록](docs/decisions.md)을 먼저 읽으세요. Claude Code와 로컬 Codex는 SessionStart hook으로 작업 상태를 읽고 시작 보고를 합니다. Codex의 최초 훅 신뢰 절차는 에이전트 작업 문서에 있습니다. 다음 협의는 [Q01~Q16 목록](docs/planning/user-decisions-v0.1.md), 잔여 범위·출시 제안·상세 초안 통합 내역은 [잔여 기획](docs/planning/remaining-plan-v0.1.md)에 있습니다. 제품·수집·검색/조사·관리/운영 명세와 조사 자료는 [문서 안내](docs/README.md)에 모았습니다. 추천안과 검증 시나리오는 구현 승인이나 시험 완료를 뜻하지 않습니다.
 
 ## 시작하기
 
