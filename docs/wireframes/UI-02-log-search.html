@@ -629,25 +629,11 @@
 
 <section class="wf-state" id="s15">
   <h2 class="wf-state-title">상태 15. 현재 조건으로 알림 규칙 만들기</h2>
-  <div class="wf-overlay">
-    <div class="wf-modal" role="dialog" aria-label="현재 조건으로 알림 규칙 만들기">
-      <div class="wf-modal-head">현재 조건으로 알림 규칙 만들기</div>
-      <div class="wf-modal-body">
-        <p>지금 조건을 복사해 새 알림 규칙 편집을 엽니다.</p>
-        <dl class="wf-kv">
-          <dt>복사할 조건</dt><dd>(서비스 주문 또는 결제) 그리고 (환경 운영) 그리고 (레벨 ERROR 또는 WARN) 그리고 (본문에 "timeout" 포함) 그리고 (http.status 500 이상)</dd>
-        </dl>
-        <p class="wf-callout">복사한 뒤에는 서로 따로 바뀝니다. 이 검색 조건이나 저장 검색을 고쳐도 알림 규칙은 바뀌지 않고, 알림 규칙을 고쳐도 저장 검색은 바뀌지 않습니다.</p>
-        <p class="wf-help">알림은 중앙 수신 시각으로 셉니다. 시간 구간과 임계 건수는 기본값이 없어 규칙 편집에서 정합니다.</p>
-      </div>
-      <div class="wf-modal-foot"><span class="wf-btn">취소</span><a class="wf-btn wf-btn--primary" href="UI-07-alert-rule-edit.html">규칙 편집 열기</a></div>
-    </div>
-  </div>
+  <p class="wf-callout">확인 창 없이 지금 조건을 복사한 새 알림 규칙 편집(<a href="UI-07-alert-rule-edit.html">UI-07</a>)을 바로 엽니다. 복사 관계 안내와 시간 구간·임계 안내는 UI-07 위쪽에 있습니다(UI-07 상태 3).</p>
   <ul class="wf-notes">
     <li><span class="wf-term">현재 조건으로 알림 규칙 만들기</span>는 조건을 복사해 알림 규칙 편집(<a href="UI-07-alert-rule-edit.html">UI-07</a>)을 연다(5절 UI-02, <span class="wf-ref">TD-05</span>). 저장 검색·규칙과는 복사 관계라 한쪽을 고쳐도 다른 쪽은 바뀌지 않는다고 알린다(<span class="wf-ref">SD-30</span>).</li>
     <li>알림 집계는 중앙 수신 시각 기준이고 시간 구간과 임계 건수는 기본값이 없다(<span class="wf-ref">Q12-01</span>, UI-07 요소). 필터가 하나도 없는 조건이면 UI-07이 경고한다(UI-07 그릴 상태).</li>
-    <li>안내를 확인 창으로 보여 준 것은 와이어프레임 표기다.</li>
-    <li><span class="wf-review">WQ-10 설계로 넘김:</span> 복사 관계 안내를 이 확인 창에 둘지 UI-07 첫 화면에 둘지 문서에 없다. 묶음 3의 UI-07과 맞춰 한 곳에만 두어야 한다. <strong>기본안:</strong> UI-07 위쪽에만 둔다. UI-07은 확인 창 없이도 열리므로 그곳에 있어야 한다. UI-02 상태 15의 확인 창은 화면 설계에서 뺀다(WQ-39와 같음).</li>
+    <li><span class="wf-review">WQ-10 화면 확정(2026-11-05 디자인 시스템 11절):</span> 복사 관계 안내는 UI-07 위쪽에만 둔다. UI-07은 확인 창 없이도 열리므로 그곳에 있어야 한다. 그래서 이 상태의 확인 창을 뺐다(WQ-39와 같음).</li>
     <li><span class="wf-review">WQ-11 문서로 정리:</span> 검색의 시간 범위와 시간 기준은 규칙으로 넘기지 않는다고 그렸다(규칙의 시간 구간은 기본값 없음, 집계는 수신 시각). 맞는지 확인이 필요하다. <strong>정리:</strong> 그림이 맞다. 규칙의 시간 구간·임계는 기본값 없이 직접 입력하고(Q12-01) 집계는 중앙 수신 시각이다.</li>
   </ul>
 </section>

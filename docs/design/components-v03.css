@@ -1,0 +1,199 @@
+@charset "utf-8";
+/*
+ * LogDock 부품 스타일 v0.3 (2026-11-05 비교용, 채택하지 않음). 현재 기준은 components.css(v0.2)
+ *
+ * - tokens.css의 용도 토큰만 쓴다.
+ * - 화면 구현 때는 같은 규칙을 CSS Modules로 옮기고 동작·접근성은 Base UI 부품을 쓴다(합의 1B·4A).
+ * - 상태는 색만으로 구분하지 않고 글자를 함께 쓴다(화면 흐름 명세 1절).
+ *
+ * v0.3 원칙(2026-11-05, v0.2가 "AI틱하다"는 지적 뒤 덜어내기)
+ *   1. 로그가 주인공이다. 표는 카드에 넣지 않고 화면 폭을 다 쓴다.
+ *   2. 색은 문제에만. 옅은 색 상자는 전역 배너 하나만 쓰고, 나머지 상태는 색 글자로 쓴다.
+ *   3. 장식 반복 금지. 점·알약·고리 그림자를 부품마다 붙이지 않는다.
+ *   4. 강조는 하나. 건수와 오류만 진하게, 나머지는 회색 위계로 물러난다.
+ *   5. 문구는 짧게. 설명 문장 대신 값과 이동할 곳을 쓴다.
+ * 채택한 기준: components.css(v0.2)
+ */
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--color-bg-surface); color: var(--color-text);
+  font: var(--font-weight-regular) var(--text-md)/var(--leading-md) var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: var(--focus-ring-width) solid var(--color-focus); outline-offset: var(--focus-ring-offset); }
+.mono { font-family: var(--font-mono); font-size: 12.5px; font-feature-settings: var(--font-feature-numeric); }
+.muted { color: var(--color-text-secondary); }
+.tertiary { color: var(--color-text-tertiary); }
+.strong { font-weight: var(--font-weight-strong); }
+a.link { color: var(--color-text-link); text-decoration: none; }
+a.link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── 상단 메뉴 CM-01 ─────────────────────────────────────────── */
+.topbar {
+  height: 40px; display: flex; align-items: stretch; gap: var(--space-6); padding: 0 var(--space-4);
+  border-bottom: 1px solid var(--color-border); background: var(--color-bg-surface);
+}
+.brand { display: flex; align-items: center; gap: 7px; font-weight: var(--font-weight-strong); letter-spacing: -0.01em; }
+/* 로고: 길이가 다른 세 줄(로그 줄)과 끝의 짧은 줄 하나. 아이콘 하나만 정체성으로 쓴다 */
+.brand svg { width: 16px; height: 16px; }
+.menu { display: flex; gap: var(--space-4); }
+.menu a {
+  display: flex; align-items: center; gap: 5px; color: var(--color-text-secondary); text-decoration: none;
+  box-shadow: inset 0 -2px 0 transparent;
+}
+.menu a:hover { color: var(--color-text); }
+.menu a[aria-current="page"] { color: var(--color-text); box-shadow: inset 0 -2px 0 var(--color-text); }
+.menu .n { color: var(--color-danger-fg); font-size: var(--text-sm); font-feature-settings: var(--font-feature-numeric); }
+.topbar-end { margin-left: auto; display: flex; gap: var(--space-4); align-items: center; color: var(--color-text-tertiary); font-size: var(--text-sm); }
+.topbar-end button { border: 0; background: none; padding: 0; color: inherit; cursor: pointer; font-size: var(--text-sm); }
+.topbar-end button:hover { color: var(--color-text); }
+
+/* 전역 배너: 화면에서 유일하게 바탕을 칠하는 상태 표시 */
+.banner { display: flex; gap: var(--space-3); align-items: center; padding: 5px var(--space-4); background: var(--color-warning-bg); color: var(--color-warning-fg); font-size: var(--text-sm); }
+.banner.danger { background: var(--color-danger-bg); color: var(--color-danger-fg); }
+.banner b { font-weight: var(--font-weight-strong); }
+.banner a { color: inherit; margin-left: auto; text-underline-offset: 3px; }
+
+/* ── 상태 글자 ─────────────────────────────────────────────── */
+/* 기본은 색 글자. 바탕·점 없음 */
+.st { font-weight: var(--font-weight-medium); white-space: nowrap; }
+.st.success { color: var(--color-success-fg); }
+.st.info { color: var(--color-info-fg); }
+.st.warning { color: var(--color-warning-fg); }
+.st.danger { color: var(--color-danger-fg); }
+.st.neutral { color: var(--color-neutral-fg); }
+.st.unknown { color: var(--color-unknown-fg); text-decoration: underline dashed var(--color-unknown-border); text-underline-offset: 3px; }
+/* 목록처럼 상태끼리 줄을 맞춰야 할 때만 테두리 배지를 쓴다 */
+.tag { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: var(--radius-sm); border: 1px solid currentColor; font-size: var(--text-sm); white-space: nowrap; }
+.tag.unknown { border-style: var(--border-style-unknown); }
+
+/* 로그 레벨: 고정폭 색 글자. INFO 이하는 회색으로 물러난다 */
+.lv { font: var(--font-weight-medium) 12px/16px var(--font-mono); }
+.lv.error { color: var(--color-danger-fg); font-weight: 600; }
+.lv.warn { color: var(--color-warning-fg); }
+.lv.info, .lv.debug { color: var(--color-text-tertiary); }
+.lv.unknown { color: var(--color-unknown-fg); text-decoration: underline dashed var(--color-unknown-border); text-underline-offset: 3px; }
+
+/* ── 버튼 ───────────────────────────────────────────────────── */
+.btn {
+  height: 28px; padding: 0 10px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-bg-surface);
+  cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:hover { background: var(--color-bg-hover); }
+.btn.primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-text-on-accent); font-weight: var(--font-weight-medium); }
+.btn.primary:hover { background: var(--color-accent-hover); }
+.btn.text { border-color: transparent; background: none; color: var(--color-text-secondary); padding: 0 6px; }
+.btn.text:hover { color: var(--color-text); background: var(--color-bg-hover); }
+.btn:disabled { color: var(--color-text-disabled); background: var(--color-bg-subtle); border-color: var(--color-border); cursor: not-allowed; }
+
+/* ── 조회 막대: 시간 범위 CM-02 · 조건 CM-03 · 실행 ───────────────── */
+.querybar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--color-border); }
+.range {
+  height: 28px; display: inline-flex; align-items: center; gap: var(--space-2); padding: 0 10px; border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md); background: none; cursor: pointer; white-space: nowrap;
+}
+.range:hover { background: var(--color-bg-hover); }
+.range .basis { color: var(--color-text-tertiary); }
+.conds {
+  flex: 1; min-width: 0; height: 28px; display: flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-control); border-radius: var(--radius-md);
+}
+.conds:focus-within { border-color: var(--color-focus); box-shadow: 0 0 0 1px var(--color-focus); }
+.conds input { flex: 1; min-width: 80px; border: 0; outline: 0; background: none; font-family: var(--font-mono); font-size: 12.5px; }
+.conds input::placeholder { font-family: var(--font-sans); color: var(--color-text-tertiary); }
+/* 조건은 칩 상자 대신 `키:값` 글자. 지울 때만 마우스를 올려 ×를 보인다 */
+.cond { display: inline-flex; align-items: center; height: 22px; padding: 0 2px 0 6px; border-radius: var(--radius-sm); font: 12.5px/1 var(--font-mono); white-space: nowrap; }
+.cond:hover { background: var(--color-bg-hover); }
+.cond .k { color: var(--color-text-tertiary); }
+.cond.not .k::before { content: "-"; color: var(--color-danger-fg); }
+.cond button { width: 18px; height: 18px; border: 0; background: none; color: var(--color-text-tertiary); cursor: pointer; visibility: hidden; font-size: 11px; }
+.cond:hover button, .cond:focus-within button { visibility: visible; }
+
+/* ── 왼쪽 항목별 건수 ─────────────────────────────────────── */
+.facets { border-right: 1px solid var(--color-border); padding: var(--space-3) 0 var(--space-6); background: var(--color-bg-page); }
+.facet { padding: 0 var(--space-2) var(--space-4); }
+.facet h3 { margin: 0; padding: 0 var(--space-2) var(--space-1); font-size: var(--text-sm); font-weight: var(--font-weight-regular); color: var(--color-text-tertiary); }
+.facet label { display: grid; grid-template-columns: 14px 1fr auto; gap: var(--space-2); align-items: center; height: 26px; padding: 0 var(--space-2); border-radius: var(--radius-sm); cursor: pointer; }
+.facet label:hover { background: var(--color-bg-hover); }
+.facet input { margin: 0; width: 13px; height: 13px; accent-color: var(--color-accent); }
+.facet .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.facet .cnt { color: var(--color-text-tertiary); font-size: var(--text-sm); font-feature-settings: var(--font-feature-numeric); }
+.facet .note { color: var(--color-warning-fg); font-size: var(--text-sm); margin-left: 4px; }
+
+/* ── 결과 머리 CM-04 ─────────────────────────────────────────── */
+.resulthead { display: flex; align-items: baseline; gap: var(--space-3); padding: var(--space-3) var(--space-4) var(--space-1); }
+.resulthead .count { font-size: 20px; line-height: 24px; font-weight: var(--font-weight-strong); letter-spacing: -0.02em; font-feature-settings: var(--font-feature-numeric); }
+.resulthead .count small { font-size: var(--text-md); font-weight: var(--font-weight-regular); color: var(--color-text-secondary); margin-left: 2px; }
+.resulthead .meta { color: var(--color-text-secondary); font-size: var(--text-sm); }
+.resulthead .end { margin-left: auto; display: flex; gap: var(--space-1); align-items: center; }
+.issues { display: flex; gap: var(--space-4); padding: 0 var(--space-4) var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.issues .warn { color: var(--color-warning-fg); }
+.issues a { color: inherit; text-underline-offset: 3px; }
+
+/* ── 발생량 그래프 ──────────────────────────────────────────── */
+.hist { position: relative; padding: 0 var(--space-4); }
+.hist svg { display: block; width: 100%; height: 72px; }
+.hist-legend { display: flex; gap: var(--space-3); font-size: var(--text-sm); color: var(--color-text-tertiary); }
+.hist-legend i { display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 1px; vertical-align: 0; }
+.tip {
+  position: absolute; z-index: var(--z-popover); pointer-events: none; display: none; min-width: 160px; padding: 6px var(--space-2);
+  background: var(--color-toast-bg); color: var(--color-toast-text); border-radius: var(--radius-sm); font-size: var(--text-sm); line-height: 18px;
+}
+.tip .r { display: flex; justify-content: space-between; gap: var(--space-4); color: var(--color-toast-text-secondary); }
+.tip .r b { color: var(--color-toast-text); font-weight: var(--font-weight-regular); font-feature-settings: var(--font-feature-numeric); }
+
+/* ── 로그 표 ───────────────────────────────────────────────── */
+.logs { width: 100%; border-collapse: collapse; table-layout: fixed; font-family: var(--font-mono); font-size: 12.5px; }
+.logs th {
+  position: sticky; top: 0; z-index: 1; background: var(--color-bg-surface); height: 28px; padding: 0 var(--space-2); text-align: left;
+  font: var(--font-weight-regular) var(--text-sm)/1 var(--font-sans); color: var(--color-text-tertiary); border-bottom: 1px solid var(--color-border);
+}
+.logs th:first-child, .logs td:first-child { padding-left: var(--space-4); }
+.logs td { height: 26px; padding: 0 var(--space-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.logs tbody tr { cursor: default; }
+.logs tbody tr:hover td { background: var(--color-bg-hover); }
+.logs tbody tr[aria-selected="true"] td { background: var(--color-bg-selected); }
+.logs tbody tr:focus-visible { outline-offset: var(--focus-ring-offset-inset); }
+.logs td.t { color: var(--color-text-tertiary); }
+.logs tr.e td.t { box-shadow: inset 2px 0 0 var(--color-danger-border); }
+.logs td.src { font-family: var(--font-sans); font-size: var(--text-sm); color: var(--color-text-secondary); }
+.logs .more { color: var(--color-text-tertiary); margin-left: var(--space-2); font-family: var(--font-sans); font-size: 11.5px; }
+.logs .q { color: var(--color-warning-fg); font-family: var(--font-sans); font-size: 11.5px; margin-right: var(--space-2); }
+.logs .k { color: var(--color-text-tertiary); }
+.loadmore { display: block; width: 100%; height: 32px; border: 0; border-top: 1px solid var(--color-border); background: none; color: var(--color-text-secondary); cursor: pointer; font-size: var(--text-sm); }
+.loadmore:hover { color: var(--color-text); background: var(--color-bg-hover); }
+
+/* ── 상세 패널 UI-03: 오른쪽에 붙는 패널 ─────────────────────── */
+.detail { border-left: 1px solid var(--color-border); background: var(--color-bg-surface); display: flex; flex-direction: column; min-width: 0; }
+.detail-head { display: flex; align-items: center; gap: var(--space-2); height: 40px; padding: 0 var(--space-2) 0 var(--space-4); border-bottom: 1px solid var(--color-border); }
+.detail-head .t { font-family: var(--font-mono); font-size: 12.5px; color: var(--color-text-secondary); }
+.detail-head .end { margin-left: auto; display: flex; gap: 2px; }
+.detail-body { overflow: auto; padding: var(--space-3) var(--space-4) var(--space-6); }
+.detail h4 { margin: var(--space-5) 0 var(--space-2); font-size: var(--text-sm); font-weight: var(--font-weight-regular); color: var(--color-text-tertiary); }
+.detail h4:first-child { margin-top: 0; }
+.raw { margin: 0; padding: var(--space-3); border-radius: var(--radius-md); background: var(--color-bg-subtle); font: 12.5px/19px var(--font-mono); white-space: pre-wrap; word-break: break-word; }
+.raw .dim { color: var(--color-text-tertiary); }
+.fields { display: grid; grid-template-columns: max-content 1fr; column-gap: var(--space-4); margin: 0; font-size: var(--text-md); }
+.fields > div { display: contents; }
+.fields dt, .fields dd { margin: 0; padding: 3px 0; }
+.fields dt { color: var(--color-text-tertiary); }
+.fields dd { display: flex; gap: var(--space-2); align-items: center; min-width: 0; }
+.fields dd .v { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fields.mono dt, .fields.mono dd .v { font-family: var(--font-mono); font-size: 12.5px; }
+.fields dd .act { margin-left: auto; display: flex; gap: 2px; visibility: hidden; }
+.fields > div:hover .act, .fields > div:focus-within .act { visibility: visible; }
+.fields .act button { height: 20px; padding: 0 5px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-bg-surface); font: 11.5px/1 var(--font-sans); color: var(--color-text-secondary); cursor: pointer; }
+.fields .act button:hover { color: var(--color-text); }
+
+/* ── 토스트 CM-08 ─────────────────────────────────────────── */
+.toast {
+  width: 340px; padding: 10px var(--space-3); border-radius: var(--radius-md); background: var(--color-toast-bg); color: var(--color-toast-text);
+  box-shadow: var(--shadow-toast); display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-3); align-items: baseline; font-size: var(--text-md);
+}
+.toast .kind { font-size: var(--text-sm); color: var(--color-toast-text-secondary); }
+.toast.fail .kind { color: #ff8a8a; }
+.toast p { margin: 0; }
+.toast a { color: inherit; text-underline-offset: 3px; }
+.toast button { border: 0; background: none; color: var(--color-toast-text-secondary); cursor: pointer; }

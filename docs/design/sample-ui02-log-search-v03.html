@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LogDock 시안 — 로그 탐색 v0.3</title>
+<!-- 시안 표시용 글꼴. 제품은 글꼴 파일을 직접 제공하고 외부 CDN을 쓰지 않는다(design-system-v0.1.md 4절). -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="tokens-dark-preview.css">
+<link rel="stylesheet" href="components-v03.css">
+<style>
+  /* 화면 흐름 명세 UI-02(로그 탐색)와 UI-03(이벤트 상세)을 합친 정적 시안 v0.3. 모든 값은 합성 예시다.
+     채택하지 않은 비교용(2026-11-05 사용자가 v0.2를 골랐다) */
+  html, body { height: 100%; }
+  body { display: flex; flex-direction: column; min-width: 1080px; }
+  .work { flex: 1; min-height: 0; display: grid; grid-template-columns: 208px minmax(0, 1fr) 0; transition: grid-template-columns var(--duration-normal) var(--easing-standard); }
+  body.open .work { grid-template-columns: 0 minmax(0, 1fr) 420px; }
+  .facets, .detail { overflow: hidden auto; }
+  .main { min-width: 0; overflow: auto; }
+  .toasts { position: fixed; right: var(--space-4); bottom: var(--space-4); display: grid; gap: var(--space-2); z-index: var(--z-toast); }
+</style>
+</head>
+<body>
+
+<nav class="topbar" aria-label="주 메뉴">
+  <span class="brand">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3.5h12M2 8h8M2 12.5h5"/></g><path d="M12 11v3" stroke="var(--color-danger-border)" stroke-width="2" stroke-linecap="round"/></svg>
+    LogDock
+  </span>
+  <div class="menu">
+    <a href="#" aria-current="page">로그 탐색</a>
+    <a href="#">저장 검색</a>
+    <a href="#">알림</a>
+    <a href="#">수집 연결 <span class="n" aria-label="조치 필요 2건">2</span></a>
+    <a href="#">저장 공간</a>
+    <a href="#">감사 이력</a>
+  </div>
+  <div class="topbar-end">
+    <span class="mono">KST</span>
+    <button id="theme" title="검토용. 첫 출시는 밝은 테마만이다">어두운 테마(검토용)</button>
+    <button>공용 계정</button>
+  </div>
+</nav>
+<div class="banner" role="status"><b>디스크 경고</b><span>중앙 저장 공간 86% 사용. 보존 기간 전에 오래된 로그가 지워질 수 있습니다.</span><a href="#">저장 공간</a></div>
+
+<div class="querybar">
+  <button class="range" aria-haspopup="dialog"><span>최근 1시간</span><span class="basis">발생 시각</span></button>
+  <div class="conds" role="group" aria-label="검색 조건">
+    <span class="cond"><span class="k">service:</span>billing<button aria-label="조건 지우기">✕</button></span>
+    <span class="cond"><span class="k">env:</span>prod<button aria-label="조건 지우기">✕</button></span>
+    <span class="cond not"><span class="k">body:</span>"GET /healthz"<button aria-label="조건 지우기">✕</button></span>
+    <input aria-label="조건 추가 또는 본문 검색" placeholder="조건 추가 또는 본문 검색">
+  </div>
+  <button class="btn primary">실행</button>
+</div>
+
+<div class="work">
+  <aside class="facets" aria-label="항목별 건수">
+    <div class="facet"><h3>레벨</h3>
+      <label><input type="checkbox" checked><span class="name lv error">ERROR</span><span class="cnt" id="c-e"></span></label>
+      <label><input type="checkbox" checked><span class="name lv warn">WARN</span><span class="cnt" id="c-w"></span></label>
+      <label><input type="checkbox" checked><span class="name lv info">INFO</span><span class="cnt" id="c-i"></span></label>
+      <label><input type="checkbox" checked><span class="name lv unknown">미확인</span><span class="cnt" id="c-u"></span></label>
+    </div>
+    <div class="facet"><h3>서버</h3>
+      <label><input type="checkbox" checked><span class="name">app-01</span><span class="cnt" id="c-s1"></span></label>
+      <label><input type="checkbox" checked><span class="name">app-02<span class="note">멈춤</span></span><span class="cnt" id="c-s2"></span></label>
+    </div>
+    <div class="facet"><h3>수집 대상</h3>
+      <label><input type="checkbox" checked><span class="name">api</span><span class="cnt" id="c-t1"></span></label>
+      <label><input type="checkbox" checked><span class="name">worker</span><span class="cnt" id="c-t2"></span></label>
+      <label><input type="checkbox" checked><span class="name">nginx access</span><span class="cnt" id="c-t3"></span></label>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="resulthead">
+      <span class="count" id="total"></span>
+      <span class="meta"><span class="mono">13:02:00–14:02:00</span> KST · 수신 <span class="mono">14:02:09</span>까지 반영</span>
+      <span class="end">
+        <button class="btn text">최신순</button>
+        <button class="btn text">저장</button>
+        <button class="btn text">알림 규칙으로</button>
+      </span>
+    </div>
+    <div class="issues">
+      <span><span class="warn">app-02 수집 멈춤 13:40–13:52</span> — 이 구간 결과가 빠졌을 수 있음 · <a href="#">수집 연결</a></span>
+      <span>판정 불가 37건 제외 · <a href="#">보기</a></span>
+    </div>
+    <div class="hist">
+      <svg id="hist" role="img" aria-label="분당 발생량. 같은 값은 왼쪽 항목별 건수와 결과 표에 있습니다."></svg>
+      <div class="tip" id="tip"></div>
+    </div>
+    <table class="logs" aria-label="검색 결과">
+      <colgroup><col style="width:128px"><col style="width:64px"><col style="width:156px"><col></colgroup>
+      <thead><tr><th>11월 5일</th><th>레벨</th><th>출처</th><th>본문</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <button class="loadmore">50건 더 보기</button>
+  </main>
+
+  <aside class="detail" aria-label="이벤트 상세">
+    <div class="detail-head">
+      <span class="lv error">ERROR</span><span class="t">14:01:58.902</span>
+      <span class="end">
+        <button class="btn text">주변 로그</button>
+        <button class="btn text">복사</button>
+        <button class="btn text" id="close" aria-label="닫기">✕</button>
+      </span>
+    </div>
+    <div class="detail-body">
+      <h4>원문</h4>
+<pre class="raw">{"level":"error","ts":"2026-11-05T05:01:58.902Z",
+ "msg":"payment confirm failed",
+ "order_id":1043,"attempt":3,
+ "err":"context deadline exceeded (Client.Timeout exceeded while awaiting headers)",
+ "upstream":"pg-gateway.internal:443",
+ "req_id":"7f3c9a1e-52d0-4b8e-9a61-0c2f1d7e8b44"}</pre>
+      <h4>필드</h4>
+      <dl class="fields mono">
+        <div><dt>order_id</dt><dd><span class="v">1043</span><span class="act"><button>+ 조건</button><button>− 제외</button></span></dd></div>
+        <div><dt>attempt</dt><dd><span class="v">3</span><span class="act"><button>+ 조건</button><button>− 제외</button></span></dd></div>
+        <div><dt>upstream</dt><dd><span class="v">pg-gateway.internal:443</span><span class="act"><button>+ 조건</button><button>− 제외</button></span></dd></div>
+        <div><dt>req_id</dt><dd><span class="v">7f3c9a1e-52d0-4b8e-9a61-0c2f1d7e8b44</span><span class="act"><button>+ 조건</button><button>− 제외</button></span></dd></div>
+      </dl>
+      <h4>시각</h4>
+      <dl class="fields">
+        <div><dt>발생</dt><dd><span class="v mono">2026-11-05 14:01:58.902</span><span class="tertiary">본문 ts</span></dd></div>
+        <div><dt>관측</dt><dd><span class="v mono">2026-11-05 14:01:58.910</span></dd></div>
+        <div><dt>수신</dt><dd><span class="v mono">2026-11-05 14:01:59.140</span></dd></div>
+      </dl>
+      <h4>출처</h4>
+      <dl class="fields">
+        <div><dt>서비스</dt><dd>billing · prod</dd></div>
+        <div><dt>서버</dt><dd>app-01</dd></div>
+        <div><dt>수집 연결</dt><dd>api (journald) <span class="st success">수집/전송 진행</span></dd></div>
+        <div><dt>레벨</dt><dd><span class="mono">error</span> <span class="tertiary">→</span> <span class="lv error">ERROR</span></dd></div>
+      </dl>
+    </div>
+  </aside>
+</div>
+
+<div class="toasts" aria-live="polite">
+  <div class="toast" id="toast"><span class="kind">성공</span><p>검색 “결제 실패 확인”을 저장했습니다. <a href="#">열기</a></p><button aria-label="닫기">✕</button></div>
+</div>
+
+<script>
+// 합성 데이터
+let seed = 11;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+const START = 13 * 60 + 2;
+const B = Array.from({ length: 60 }, (_, i) => {
+  const m = START + i, gap = m >= 820 && m < 832, spike = m >= 835;
+  let total = ri(16, 30), warn = rnd() < 0.3 ? ri(1, 2) : 0, error = rnd() < 0.08 ? 1 : 0;
+  if (gap) total = Math.round(total * 0.45), warn = 0;
+  if (spike) error = ri(3, 9), warn = ri(4, 10), total += ri(6, 14);
+  return { m, gap, error, warn, rest: total };
+});
+const fmt = (n) => n.toLocaleString('ko-KR');
+const sum = (k) => B.reduce((a, b) => a + b[k], 0);
+const E = sum('error'), W = sum('warn'), R = sum('rest'), T = E + W + R, U = Math.round(R * 0.035);
+const put = (id, v) => (document.getElementById(id).textContent = fmt(v));
+document.getElementById('total').innerHTML = `${fmt(T)}<small>건</small>`;
+put('c-e', E); put('c-w', W); put('c-i', R - U); put('c-u', U);
+const s2 = Math.round(T * 0.38); put('c-s1', T - s2); put('c-s2', s2);
+const t2 = Math.round(T * 0.16), t3 = Math.round(T * 0.31); put('c-t1', T - t2 - t3); put('c-t2', t2); put('c-t3', t3);
+
+// 발생량: 전체는 회색, ERROR·WARN만 색. 조각 사이 1px 틈, 격자 없음, 축은 시각만.
+const svg = document.getElementById('hist'), tip = document.getElementById('tip');
+const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+function draw() {
+  const Wd = svg.clientWidth, H = 72, bot = 16, plot = H - bot - 4;
+  const max = Math.max(...B.map((b) => b.rest + b.warn + b.error));
+  const step = Wd / B.length, bw = Math.max(2, step - 2), y = (n) => 4 + plot - (n / max) * plot;
+  let o = '';
+  const gi = B.findIndex((b) => b.gap), gn = B.filter((b) => b.gap).length;
+  o += `<rect x="${gi * step}" y="4" width="${gn * step}" height="${plot}" fill="${v('--color-warning-bg')}"/>`;
+  o += `<line x1="0" x2="${Wd}" y1="${4 + plot + 0.5}" y2="${4 + plot + 0.5}" stroke="${v('--color-border')}"/>`;
+  B.forEach((b, i) => {
+    const x = i * step + 1; let acc = 0;
+    [['rest', '--color-chart-volume'], ['warn', '--color-chart-level-warn'], ['error', '--color-chart-level-error']].forEach(([k, c]) => {
+      if (!b[k]) return;
+      const y1 = y(acc + b[k]), h = y(acc) - y1 - (acc ? 1 : 0); acc += b[k];
+      o += `<rect x="${x}" y="${y1}" width="${bw}" height="${Math.max(1, h)}" fill="${v(c)}"/>`;
+    });
+    o += `<rect class="hit" data-i="${i}" x="${i * step}" y="0" width="${step}" height="${H}" fill="transparent"/>`;
+    if (b.m % 15 === 0) o += `<text x="${Math.min(x, Wd - 34)}" y="${H - 3}" font-size="11" font-family="JetBrains Mono, monospace" fill="${v('--color-text-tertiary')}">${hhmm(b.m)}</text>`;
+  });
+  svg.setAttribute('viewBox', `0 0 ${Wd} ${H}`); svg.innerHTML = o;
+}
+draw(); addEventListener('resize', draw);
+svg.addEventListener('mousemove', (e) => {
+  const h = e.target.closest('.hit'); if (!h) return (tip.style.display = 'none');
+  const b = B[h.dataset.i], r = svg.parentElement.getBoundingClientRect();
+  tip.innerHTML = `<div>${hhmm(b.m)}–${hhmm(b.m + 1)}</div><div class="r">전체<b>${fmt(b.rest + b.warn + b.error)}</b></div><div class="r">WARN<b>${b.warn}</b></div><div class="r">ERROR<b>${b.error}</b></div>${b.gap ? '<div class="r">app-02 수집 멈춤</div>' : ''}`;
+  tip.style.display = 'block'; tip.style.left = Math.min(e.clientX - r.left + 12, r.width - 170) + 'px'; tip.style.top = (e.clientY - r.top + 8) + 'px';
+});
+svg.addEventListener('mouseleave', () => (tip.style.display = 'none'));
+
+// 결과 표. 실제처럼 형식이 섞인 합성 로그
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const L = [
+  ['14:01:58.902', 'error', 'app-01 · api', '{"level":"error","msg":"payment confirm failed","order_id":1043,"attempt":3,"err":"context deadline exceeded (Client.Timeout exceeded while awaiting headers)","req_id":"7f3c9a1e-52d0-4b8e-9a61-0c2f1d7e8b44"}'],
+  ['14:01:58.871', 'info', 'app-01 · nginx access', '10.0.3.17 - - [05/Nov/2026:14:01:58 +0900] "POST /v1/payments/confirm HTTP/1.1" 504 167 "-" "okhttp/4.12.0" rt=5.002 uct=0.001'],
+  ['14:01:57.413', 'warn', 'app-01 · api', '{"level":"warn","msg":"retrying upstream","attempt":2,"backoff_ms":1000,"req_id":"7f3c9a1e-52d0-4b8e-9a61-0c2f1d7e8b44"}'],
+  ['14:01:57.033', 'error', 'app-02 · api', 'Error: upstream request timeout', 4],
+  ['14:01:56.950', 'info', 'app-02 · nginx access', '10.0.3.22 - - [05/Nov/2026:14:01:56 +0900] "GET /v1/orders/1044 HTTP/1.1" 200 812 "-" "Mozilla/5.0" rt=0.018'],
+  ['14:01:56.105', 'warn', 'app-02 · worker', 'pool exhausted: active=20 idle=0 waiting=12 (max=20)'],
+  ['14:01:55.871', 'info', 'app-01 · worker', '[정산] 배치 시작 date=2026-11-05 target=1,284건 chunk=200'],
+  ['14:01:54.210', 'info', 'app-01 · api', '{"level":"info","msg":"request completed","method":"POST","path":"/v1/payments/confirm","status":504,"duration_ms":5002}'],
+  ['14:01:52.640', 'error', 'app-01 · api', '{"level":"error","msg":"read tcp 10.0.3.17:51244->10.0.9.4:443: i/o timeout","component":"pgclient"}'],
+  ['14:01:49.002', 'info', 'app-02 · api', 'GET /v1/orders/1041 200 21ms'],
+  ['13:57:40.004', 'unknown', 'app-02 · worker', 'upstream connect error or disconnect/reset before headers. reset reason: connection timeout', 0, '시각 대체'],
+  ['13:56:12.330', 'warn', 'app-02 · api', 'slow query 1830ms: SELECT * FROM payments WHERE order_id = $1 AND status IN ($2, $3)'],
+  ['13:51:03.118', 'info', 'app-01 · worker', '[정산] chunk 4/7 완료 processed=800 skipped=3'],
+  ['13:41:07.771', 'info', 'app-01 · api', 'config reloaded: upstream.timeout=5s retry.max=3 retry.backoff=exponential'],
+  ['13:22:51.213', 'info', 'app-01 · api', 'GET /v1/orders/1038 200 17ms'],
+];
+const lab = { error: 'ERROR', warn: 'WARN', info: 'INFO', unknown: '미확인' };
+const rows = document.getElementById('rows');
+// 시안의 합성 문자열만 넣는다. 실제 화면은 로그 본문을 글자로만 그린다(SD-36).
+rows.innerHTML = L.map(([t, lv, src, msg, more, q]) =>
+  `<tr tabindex="0" class="${lv === 'error' ? 'e' : ''}"><td class="t">${t}</td><td><span class="lv ${lv}">${lab[lv]}</span></td><td class="src">${src}</td>` +
+  `<td>${q ? `<span class="q">${q}</span>` : ''}${esc(msg)}${more ? `<span class="more">+${more}줄</span>` : ''}</td></tr>`).join('');
+
+// 상세: 행을 누르면 오른쪽에 붙어 열리고(항목별 건수는 접힘) Esc로 닫으면 원래 행으로 초점이 돌아간다.
+let last = null;
+const openDetail = (tr) => { rows.querySelectorAll('[aria-selected]').forEach((r) => r.removeAttribute('aria-selected')); tr.setAttribute('aria-selected', 'true'); last = tr; document.body.classList.add('open'); setTimeout(draw, 220); };
+const closeDetail = () => { document.body.classList.remove('open'); last?.focus(); setTimeout(draw, 220); };
+rows.addEventListener('click', (e) => { const tr = e.target.closest('tr'); if (tr) openDetail(tr); });
+rows.addEventListener('keydown', (e) => { if (e.key === 'Enter') openDetail(e.target.closest('tr')); });
+document.getElementById('close').addEventListener('click', closeDetail);
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('open')) closeDetail(); });
+if (location.hash === '#detail') openDetail(rows.querySelector('tr'));
+
+// 검토용 테마 전환(?theme=dark)
+const tb = document.getElementById('theme');
+const setTheme = (t) => { document.documentElement.dataset.theme = t; tb.textContent = t === 'dark' ? '밝은 테마' : '어두운 테마(검토용)'; draw(); };
+tb.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+if (new URLSearchParams(location.search).get('theme') === 'dark') setTheme('dark');
+setTimeout(() => document.getElementById('toast')?.remove(), 6000);
+</script>
+</body>
+</html>

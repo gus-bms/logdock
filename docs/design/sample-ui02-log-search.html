@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LogDock 시안 — 로그 탐색</title>
+<!-- 시안 표시용 글꼴. 제품은 글꼴 파일을 직접 제공하고 외부 CDN을 쓰지 않는다(design-system-v0.1.md 4절). -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="tokens-dark-preview.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* 이 시안의 배치. 화면 흐름 명세 UI-02(로그 탐색)와 UI-03(이벤트 상세 패널)을 합친 정적 시안이다.
+     모든 값은 합성 예시이며 화면 구현 승인이 아니다. */
+  body { min-width: 1080px; }
+  /* 정렬 규칙(design-system 6.1절): 도구 줄과 작업 영역은 같은 열 기준선(바깥 여백·왼쪽 열 폭·열 사이 간격)을 쓴다 */
+  .toolbar { display: grid; grid-template-columns: var(--layout-side) minmax(0, 1fr) auto; column-gap: var(--layout-gutter); align-items: center; padding: var(--space-3) var(--layout-pad-x) 0; }
+  .toolbar .timepick { width: 100%; padding: 0 var(--space-2); }  /* 아이콘이 아래 필터의 체크 상자와 같은 세로선에 오게 */
+  .toolbar .timepick .icon.tertiary { margin-left: auto; }
+  .toolbar-actions { display: flex; gap: var(--space-2); align-items: center; }
+  .toolbar { position: relative; }
+  .tp-pop { position: absolute; left: var(--layout-pad-x); top: calc(100% + var(--space-2)); width: 384px; }
+  .tp-pop[hidden], .tp-pop [hidden] { display: none; }
+  .rel-row { display: grid; grid-template-columns: auto 88px 1fr; gap: var(--space-2); align-items: center; }
+  .sel-wrap { position: relative; }
+  .sel-wrap .listbox { position: absolute; left: 0; top: calc(100% + 4px); width: 100%; }
+  .workspace { display: grid; grid-template-columns: var(--layout-side) minmax(0, 1fr); align-items: start; gap: var(--layout-gutter); padding: var(--space-3) var(--layout-pad-x) 0; }
+  .sidebar { position: sticky; top: calc(var(--size-topbar) + var(--space-3)); padding: 0 0 var(--space-6); }
+  .main { padding: 0 0 var(--space-8); display: grid; gap: var(--space-3); min-width: 0; }
+  .chart-card { padding: var(--space-3) var(--space-4) var(--space-2); position: relative; }
+  .chart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-1); }
+  .chart-head h2 { margin: 0; font-size: var(--text-sm); font-weight: var(--font-weight-strong); }
+  #hist { display: block; width: 100%; height: 120px; }
+  .drawer { position: fixed; top: calc(var(--size-topbar) + var(--space-2)); right: var(--space-2); bottom: var(--space-2); width: 420px; z-index: var(--z-popover); transform: translateX(calc(100% + 16px)); visibility: hidden; transition: transform var(--duration-normal) var(--easing-standard), visibility var(--duration-normal); }
+  .drawer.open { transform: none; visibility: visible; }
+  .toast-stack { position: fixed; right: var(--space-4); top: calc(var(--size-topbar) + 64px); transition: right var(--duration-normal) var(--easing-standard); display: grid; gap: var(--space-2); z-index: var(--z-toast); }
+  body.detail-open .toast-stack { right: calc(420px + var(--space-6)); }
+  .hint { position: fixed; left: 50%; bottom: var(--space-4); transform: translateX(-50%); background: var(--color-accent); color: var(--color-text-on-accent); padding: 6px var(--space-3); border-radius: var(--radius-full); font-size: var(--text-sm); box-shadow: var(--shadow-toast); }
+  body.detail-open .hint { display: none; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></symbol>
+  <symbol id="i-down" viewBox="0 0 16 16"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7m0-7-7 7"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 16 16"><path d="M3.5 8h9"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="7" height="7" rx="1.5"/><path d="M3.5 10.5v-6a1 1 0 0 1 1-1h6"/></symbol>
+  <symbol id="i-context" viewBox="0 0 16 16"><path d="M3 4h10M3 8h10M3 12h10"/><circle cx="1.5" cy="8" r=".5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 16 16"><path d="M4.5 11V7.5a3.5 3.5 0 0 1 7 0V11l1 1.5h-9z"/><path d="M6.5 14h3"/></symbol>
+  <symbol id="i-save" viewBox="0 0 16 16"><path d="M4 2.5h6.5L13 5v8.5H3V3.5a1 1 0 0 1 1-1z"/><path d="M5.5 2.5v3h4v-3M5 13.5V10h6v3.5"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 16 16"><path d="M5 3v10M2.5 10.5 5 13l2.5-2.5M11 13V3M8.5 5.5 11 3l2.5 2.5"/></symbol>
+</svg>
+
+<nav class="topbar" aria-label="주 메뉴">
+  <span class="brand"><span class="brand-mark" aria-hidden="true"></span>LogDock</span>
+  <div class="menu">
+    <a href="#" aria-current="page">로그 탐색</a>
+    <a href="#">저장 검색</a>
+    <a href="#">알림</a>
+    <a href="#">수집 연결 <span class="menu-count" aria-label="조치 필요 2건">2</span></a>
+    <a href="#">저장 공간</a>
+    <a href="#">감사 이력</a>
+  </div>
+  <div class="topbar-end"><span class="mono tertiary">Asia/Seoul</span><button class="btn ghost sm" id="theme" title="검토용: 어두운 테마는 첫 출시 범위가 아니다">어두운 테마 보기</button><span class="avatar" title="공용 계정">공용</span></div>
+</nav>
+
+<div class="toolbar">
+  <button class="timepick" id="tp" aria-haspopup="dialog" aria-expanded="false" aria-controls="tp-pop">
+    <svg class="icon"><use href="#i-clock"/></svg><strong>최근 1시간</strong><span class="range mono">13:02–14:02</span><svg class="icon tertiary"><use href="#i-down"/></svg>
+  </button>
+  <div class="querybar" role="group" aria-label="검색 조건">
+    <svg class="icon"><use href="#i-search"/></svg>
+    <span class="chip"><span class="chip-key">서비스</span><span class="chip-op">=</span><span class="chip-val">billing</span><button aria-label="서비스 조건 지우기"><svg class="icon" style="width:12px;height:12px"><use href="#i-x"/></svg></button></span>
+    <span class="chip"><span class="chip-key">환경</span><span class="chip-op">=</span><span class="chip-val">prod</span><button aria-label="환경 조건 지우기"><svg class="icon" style="width:12px;height:12px"><use href="#i-x"/></svg></button></span>
+    <span class="chip exclude"><span class="chip-key">본문</span><span class="chip-op">제외</span><span class="chip-val">healthcheck</span><button aria-label="본문 제외 조건 지우기"><svg class="icon" style="width:12px;height:12px"><use href="#i-x"/></svg></button></span>
+    <input value="timeout" aria-label="본문 포함 검색어" placeholder="본문 검색 또는 조건 추가">
+  </div>
+  <div class="toolbar-actions">
+  <div class="segmented" role="group" aria-label="시간 기준">
+    <button aria-pressed="true">발생 시각</button><button aria-pressed="false">수신 시각</button>
+  </div>
+  <button class="btn primary">검색 <span class="kbd">↵</span></button>
+  <button class="btn icon-only" aria-label="조건 저장" title="조건 저장"><svg class="icon"><use href="#i-save"/></svg></button>
+  <button class="btn icon-only" aria-label="현재 조건으로 알림 규칙 만들기" title="현재 조건으로 알림 규칙 만들기"><svg class="icon"><use href="#i-bell"/></svg></button>
+  </div>
+<!-- CM-02 시간 범위 선택 팝오버. 동작·초점은 Base UI Popover에 맡긴다. 빠른 선택 버튼과 기본 N은 화면 설계에서 정한다(와이어프레임 CM-02) -->
+<div class="popover tp-pop" id="tp-pop" role="dialog" aria-label="시간 범위" hidden>
+  <div class="field"><span class="field-label">시간 기준</span>
+    <div class="segmented" id="tp-basis"><button aria-pressed="true" data-v="발생 시각">발생 시각(기본)</button><button aria-pressed="false" data-v="수신 시각">수신 시각</button></div>
+    <span class="field-hint">수신 시각은 중앙이 처음 유효하게 받은 시각으로, 늦게 도착한 로그를 찾을 때 씁니다.</span></div>
+  <div class="field"><span class="field-label">범위</span>
+    <div class="segmented" id="tp-mode"><button aria-pressed="true" data-v="rel">상대 범위</button><button aria-pressed="false" data-v="abs">고정 범위</button></div></div>
+  <div id="tp-rel" class="field">
+    <div class="rel-row"><span>최근</span><input class="input num" id="tp-n" value="1" inputmode="numeric" aria-label="최근 범위 크기">
+      <div class="sel-wrap"><button class="select-trigger" id="tp-unit" aria-haspopup="listbox" aria-expanded="false" style="width:100%"><span>시간</span><svg class="icon"><use href="#i-down"/></svg></button>
+        <ul class="listbox" id="tp-units" role="listbox" hidden><li class="option" role="option" aria-selected="false">분</li><li class="option" role="option" aria-selected="true">시간</li><li class="option" role="option" aria-selected="false">일</li></ul></div></div>
+    <span class="field-hint">실행할 때 서버 시각으로 절대 범위를 정합니다. 그 뒤에는 범위가 움직이지 않습니다.</span></div>
+  <div id="tp-abs" class="field" hidden>
+    <div class="range-row"><label class="field"><span class="field-hint">시작(포함)</span><input class="input num" id="tp-s" value="2026-11-05 13:00:00"></label><span class="sep">~</span>
+      <label class="field"><span class="field-hint">끝(제외)</span><input class="input num" id="tp-e" value="2026-11-05 12:00:00" aria-describedby="tp-err"></label></div>
+    <span class="field-error" id="tp-err" hidden>끝 시각은 시작 시각보다 뒤여야 합니다.</span>
+    <span class="field-hint">UTC+09:00 · 시작 시각은 포함하고 끝 시각은 포함하지 않습니다.</span></div>
+  <div class="popover-foot"><button class="btn" id="tp-cancel">취소</button><button class="btn primary" id="tp-apply">적용</button></div>
+</div>
+</div>
+
+<div class="workspace">
+  <aside class="sidebar facets" aria-label="항목별 건수">
+    <div class="facet">
+      <div class="facet-head"><h3>레벨</h3><button class="btn ghost sm">초기화</button></div>
+      <label class="facet-row"><input class="check" type="checkbox" checked><span class="name"><span class="lv error">ERROR</span></span><span class="cnt" id="f-error">–</span><span class="bar"><i class="error" id="b-error"></i></span></label>
+      <label class="facet-row"><input class="check" type="checkbox" checked><span class="name"><span class="lv warn">WARN</span></span><span class="cnt" id="f-warn">–</span><span class="bar"><i class="warn" id="b-warn"></i></span></label>
+      <label class="facet-row"><input class="check" type="checkbox" checked><span class="name"><span class="lv info">INFO</span></span><span class="cnt" id="f-info">–</span><span class="bar"><i class="other" id="b-info"></i></span></label>
+      <label class="facet-row"><input class="check" type="checkbox" checked><span class="name"><span class="lv unknown">미확인</span></span><span class="cnt" id="f-unknown">–</span><span class="bar"><i class="other" id="b-unknown"></i></span></label>
+    </div>
+    <div class="facet">
+      <div class="facet-head"><h3>서버</h3></div>
+      <label class="facet-row"><input class="check" type="checkbox" checked><span class="name mono">app-01</span><span class="cnt" id="f-s1">–</span><span class="bar"><i id="b-s1"></i></span></label>
+      <label class="facet-row"><input class="check" type="checkbox" checked><span class="name mono">app-02 <span class="badge warning" style="height:16px;padding:0 4px;font-size:11px;margin-left:2px">일시정지</span></span><span class="cnt" id="f-s2">–</span><span class="bar"><i id="b-s2"></i></span></label>
+    </div>
+    <div class="facet">
+      <div class="facet-head"><h3>수집 대상</h3></div>
+      <label class="facet-row"><input class="check" type="checkbox" checked><span class="name">journald · api</span><span class="cnt" id="f-t1">–</span><span class="bar"><i id="b-t1"></i></span></label>
+      <label class="facet-row"><input class="check" type="checkbox" checked><span class="name">journald · worker</span><span class="cnt" id="f-t2">–</span><span class="bar"><i id="b-t2"></i></span></label>
+    </div>
+    <div class="facet">
+      <div class="facet-head"><h3>서비스</h3></div>
+      <label class="facet-row"><input class="check" type="checkbox" checked><span class="name">billing</span><span class="cnt" id="f-svc">–</span><span class="bar"><i id="b-svc" style="width:100%"></i></span></label>
+      <p class="tertiary" style="margin:var(--space-1) var(--space-1) 0;font-size:var(--text-sm)">서비스 조건이 걸려 있어 다른 서비스는 세지 않았습니다.</p>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="card chart-card" aria-labelledby="hist-title">
+      <div class="chart-head">
+        <h2 id="hist-title">분당 발생량</h2>
+        <div class="chart-legend" aria-label="범례">
+          <span><i style="background:var(--color-chart-level-error)"></i>ERROR <b id="lg-error">–</b></span>
+          <span><i style="background:var(--color-chart-level-warn)"></i>WARN <b id="lg-warn">–</b></span>
+          <span><i style="background:var(--color-chart-level-other)"></i>INFO·미확인 <b id="lg-other">–</b></span>
+          <span><i style="background:var(--color-chart-gap-band);box-shadow:inset 0 0 0 1px var(--color-warning-border)"></i>수집 문제 구간</span>
+        </div>
+      </div>
+      <svg id="hist" role="img" aria-label="분당 발생량 막대 그래프. 같은 값은 아래 결과 표와 왼쪽 항목별 건수에서 볼 수 있습니다."></svg>
+      <div class="chart-tip" id="tip"></div>
+    </section>
+
+    <section class="card" aria-label="검색 결과">
+      <div class="resultbar" role="status">
+        <span class="badge success">완료</span>
+        <span><strong id="total">–</strong>건</span>
+        <span class="sep"></span>
+        <span>적용 범위 <span class="mono">2026-11-05 13:02:00 ~ 14:02:00</span> KST</span>
+        <span class="sep"></span>
+        <span><span class="mono">14:02:09</span>까지 수신된 로그 기준</span>
+        <span class="end">
+          <span class="tertiary">판정 불가 37건 제외</span><a href="#" style="color:var(--color-text-link);font-size:var(--text-sm)">보기</a>
+          <button class="btn ghost sm"><svg class="icon"><use href="#i-sort"/></svg>최신순</button>
+        </span>
+      </div>
+      <div class="notice">
+        <span class="badge warning">읽기 일시정지</span>
+        <span><span class="mono">app-02</span>의 수집이 <span class="mono">13:40–13:52</span>에 멈췄습니다. 이 구간의 결과가 빠졌을 수 있습니다.</span>
+        <a href="#" style="margin-left:auto">수집 연결 보기</a>
+      </div>
+      <table class="logtable">
+        <colgroup><col style="width:168px"><col style="width:84px"><col style="width:84px"><col style="width:108px"><col></colgroup>
+        <thead><tr><th>발생 시각 <span style="font-weight:400">(2026년)</span></th><th>레벨</th><th>서버</th><th>수집 대상</th><th>본문</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="tablefoot"><button class="btn sm">더 보기 <span class="tertiary">(50건씩)</span></button></div>
+    </section>
+  </main>
+</div>
+
+<aside class="drawer" id="drawer" aria-label="이벤트 상세">
+  <div class="drawer-head">
+    <span class="lv error">ERROR</span>
+    <h2>이벤트 상세</h2>
+    <div class="actions">
+      <button class="btn sm"><svg class="icon"><use href="#i-context"/></svg>주변 로그</button>
+      <button class="btn ghost sm icon-only" aria-label="본문 복사" title="본문 복사"><svg class="icon"><use href="#i-copy"/></svg></button>
+      <button class="btn ghost sm icon-only" id="drawer-close" aria-label="닫기" title="닫기 (Esc)"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-section">
+      <div class="drawer-section-head"><p class="section-label">본문</p><button class="btn ghost sm">줄바꿈</button></div>
+      <pre class="codebox">결제 승인 요청 실패: upstream timeout (order=1043, retry=3)
+  at PaymentClient.confirm (payment.ts:88)
+  at OrderService.pay (order.ts:142)
+  at async Router.handle (router.ts:51)</pre>
+    </div>
+    <div class="drawer-section">
+      <p class="section-label">필드</p>
+      <dl class="kv">
+        <div><dt class="mono">order.id</dt><dd><span class="v mono">1043</span><span class="row-actions"><button class="btn ghost sm icon-only" aria-label="이 값으로 조건 추가" title="조건에 추가"><svg class="icon"><use href="#i-plus"/></svg></button><button class="btn ghost sm icon-only" aria-label="이 값 제외" title="제외"><svg class="icon"><use href="#i-minus"/></svg></button></span></dd></div>
+        <div><dt class="mono">upstream.host</dt><dd><span class="v mono">pg-gateway.internal</span><span class="row-actions"><button class="btn ghost sm icon-only" aria-label="이 값으로 조건 추가"><svg class="icon"><use href="#i-plus"/></svg></button><button class="btn ghost sm icon-only" aria-label="이 값 제외"><svg class="icon"><use href="#i-minus"/></svg></button></span></dd></div>
+        <div><dt class="mono">retry</dt><dd><span class="v mono">3</span><span class="row-actions"><button class="btn ghost sm icon-only" aria-label="이 값으로 조건 추가"><svg class="icon"><use href="#i-plus"/></svg></button><button class="btn ghost sm icon-only" aria-label="이 값 제외"><svg class="icon"><use href="#i-minus"/></svg></button></span></dd></div>
+        <div><dt class="mono">duration_ms</dt><dd><span class="v mono">5002</span><span class="row-actions"><button class="btn ghost sm icon-only" aria-label="이 값으로 조건 추가"><svg class="icon"><use href="#i-plus"/></svg></button><button class="btn ghost sm icon-only" aria-label="이 값 제외"><svg class="icon"><use href="#i-minus"/></svg></button></span></dd></div>
+      </dl>
+    </div>
+    <div class="drawer-section">
+      <p class="section-label">시각</p>
+      <dl class="kv">
+        <div><dt>발생</dt><dd><span class="v mono">2026-11-05 14:01:58.902</span></dd></div>
+        <div><dt>관측</dt><dd><span class="v mono">2026-11-05 14:01:58.910</span></dd></div>
+        <div><dt>수신</dt><dd><span class="v mono">2026-11-05 14:01:59.140</span></dd></div>
+        <div><dt>시각 출처</dt><dd><span class="v">로그 본문의 시각</span></dd></div>
+      </dl>
+    </div>
+    <div class="drawer-section">
+      <p class="section-label">출처</p>
+      <dl class="kv">
+        <div><dt>서비스·환경</dt><dd><span class="v">billing · prod</span></dd></div>
+        <div><dt>서버</dt><dd><span class="v mono">app-01</span></dd></div>
+        <div><dt>수집 연결</dt><dd><span class="v">journald · api</span><span class="badge success" style="margin-left:auto">수집/전송 진행</span></dd></div>
+        <div><dt>레벨</dt><dd><span class="v"><span class="mono">error</span> <span class="tertiary">→</span> <span class="lv error">ERROR</span></span><span class="tertiary" style="margin-left:auto;font-size:var(--text-sm)">원본 → 정규화</span></dd></div>
+      </dl>
+    </div>
+  </div>
+</aside>
+
+<div class="toast-stack" aria-live="polite">
+  <div class="toast"><div class="toast-text"><span class="toast-kind">성공</span><strong>검색 조건을 저장했습니다.</strong><p>저장 검색 “결제 실패 확인” · <a href="#">열기</a></p></div><button class="btn ghost sm icon-only" aria-label="닫기"><svg class="icon"><use href="#i-x"/></svg></button></div>
+</div>
+
+<script>
+// 합성 데이터. 같은 씨앗으로 그래프·항목별 건수·표를 함께 만든다.
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+const START = 13 * 60 + 2;
+const buckets = Array.from({ length: 60 }, (_, i) => {
+  const m = START + i;
+  const gap = m >= 13 * 60 + 40 && m < 13 * 60 + 52;
+  const spike = m >= 13 * 60 + 55;
+  let other = ri(14, 26), warn = ri(0, 3), error = rnd() < 0.15 ? 1 : 0;
+  if (gap) other = Math.round(other * 0.5), warn = ri(0, 1);
+  if (spike) error = ri(4, 9), warn = ri(6, 12), other += ri(4, 10);
+  return { m, other, warn, error, gap };
+});
+const hhmm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+const sum = (k) => buckets.reduce((a, b) => a + b[k], 0);
+const T = { error: sum('error'), warn: sum('warn'), other: sum('other') };
+const total = T.error + T.warn + T.other;
+const unknown = Math.round(T.other * 0.04), info = T.other - unknown;
+const fmt = (n) => n.toLocaleString('ko-KR');
+const set = (id, v) => (document.getElementById(id).textContent = fmt(v));
+set('total', total); set('lg-error', T.error); set('lg-warn', T.warn); set('lg-other', T.other);
+set('f-error', T.error); set('f-warn', T.warn); set('f-info', info); set('f-unknown', unknown); set('f-svc', total);
+const s2 = Math.round(total * 0.41), s1 = total - s2, t2 = Math.round(total * 0.18), t1 = total - t2;
+set('f-s1', s1); set('f-s2', s2); set('f-t1', t1); set('f-t2', t2);
+const w = (id, v, max) => (document.getElementById(id).style.width = (v / max * 100) + '%');
+const lvMax = Math.max(T.error, T.warn, info, unknown);
+w('b-error', T.error, lvMax); w('b-warn', T.warn, lvMax); w('b-info', info, lvMax); w('b-unknown', unknown, lvMax);
+w('b-s1', s1, s1); w('b-s2', s2, s1); w('b-t1', t1, t1); w('b-t2', t2, t1);
+
+// 막대 그래프: 쌓인 막대, 조각 사이 2px 바탕 틈, 바깥 끝만 둥글게, 격자는 옅게.
+const svg = document.getElementById('hist'), tip = document.getElementById('tip');
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function draw() {
+  const W = svg.clientWidth, H = 120, padL = 28, padB = 18, padT = 6;
+  const max = Math.ceil(Math.max(...buckets.map((b) => b.other + b.warn + b.error)) / 10) * 10;
+  const plotH = H - padB - padT, step = (W - padL) / buckets.length, bw = Math.max(2, step - 2);
+  const y = (v) => padT + plotH - (v / max) * plotH;
+  let out = `<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="${css('--color-chart-gap-band')}"/><line x1="0" y1="0" x2="0" y2="6" stroke="${css('--color-warning-border')}" stroke-opacity=".35" stroke-width="1.5"/></pattern></defs>`;
+  const gi = buckets.findIndex((b) => b.gap), gn = buckets.filter((b) => b.gap).length;
+  out += `<rect x="${padL + gi * step}" y="${padT}" width="${gn * step}" height="${plotH}" fill="url(#hatch)"/>`;
+  [0, max / 2, max].forEach((v) => {
+    out += `<line x1="${padL}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--color-chart-grid')}"${v ? ' stroke-dasharray="2 3"' : ''}/>`;
+    out += `<text x="${padL - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="${css('--color-text-tertiary')}">${v}</text>`;
+  });
+  buckets.forEach((b, i) => {
+    const x = padL + i * step + 1;
+    const segs = [['other', '--color-chart-level-other'], ['warn', '--color-chart-level-warn'], ['error', '--color-chart-level-error']].filter(([k]) => b[k] > 0);
+    let acc = 0;
+    segs.forEach(([k, c], si) => {
+      const y0 = y(acc), y1 = y(acc + b[k]); acc += b[k];
+      const top = si === segs.length - 1, h = Math.max(1, y0 - y1 - (top ? 0 : 2));
+      const r = top ? Math.min(2, h / 2) : 0;
+      out += top
+        ? `<path d="M${x},${y1 + h} V${y1 + r} Q${x},${y1} ${x + r},${y1} H${x + bw - r} Q${x + bw},${y1} ${x + bw},${y1 + r} V${y1 + h} Z" fill="${css(c)}"/>`
+        : `<rect x="${x}" y="${y1 + 2}" width="${bw}" height="${h}" fill="${css(c)}"/>`;
+    });
+    out += `<rect class="hit" data-i="${i}" x="${padL + i * step}" y="${padT}" width="${step}" height="${plotH}" fill="transparent"/>`;
+    if (b.m % 10 === 0) out += `<text x="${x + bw / 2}" y="${H - 4}" text-anchor="middle" font-size="11" fill="${css('--color-text-tertiary')}">${hhmm(b.m)}</text>`;
+  });
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = out;
+}
+draw();
+addEventListener('resize', draw);
+svg.addEventListener('mousemove', (e) => {
+  const t = e.target.closest('.hit');
+  if (!t) return (tip.style.display = 'none');
+  const b = buckets[t.dataset.i], card = svg.parentElement.getBoundingClientRect();
+  tip.innerHTML = `<div class="t">${hhmm(b.m)}–${hhmm(b.m + 1)} · ${fmt(b.other + b.warn + b.error)}건</div>` +
+    [['ERROR', b.error, '--color-chart-level-error'], ['WARN', b.warn, '--color-chart-level-warn'], ['INFO·미확인', b.other, '--color-chart-level-other']]
+      .map(([n, v, c]) => `<div class="r"><i style="background:var(${c})"></i><span>${n}</span><b>${fmt(v)}</b></div>`).join('') +
+    (b.gap ? '<div class="gap">app-02 읽기 일시정지 구간</div>' : '');
+  tip.style.display = 'block';
+  const x = e.clientX - card.left + 12;
+  tip.style.left = Math.min(x, card.width - 190) + 'px';
+  tip.style.top = (e.clientY - card.top + 12) + 'px';
+});
+svg.addEventListener('mouseleave', () => (tip.style.display = 'none'));
+
+// 결과 표
+const rows = [
+  ['14:01:58.902', 'error', 'app-01', 'journald · api', '결제 승인 요청 실패: upstream <mark>timeout</mark> (order=1043, retry=3)'],
+  ['14:01:58.417', 'warn', 'app-01', 'journald · api', '재시도 3/3 대기 2000ms: upstream <mark>timeout</mark>'],
+  ['14:01:57.033', 'error', 'app-02', 'journald · api', 'PG 응답 시간 초과 <mark>timeout</mark>=5000ms path=/v1/payments/confirm'],
+  ['14:01:56.105', 'warn', 'app-02', 'journald · api', '재시도 2/3 대기 1000ms: upstream <mark>timeout</mark>'],
+  ['14:01:55.871', 'info', 'app-01', 'journald · worker', 'settlement batch 2026-11-05 started, <mark>timeout</mark>=30s'],
+  ['14:01:54.210', 'warn', 'app-01', 'journald · api', '재시도 1/3 대기 500ms: upstream <mark>timeout</mark>'],
+  ['14:01:52.640', 'error', 'app-01', 'journald · api', '{"level":"error","msg":"read tcp: i/o <mark>timeout</mark>","peer":"pg-gateway.internal:443"}'],
+  ['13:57:40.004', 'unknown', 'app-02', 'journald · worker', 'connection pool <mark>timeout</mark>, waiting=12', false, '시각 대체'],
+  ['13:56:12.330', 'warn', 'app-02', 'journald · api', 'slow query 1830ms (<mark>timeout</mark> 경고 기준 1000ms)'],
+  ['13:41:07.771', 'info', 'app-01', 'journald · api', 'upstream <mark>timeout</mark> 설정 적용: 5000ms'],
+  ['13:22:51.213', 'info', 'app-01', 'journald · worker', 'retry policy loaded: max=3 backoff=exp <mark>timeout</mark>=5s'],
+];
+const label = { error: 'ERROR', warn: 'WARN', info: 'INFO', unknown: '미확인' };
+document.getElementById('rows').innerHTML = rows.map(([t, lv, s, tg, body, sel, q]) =>
+  `<tr tabindex="0" class="lv-${lv}"${sel ? ' aria-selected="true"' : ''}><td class="mono">11-05 ${t}</td>` +
+  `<td><span class="lv ${lv}">${label[lv]}</span></td><td class="mono">${s}</td><td class="muted">${tg}</td><td class="body">${q ? `<span class="quality" style="margin:0 var(--space-2) 0 0">${q}</span>` : ''}${body}</td></tr>`).join('');
+
+// 상세 패널: 행을 누르거나 Enter로 열고, 닫으면 원래 행으로 초점을 돌린다(조사 명세 8절).
+const drawer = document.getElementById('drawer'); let lastRow = null;
+function openDetail(tr) {
+  document.querySelectorAll('#rows tr[aria-selected]').forEach((r) => r.removeAttribute('aria-selected'));
+  tr.setAttribute('aria-selected', 'true'); lastRow = tr;
+  drawer.classList.add('open'); document.body.classList.add('detail-open');
+  document.getElementById('drawer-close').focus({ preventScroll: true });
+}
+function closeDetail() {
+  drawer.classList.remove('open'); document.body.classList.remove('detail-open');
+  if (lastRow) lastRow.focus();
+}
+document.getElementById('rows').addEventListener('click', (e) => { const tr = e.target.closest('tr'); if (tr) openDetail(tr); });
+document.getElementById('rows').addEventListener('keydown', (e) => { if (e.key === 'Enter') openDetail(e.target.closest('tr')); });
+document.getElementById('drawer-close').addEventListener('click', closeDetail);
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawer.classList.contains('open')) closeDetail(); });
+// 검토용 테마 전환. 주소 끝 ?theme=dark 로도 연다.
+const themeBtn = document.getElementById('theme');
+function setTheme(t) { document.documentElement.dataset.theme = t; themeBtn.textContent = t === 'dark' ? '밝은 테마 보기' : '어두운 테마 보기'; draw(); }
+themeBtn.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+if (new URLSearchParams(location.search).get('theme') === 'dark') setTheme('dark');
+setTimeout(() => document.querySelector('.toast-stack')?.remove(), 6000); // 성공 토스트는 잠시 뒤 사라진다(CM-08). 시안은 6초
+if (location.hash === '#detail') openDetail(document.querySelector('#rows tr'));
+
+// CM-02 시간 범위 팝오버(시안 동작)
+const tp = document.getElementById('tp'), tpPop = document.getElementById('tp-pop');
+const tbSeg = document.querySelectorAll('.toolbar-actions .segmented button');
+function setPressed(btns, v) { btns.forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.v || b.textContent) === v))); }
+function tpOpen(open) { tpPop.hidden = !open; tp.setAttribute('aria-expanded', String(open)); if (open) tpPop.querySelector('[aria-pressed="true"]').focus({ preventScroll: true }); else tp.focus({ preventScroll: true }); }
+tp.addEventListener('click', () => tpOpen(tpPop.hidden));
+document.getElementById('tp-cancel').onclick = () => tpOpen(false);
+tpPop.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); tpOpen(false); } });
+document.querySelectorAll('#tp-basis button').forEach((b) => b.onclick = () => setPressed(document.querySelectorAll('#tp-basis button'), b.dataset.v));
+document.querySelectorAll('#tp-mode button').forEach((b) => b.onclick = () => {
+  setPressed(document.querySelectorAll('#tp-mode button'), b.dataset.v);
+  document.getElementById('tp-rel').hidden = b.dataset.v !== 'rel'; document.getElementById('tp-abs').hidden = b.dataset.v !== 'abs';
+});
+const unitBtn = document.getElementById('tp-unit'), units = document.getElementById('tp-units');
+unitBtn.onclick = () => { units.hidden = !units.hidden; unitBtn.setAttribute('aria-expanded', String(!units.hidden)); };
+units.querySelectorAll('.option').forEach((o) => o.onclick = () => {
+  units.querySelectorAll('.option').forEach((x) => x.setAttribute('aria-selected', String(x === o)));
+  unitBtn.firstElementChild.textContent = o.textContent; units.hidden = true; unitBtn.setAttribute('aria-expanded', 'false'); unitBtn.focus();
+});
+document.getElementById('tp-apply').onclick = () => {
+  const basis = document.querySelector('#tp-basis [aria-pressed="true"]').dataset.v;
+  const abs = !document.getElementById('tp-abs').hidden;
+  if (abs) {
+    const s = document.getElementById('tp-s'), e = document.getElementById('tp-e'), err = document.getElementById('tp-err');
+    const bad = e.value <= s.value; e.setAttribute('aria-invalid', String(bad)); err.hidden = !bad;
+    if (bad) { e.focus(); return; }
+    tp.querySelector('strong').textContent = '고정 범위'; tp.querySelector('.range').textContent = `${s.value.slice(11, 16)}–${e.value.slice(11, 16)}`;
+  } else {
+    tp.querySelector('strong').textContent = `최근 ${document.getElementById('tp-n').value}${unitBtn.textContent.trim()}`;
+  }
+  setPressed(tbSeg, basis);
+  tpOpen(false);
+};
+tbSeg.forEach((b) => b.addEventListener('click', () => { setPressed(tbSeg, b.textContent); setPressed(document.querySelectorAll('#tp-basis button'), b.textContent); }));
+if (location.hash === '#time') { tpOpen(true); }
+if (location.hash === '#time-error') { tpOpen(true); document.querySelector('#tp-mode [data-v="abs"]').click(); document.getElementById('tp-apply').click(); }
+</script>
+<div class="hint">행을 누르면 이벤트 상세가 열립니다</div>
+</body>
+</html>

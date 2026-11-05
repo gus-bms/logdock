@@ -1,0 +1,64 @@
+@charset "utf-8";
+/*
+ * 어두운 테마 — 검토용 미리보기
+ *
+ * 2026-11-05 합의(3A)로 첫 출시는 밝은 테마만 지원한다. 이 파일은 사용자가 어두운 테마를
+ * 비교해 볼 수 있게 만든 검토용이며 채택이 아니다. 용도 토큰만 다시 정의해 화면 코드는
+ * 그대로 두는 구조가 동작하는지 보여 준다.
+ *
+ * 정적 계산(2026-11-05): 본문·보조·3차 글자, 링크, 상태 글자는 표면 #111113 위 4.5:1 이상,
+ * 입력 테두리·상태 표시점·초점은 3:1 이상. 차트 색은 dataviz 검증 스크립트(어두운 표면) 통과.
+ * 같은 날 밝은 테마의 v0.2b(인디고 강조색, 하늘색 info)에 맞춰 강조·고름·info·차트 기타 색을 바꾸고 다시 계산했다.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg-page: #09090b;
+  --color-bg-surface: #111113;
+  --color-bg-subtle: #18181b;
+  --color-bg-hover: #1c1c20;
+  --color-bg-selected: #1d1d3a;
+  --color-bg-selected-strong: #262650;
+  --color-match-bg: rgb(139 146 255 / 0.22);
+  --color-bg-dim: #18181b;
+  --color-bg-overlay: rgb(0 0 0 / 0.6);
+
+  --color-text: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-tertiary: #8b8b93;
+  --color-text-disabled: #52525b;
+  --color-text-on-accent: #09090b;
+  --color-text-link: #a5acff;
+
+  --color-border: #232327;
+  --color-border-strong: #33333a;
+  --color-border-control: #66666f;
+
+  --color-accent: #8b92ff;
+  --color-accent-hover: #a5acff;
+  --color-accent-subtle: #1d1d3a;
+  --color-accent-fg: #a5acff;
+  --color-focus: #8b92ff;
+
+  --color-success-fg: #4ade80; --color-success-bg: #0f2a1a; --color-success-border: #22c55e;
+  --color-warning-fg: #fbbf24; --color-warning-bg: #2a1f08; --color-warning-border: #d99a12;
+  --color-danger-fg: #f87171;  --color-danger-bg: #2d1214;  --color-danger-border: #ef4444;
+  --color-info-fg: #38bdf8;    --color-info-bg: #0b2333;    --color-info-border: #0ea5e9;
+  --color-unknown-fg: #a1a1aa; --color-unknown-bg: transparent; --color-unknown-border: #66666f;
+  --color-neutral-fg: #a1a1aa; --color-neutral-bg: #1c1c20; --color-neutral-border: #66666f;
+
+  --color-chart-level-error: #d6405f;
+  --color-chart-level-warn: #bb8424;
+  --color-chart-level-other: #7c82f4;
+  --color-chart-volume: #3a3a41;
+  --color-chart-grid: #1f1f23;
+  --color-chart-gap-band: rgb(217 154 18 / 0.10);
+
+  --shadow-popover: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.06);
+  --shadow-toast: 0 12px 32px rgb(0 0 0 / 0.55), 0 0 0 1px rgb(255 255 255 / 0.08);
+  --shadow-modal: 0 24px 64px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.08);
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.06);
+  --color-topbar: rgb(17 17 19 / 0.8);
+  --color-toast-bg: #1c1c20;
+  --color-toast-text: #fafafa;
+  --color-toast-text-secondary: #a1a1aa;
+}

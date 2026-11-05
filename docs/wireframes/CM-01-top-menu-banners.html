@@ -98,6 +98,8 @@
       <p class="wf-banner"><strong class="wf-banner-kind">감사 기록 공백</strong><span class="wf-banner-text">감사 기록이 복구됐습니다. 2026-11-05 10:31:00 ~ 10:52:00 (UTC+09:00) 구간은 기록이 비어 있습니다.</span><a class="wf-banner-link" href="UI-15-audit-log.html">감사 이력 보기</a></p>
       <p class="wf-banner"><strong class="wf-banner-kind">디스크 경고</strong><span class="wf-banner-text">중앙 로그 저장 공간이 경고 기준(<span class="wf-n">N</span>)을 넘었습니다. 공간이 부족해지면 보관 기간(6개월)이 되기 전이라도 오래된 로그부터 삭제됩니다.</span><a class="wf-banner-link" href="UI-13-storage-retention.html">저장 공간 보기</a></p>
       <p class="wf-banner"><strong class="wf-banner-kind">조기 삭제 발생</strong><span class="wf-banner-text">공간이 부족해 2026-11-05 03:00:12 (UTC+09:00)에 보관 기간(6개월)이 되기 전 로그를 삭제했습니다. 지금 조회 가능 시작일은 2026-07-21(수신 시각 기준)입니다.</span><a class="wf-banner-link" href="UI-13-storage-retention.html">저장 공간 보기</a></p>
+      <p class="wf-banner"><strong class="wf-banner-kind">저장 공간 측정 불가</strong><span class="wf-banner-text">2026-11-05 10:05:00 (UTC+09:00)부터 중앙 저장 공간을 측정하지 못하고 있습니다. 측정하지 못하는 동안에는 디스크 경고를 낼 수 없어 조기 삭제가 예고 없이 일어날 수 있습니다.</span><a class="wf-banner-link" href="UI-13-storage-retention.html">저장 공간 보기</a></p>
+      <p class="wf-banner"><strong class="wf-banner-kind">운영 수신 주소 없음</strong><span class="wf-banner-text">운영 수신 주소가 없어 수집 끊김·알림 평가 중단·디스크 경고 같은 운영 메일이 아무에게도 가지 않습니다.</span><a class="wf-banner-link" href="UI-14-mail-status.html">메일 상태 보기</a></p>
     </div>
   </div>
   <table class="wf-table" style="margin-top: 16px">
@@ -107,15 +109,17 @@
       <tr><td>알림 평가 중단</td><td>알림 평가가 멈춘 동안</td><td>UI-06 알림 규칙 목록</td><td><span class="wf-ref">Q12 6절</span> UI-06 그릴 상태</td></tr>
       <tr><td>메일 최종 실패</td><td>확인하지 않은 최종 실패가 있는 동안</td><td>UI-06 알림 규칙 목록(검토 항목)</td><td><span class="wf-ref">Q12 5·6절</span> <span class="wf-ref">Q12-09</span></td></tr>
       <tr><td>감사 기록 장애</td><td>감사 기록을 저장하지 못하는 동안</td><td>UI-15 감사 이력</td><td><span class="wf-ref">Q10-14</span> <span class="wf-ref">TD-17</span></td></tr>
-      <tr><td>감사 기록 공백</td><td>복구 뒤(내리는 시점은 검토 항목)</td><td>UI-15 감사 이력</td><td><span class="wf-ref">Q10-14</span></td></tr>
+      <tr><td>감사 기록 공백</td><td>복구 뒤 사람이 <span class="wf-term">확인</span>을 누를 때까지(WQ-03)</td><td>UI-15 감사 이력</td><td><span class="wf-ref">Q10-14</span></td></tr>
       <tr><td>디스크 경고</td><td>경고 기준을 넘은 동안</td><td>UI-13 저장 공간과 보존</td><td><span class="wf-ref">Q13-01</span></td></tr>
-      <tr><td>조기 삭제 발생</td><td>조기 삭제 뒤(내리는 시점은 검토 항목)</td><td>UI-13 저장 공간과 보존</td><td><span class="wf-ref">Q13-01</span> <span class="wf-ref">SD-33</span></td></tr>
+      <tr><td>조기 삭제 발생</td><td>조기 삭제 뒤 사람이 <span class="wf-term">확인</span>을 누를 때까지(WQ-03)</td><td>UI-13 저장 공간과 보존</td><td><span class="wf-ref">Q13-01</span> <span class="wf-ref">SD-33</span></td></tr>
+      <tr><td>저장 공간 측정 불가</td><td>측정 실패가 <span class="wf-n">N</span>분 이어진 동안</td><td>UI-13 저장 공간과 보존</td><td>WQ-76</td></tr>
+      <tr><td>운영 수신 주소 없음</td><td>운영 수신 주소가 하나도 없는 동안</td><td>UI-14 메일 상태</td><td>WQ-83(2026-11-05 사용자 A안)</td></tr>
     </tbody>
   </table>
   <ul class="wf-notes">
     <li>메일 최종 실패를 확인 처리하는 방식은 API 설계에서 정한다(4절 CM-01). 그래서 확인 버튼을 그리지 않았다.</li>
     <li><span class="wf-review">WQ-02 설계로 넘김:</span> 메일 최종 실패 배너가 어느 화면으로 가는지 문서에 없다. 규칙마다 <span class="wf-term">마지막 전달 결과</span>를 보여 주는 UI-06으로 그렸다. <strong>기본안:</strong> <span class="wf-term">최종 실패 미확인</span> 필터를 건 UI-06으로 간다. 확인 처리는 사건 단위로 UI-09에서 하고 API는 설계에서 정한다(WQ-31·32·37·49와 한 묶음).</li>
-    <li><span class="wf-review">WQ-03 설계로 넘김:</span> 지나간 일을 알리는 배너(감사 기록 공백, 조기 삭제 발생)를 언제 내릴지 문서에 없다. <strong>기본안:</strong> 감사 기록 공백·조기 삭제 발생 배너는 <span class="wf-term">확인</span>을 누를 때까지 보이고 같은 일이 다시 생기면 다시 보인다. 기록은 UI-13·UI-15에 남는다.</li>
+    <li><span class="wf-review">WQ-03 화면 확정(2026-11-05 디자인 시스템 11절):</span> 지나간 일을 알리는 배너(감사 기록 공백, 조기 삭제 발생)를 언제 내릴지 정했다. API 계약 초안 4.4절의 `확인`(ack)과 같다. 감사 기록 공백·조기 삭제 발생 배너는 <span class="wf-term">확인</span>을 누를 때까지 보이고 같은 일이 다시 생기면 다시 보인다. 기록은 UI-13·UI-15에 남는다.</li>
     <li>감사 기록 장애 중 보류되는 작업은 <span class="wf-ref">Q10-14</span>의 일반 민감 변경과 <span class="wf-ref">TD-17</span>의 알림 규칙 변경이다. 긴급 키 폐기와 전체 세션 종료는 차단 상태를 확정할 수 있으면 진행한다(CM-07 상태 6).</li>
     <li>디스크 경고 기준은 정하지 않았다(7절). 조회 가능 시작일은 보관·조기 삭제 기준인 수신 시각으로 쓴다(<span class="wf-ref">SD-33</span>).</li>
     <li>시각은 배포 설정의 표시 시간대로 쓰고 시간대를 함께 적는다(1절, <span class="wf-ref">SD-07</span>).</li>

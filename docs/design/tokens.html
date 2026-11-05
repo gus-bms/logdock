@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LogDock 기준값과 부품</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* 견본 배치 전용. 부품 모양은 components.css가 원본이다. 모든 값은 합성 예시다. */
+  main { max-width: 1120px; margin: 0 auto; padding: var(--space-8) var(--space-6) var(--space-10); display: grid; gap: var(--space-8); }
+  h1 { font-size: var(--text-xl); line-height: var(--leading-xl); margin: 0; font-weight: var(--font-weight-strong); letter-spacing: -0.01em; }
+  h2 { font-size: var(--text-lg); line-height: var(--leading-lg); margin: 0 0 var(--space-3); font-weight: var(--font-weight-strong); }
+  .lead { margin: var(--space-1) 0 0; color: var(--color-text-secondary); }
+  .lead a { color: var(--color-text-link); }
+  .pad { padding: var(--space-4); }
+  .row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); }
+  .sw { display: grid; gap: var(--space-1); font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .sw i { height: 40px; border-radius: var(--radius-md); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.06); }
+  .floats { display: flex; gap: var(--space-6); flex-wrap: wrap; padding: var(--space-2) 0; }
+  .float { width: 160px; height: 72px; background: var(--color-bg-surface); border-radius: var(--radius-lg); display: grid; place-items: center; color: var(--color-text-secondary); }
+  .spacing { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2); align-items: center; }
+  .spacing div { height: 10px; background: var(--color-chart-level-other); border-radius: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>LogDock 기준값과 부품</h1>
+    <p class="lead">tokens.css · components.css v0.2 초안(2026-11-05 채택, 같은 날 v0.2b 강조색·글자·행 높이·정렬 규칙 반영). 설명은 design-system-v0.1.md, 화면 적용은 <a href="sample-ui02-log-search.html">로그 탐색 시안</a>. 시안 표시용으로 Pretendard·JetBrains Mono를 CDN에서 불러온다(제품은 직접 제공).</p>
+  </header>
+
+  <section><h2>상태 배지</h2>
+    <div class="card pad row">
+      <span class="badge success">수집/전송 진행</span><span class="badge info">연결 대기</span><span class="badge warning">읽기 일시정지</span>
+      <span class="badge danger">디스크 사용 불가</span><span class="badge unknown">관측 오래됨/미확인</span><span class="badge neutral">보관</span>
+      <span class="tertiary" style="margin-left:var(--space-4)">로그 레벨</span>
+      <span class="lv error">ERROR</span><span class="lv warn">WARN</span><span class="lv info">INFO</span><span class="lv unknown">미확인</span>
+      <span class="tertiary" style="margin-left:var(--space-4)">시각·품질</span><span class="quality" style="margin:0">시각 대체</span>
+    </div>
+    <div class="card pad row" style="margin-top:var(--space-3)">
+      <span class="tertiary">상태가 둘 이상(조치 필요 순)</span><span class="badge-group"><span class="badge danger">디스크 사용 불가</span><span class="badge warning">이벤트 거부 관측</span></span>
+      <span class="tertiary" style="margin-left:var(--space-4)">비활성 이유</span><button class="btn sm" disabled aria-describedby="dr1">알림 규칙 만들기</button><span class="disabled-reason" id="dr1">알림 규칙 수가 상한에 닿았습니다</span>
+    </div>
+  </section>
+
+  <section><h2>버튼과 입력</h2>
+    <div class="card pad row">
+      <button class="btn primary">검색 <span class="kbd">↵</span></button>
+      <button class="btn">조건 초기화</button>
+      <button class="btn" disabled>내보내기</button>
+      <button class="btn ghost">취소</button>
+      <button class="btn danger" aria-busy="true">키 폐기 중…</button>
+      <button class="btn sm">더 보기</button>
+      <div class="segmented" role="group" aria-label="시간 기준"><button aria-pressed="true">발생 시각</button><button aria-pressed="false">수신 시각</button></div>
+    </div>
+    <div class="card pad row" style="margin-top:var(--space-2)">
+      <button class="timepick"><strong>최근 1시간</strong><span class="range mono">13:02–14:02</span></button>
+      <div class="querybar" style="max-width:560px">
+        <span class="chip"><span class="chip-key">서비스</span><span class="chip-op">=</span><span class="chip-val">billing</span><button aria-label="지우기">✕</button></span>
+        <span class="chip exclude"><span class="chip-key">본문</span><span class="chip-op">제외</span><span class="chip-val">healthcheck</span><button aria-label="지우기">✕</button></span>
+        <input placeholder="본문 검색 또는 조건 추가" aria-label="검색어">
+      </div>
+    </div>
+  </section>
+
+  <section><h2>입력 오류 · 선택 목록 · 단계 표시</h2>
+    <div class="card pad" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-6);align-items:start">
+      <div style="display:grid;gap:var(--space-4)">
+        <label class="field"><span class="field-label">시작(포함)</span><input class="input num" value="2026-11-05 10:00:00"></label>
+        <div class="field"><label class="field-label" for="e1">끝(제외)</label><input class="input num" id="e1" value="2026-11-05 09:00:00" aria-invalid="true" aria-describedby="e1-err"><span class="field-error" id="e1-err">끝 시각은 시작 시각보다 뒤여야 합니다.</span></div>
+        <label class="field"><span class="field-label">비활성</span><input class="input" value="수집 대상은 고칠 수 없음" disabled></label>
+      </div>
+      <div style="display:grid;gap:var(--space-2);align-content:start">
+        <span class="field-label">선택 목록</span>
+        <button class="select-trigger" aria-expanded="true" style="width:180px"><span>시간</span><svg class="icon" viewBox="0 0 16 16"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg></button>
+        <ul class="listbox" role="listbox" style="width:180px"><li class="option" role="option" aria-selected="false">분</li><li class="option" role="option" aria-selected="true">시간</li><li class="option" role="option" aria-selected="false" data-highlighted>일</li><li class="option" role="option" aria-disabled="true">주(예시: 고를 수 없음)</li></ul>
+      </div>
+      <div style="display:grid;gap:var(--space-3)">
+        <span class="field-label">단계 표시 (CM-07 진행 단계)</span>
+        <ol class="steps">
+          <li class="step done"><span class="step-mark"></span><div class="step-title">요청 접수<span class="t">완료 10:15:03</span></div></li>
+          <li class="step done"><span class="step-mark"></span><div class="step-title">중앙 확정<span class="t">완료 10:15:04</span></div><div class="step-desc">이 키의 새 전송 차단</div></li>
+          <li class="step wait"><span class="step-mark"></span><div class="step-title">에이전트 관측<span class="t">대기</span></div><div class="step-desc">에이전트가 다음에 보고하면 확인</div></li>
+        </ol>
+        <ol class="steps">
+          <li class="step unknown"><span class="step-mark"></span><div class="step-title">미확인<span class="t">마지막 보고 09:31:07</span></div></li>
+          <li class="step hold"><span class="step-mark"></span><div class="step-title">보류<span class="t">감사 기록 장애</span></div></li>
+          <li class="step fail"><span class="step-mark"></span><div class="step-title">실패<span class="t">키가 아직 유효할 수 있음</span></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section><h2>확인 창 (CM-07)</h2>
+    <div class="dialog" role="dialog" aria-labelledby="d-t" style="margin:0">
+      <div class="dialog-head"><h2 id="d-t" style="margin:0">키 폐기</h2></div>
+      <div class="dialog-body">
+        <div class="field"><span class="field-label">대상</span><dl class="kv"><div><dt>연결</dt><dd>결제 · app-01 · app.log</dd></div><div><dt>키</dt><dd>2026-10-02 발급 · 유효</dd></div></dl></div>
+        <div class="field"><span class="field-label">영향</span><ul class="impact"><li class="strong">중앙이 이 키로 들어오는 새 전송을 받지 않습니다.</li><li>이미 저장한 로그는 그대로 검색됩니다.</li><li>서버에서 읽기를 멈추는 일은 서버 운영자가 직접 합니다.</li></ul></div>
+        <div class="field"><label class="field-label" for="pw">비밀번호 다시 입력</label><input class="input" id="pw" type="password" value="••••" aria-invalid="true" aria-describedby="pw-e"><span class="field-error" id="pw-e">비밀번호가 맞지 않습니다.</span></div>
+      </div>
+      <div class="dialog-foot"><button class="btn">취소</button><button class="btn danger">키 폐기</button></div>
+    </div>
+    <div class="dialog" role="dialog" aria-labelledby="k-t" style="margin:var(--space-4) 0 0">
+      <div class="dialog-head"><h2 id="k-t" style="margin:0">새 키 (1회 표시)</h2></div>
+      <div class="dialog-body secret-once">
+        <div class="callout warning"><span class="badge warning">한 번만 표시</span><div><strong>새 키 원문은 지금 한 번만 보여 줍니다.</strong> 닫으면 다시 볼 수 없습니다.</div></div>
+        <div class="secret-box"><code>ldk_SAMPLE-not-a-real-key-4f2a9c71</code><button class="btn sm">키 복사</button></div>
+        <label class="check-row"><input type="checkbox" class="check">키를 복사해 안전한 곳에 두었습니다</label>
+      </div>
+      <div class="dialog-foot"><button class="btn primary" disabled>닫기</button></div>
+    </div>
+  </section>
+
+  <section><h2>배너·토스트</h2>
+    <div class="card" style="overflow:hidden">
+      <div class="banner"><span class="badge warning">디스크 경고</span><span>중앙 로그 저장 공간이 경고 기준을 넘었습니다.</span><a href="#">저장 공간 보기</a></div>
+      <div class="banner danger"><span class="badge danger">알림 평가 중단</span><span>알림 규칙을 평가하지 못하고 있습니다.</span><a href="#">알림 보기</a></div>
+      <div class="banner danger"><span class="badge danger">감사 기록 공백</span><span>2026-11-05 10:31~10:44 감사 기록이 비어 있습니다.</span><a href="#">감사 이력 보기</a><button class="ack">확인</button></div>
+    </div>
+    <div class="row" style="margin-top:var(--space-4);align-items:start;gap:var(--space-4)">
+      <div class="toast"><div class="toast-text"><span class="toast-kind">성공</span><strong>검색 조건을 저장했습니다.</strong><p>저장 검색 “결제 실패 확인”</p></div><button class="btn ghost sm icon-only" aria-label="닫기">✕</button></div>
+      <div class="toast fail"><div class="toast-text"><span class="toast-kind">실패</span><strong>내보내기를 시작하지 못했습니다.</strong><p>결과가 한도를 넘었습니다. 시간 범위를 줄여 다시 시도하세요. <a href="#">조건 고치기</a></p></div><button class="btn ghost sm icon-only" aria-label="닫기">✕</button></div>
+      <div class="toast hold"><div class="toast-text"><span class="toast-kind">보류</span><strong>키 폐기를 보류했습니다.</strong><p>감사 기록이 복구되면 다시 실행하세요.</p></div><button class="btn ghost sm icon-only" aria-label="닫기">✕</button></div>
+    </div>
+  </section>
+
+  <section><h2>색</h2>
+    <div class="card pad swatches">
+      <div class="sw"><i style="background:var(--color-bg-page)"></i>bg-page</div>
+      <div class="sw"><i style="background:var(--color-bg-subtle)"></i>bg-subtle</div>
+      <div class="sw"><i style="background:var(--color-bg-selected)"></i>bg-selected</div>
+      <div class="sw"><i style="background:var(--color-border)"></i>border</div>
+      <div class="sw"><i style="background:var(--color-border-control)"></i>border-control</div>
+      <div class="sw"><i style="background:var(--color-text-secondary)"></i>text-secondary</div>
+      <div class="sw"><i style="background:var(--color-accent)"></i>accent (인디고)</div>
+      <div class="sw"><i style="background:var(--color-focus)"></i>focus</div>
+      <div class="sw"><i style="background:var(--color-success-border)"></i>success</div>
+      <div class="sw"><i style="background:var(--color-info-border)"></i>info</div>
+      <div class="sw"><i style="background:var(--color-warning-border)"></i>warning</div>
+      <div class="sw"><i style="background:var(--color-danger-border)"></i>danger</div>
+      <div class="sw"><i style="background:var(--color-chart-level-error)"></i>chart ERROR</div>
+      <div class="sw"><i style="background:var(--color-chart-level-warn)"></i>chart WARN</div>
+      <div class="sw"><i style="background:var(--color-chart-level-other)"></i>chart 기타</div>
+    </div>
+  </section>
+
+  <section><h2>글자</h2>
+    <div class="card pad">
+      <div style="font-size:var(--text-xl);line-height:var(--leading-xl);font-weight:600">화면 제목 20/28 · 600</div>
+      <div style="font-size:var(--text-lg);line-height:var(--leading-lg);font-weight:600">절 제목 16/24 · 600</div>
+      <div style="font-size:var(--text-base);font-weight:500">입력·버튼 14/20 · 500</div>
+      <div>기본 본문 14/20 · 400 — 마지막 보고 14:02:11 KST</div>
+      <div style="font-size:var(--text-table)">로그 표 칸 13/20 · 400 — 시각·서버는 고정폭 숫자 11-05 14:01:58.902</div>
+      <div class="muted" style="font-size:var(--text-sm)">보조 12/16 — 시간대 Asia/Seoul</div>
+      <div class="mono" style="margin-top:var(--space-2)">고정폭 12.5/20(로그 본문·필드 이름·원문 상자만) — 한글과 English가 섞인 로그 0123456789 |1lI O0</div>
+    </div>
+  </section>
+
+  <section><h2>간격 · 그림자</h2>
+    <div class="card pad spacing">
+      <span class="mono">space-1 · 4</span><div style="width:4px"></div>
+      <span class="mono">space-2 · 8</span><div style="width:8px"></div>
+      <span class="mono">space-3 · 12</span><div style="width:12px"></div>
+      <span class="mono">space-4 · 16</span><div style="width:16px"></div>
+      <span class="mono">space-6 · 24</span><div style="width:24px"></div>
+      <span class="mono">space-8 · 32</span><div style="width:32px"></div>
+    </div>
+    <div class="floats" style="margin-top:var(--space-4)">
+      <div class="float" style="box-shadow:var(--shadow-popover)">팝오버</div>
+      <div class="float" style="box-shadow:var(--shadow-toast)">토스트</div>
+      <div class="float" style="box-shadow:var(--shadow-modal)">확인 창</div>
+      <div class="float" style="border:1px solid var(--color-border)">패널</div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

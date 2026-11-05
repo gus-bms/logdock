@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LogDock 시안 — 수집 연결 상세</title>
+<!-- 시안 표시용 글꼴. 제품은 글꼴 파일을 직접 제공하고 외부 CDN을 쓰지 않는다(design-system-v0.1.md 4절). -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="tokens-dark-preview.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* 이 시안의 배치. 화면 흐름 명세 5절 UI-12(수집 연결 상세)와 4절 CM-05·CM-07의 정적 시안이다.
+     와이어프레임 UI-12의 상태 1·2·11·12를 아래 '시안 상태'로 바꿔 본다. 모든 값은 합성 예시이며 화면 구현 승인이 아니다. */
+  body { min-width: 1080px; }
+  .page { display: grid; gap: var(--layout-gutter); padding: var(--space-4) var(--layout-pad-x) 96px; max-width: 1280px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--layout-gutter); align-items: start; }
+  .col { display: grid; gap: var(--layout-gutter); }
+  .section-card .kv { grid-template-columns: 148px 1fr; }
+  .section-card .kv dd > span { line-height: 22px; }
+  .section-card .callout { margin: 0 var(--space-2) var(--space-2); }
+  .keyonce { display: grid; gap: var(--space-2); }
+  #actions { flex-direction: column; align-items: flex-end; gap: 6px; }
+  .demo-switch { position: fixed; left: 50%; bottom: var(--space-4); transform: translateX(-50%); display: flex; align-items: center; gap: var(--space-2);
+    padding: 6px 6px 6px var(--space-3); border-radius: var(--radius-full); background: var(--color-toast-bg); color: var(--color-toast-text-secondary); font-size: var(--text-sm); box-shadow: var(--shadow-toast); z-index: var(--z-sticky); }
+  .demo-switch .segmented { height: 30px; background: rgb(255 255 255 / 0.08); box-shadow: none; }
+  .demo-switch .segmented button { height: 26px; color: var(--color-toast-text-secondary); }
+  .demo-switch .segmented button[aria-pressed="true"] { background: rgb(255 255 255 / 0.16); color: var(--color-toast-text); box-shadow: none; }
+  .toast-stack { position: fixed; right: var(--space-4); top: calc(var(--size-topbar) + var(--space-3)); display: grid; gap: var(--space-2); z-index: var(--z-toast); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-down" viewBox="0 0 16 16"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7m0-7-7 7"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="7" height="7" rx="1.5"/><path d="M3.5 10.5v-6a1 1 0 0 1 1-1h6"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 16 16"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></symbol>
+  <symbol id="i-right" viewBox="0 0 16 16"><path d="m6.5 4.5 3.5 3.5-3.5 3.5"/></symbol>
+</svg>
+
+<nav class="topbar" aria-label="주 메뉴">
+  <span class="brand"><span class="brand-mark" aria-hidden="true"></span>LogDock</span>
+  <div class="menu">
+    <a href="sample-ui02-log-search.html">로그 탐색</a>
+    <a href="#">저장 검색</a>
+    <a href="#">알림</a>
+    <a href="#" aria-current="page">수집 연결 <span class="menu-count" aria-label="조치 필요 2건">2</span></a>
+    <a href="#">저장 공간</a>
+    <a href="#">감사 이력</a>
+  </div>
+  <div class="topbar-end"><span class="mono tertiary">Asia/Seoul</span><button class="btn ghost sm" id="theme" title="검토용: 어두운 테마는 첫 출시 범위가 아니다">어두운 테마 보기</button><span class="avatar" title="공용 계정">공용</span></div>
+</nav>
+
+<main class="page">
+  <header>
+    <nav class="crumb" aria-label="위치"><a href="#">수집 연결</a><svg class="icon" style="width:12px;height:12px"><use href="#i-right"/></svg><a href="#" id="crumb-svc">결제</a></nav>
+    <div class="page-head">
+      <div>
+        <h1 id="title">결제 · app-01 · app.log</h1>
+        <div class="meta" id="meta"></div>
+      </div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </header>
+
+  <section class="stat-grid" id="stats" aria-label="연결 상태"></section>
+  <div id="state-callout"></div>
+
+  <div class="cols">
+    <div class="col">
+      <section class="card section-card" aria-labelledby="h-progress"><header><h2 id="h-progress">수집 진행</h2><span class="end" id="progress-end"></span></header><div class="body"><dl class="kv" id="kv-progress"></dl></div><div id="progress-callout"></div></section>
+      <section class="card section-card" aria-labelledby="h-quality"><header><h2 id="h-quality">데이터 품질과 시각</h2><span class="end">건수는 2026-11-05 00:00:00부터 집계</span></header><div class="body"><dl class="kv" id="kv-quality"></dl></div></section>
+    </div>
+    <div class="col">
+      <section class="card section-card" aria-labelledby="h-steps"><header><h2 id="h-steps">연결 확인 단계</h2><span class="end">UI-11 7단계와 같은 증거</span></header><div class="body" style="padding:var(--space-4)"><ol class="steps" id="evidence"></ol></div></section>
+      <section class="card section-card" aria-labelledby="h-config"><header><h2 id="h-config">설정</h2><span class="end"><button class="btn sm" id="dl"><svg class="icon"><use href="#i-dl"/></svg>설정 내려받기</button></span></header><div class="body"><dl class="kv" id="kv-config"></dl></div><p class="note">설정 내려받기는 키 원문을 뺀 설정 틀만 줍니다. 변경이 아니라 확인 창을 거치지 않습니다.</p></section>
+    </div>
+  </div>
+
+  <section class="card section-card" aria-labelledby="h-keys"><header><h2 id="h-keys">키</h2><span class="end">연결당 유효 키 1개, 교체 중 2개까지 · 원문은 발급·교체 때 한 번만 보여 줍니다</span></header><div class="body" id="keys"></div></section>
+
+  <section class="card section-card" aria-labelledby="h-diag"><header><h2 id="h-diag">진단 이력</h2><span class="end">본문 없이 오류·거부 요약만 남깁니다 · 2026-10-29 08:00:00부터 볼 수 있음</span></header>
+    <div class="body"><table class="datatable" id="diag"><colgroup><col style="width:180px"><col style="width:140px"><col><col style="width:96px"></colgroup>
+      <thead><tr><th scope="col">관측 시각</th><th scope="col">종류</th><th scope="col">내용</th><th scope="col" class="end">건수</th></tr></thead><tbody></tbody></table></div>
+  </section>
+</main>
+
+<div class="demo-switch" role="group" aria-label="시안 상태 바꾸기">시안 상태
+  <div class="segmented" id="demo">
+    <button data-s="base" aria-pressed="true">기본</button><button data-s="problem" aria-pressed="false">수집 문제</button><button data-s="stale" aria-pressed="false">미관측</button><button data-s="blocked" aria-pressed="false">키 차단 뒤</button><button data-s="hold" aria-pressed="false">복구 보류</button>
+  </div>
+</div>
+<div class="toast-stack" id="toasts" aria-live="polite"></div>
+<div id="dialog-root"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const badge = (k, t) => `<span class="badge ${k}">${t}</span>`;
+const stale = (t) => `<span class="stale">마지막 보고 기준 ${t}</span>`;
+const unk = '<span class="unknown-v">미확인</span>';
+const kv = (rows) => rows.map(([k, v]) => `<div><dt>${k}</dt><dd><span>${v}</span></dd></div>`).join('');
+
+/* 상태별 합성 값. 와이어프레임 UI-12 상태 1(기본)·2(수집 문제)·11(미관측)·12(키 차단 뒤) */
+const S = {
+  base: {
+    title: '결제 · app-01 · app.log',
+    meta: ['파일 /var/app/payment/app.log', '환경 운영', '등록 2026-10-02 09:58:20'],
+    admin: ['success', '사용', '설정 버전 3'],
+    obs: ['success', '수집/전송 진행', '마지막 읽기 10:14:50 · 전송 확인 10:14:51'],
+    report: ['2026-11-05 10:14:52', '에이전트 대기 0.3MB'],
+    progress: [['마지막 읽기', '10:14:50'], ['마지막 전송 확인(ACK)', '10:14:51'], ['대기', '0.3MB'], ['가장 오래된 대기', '10:14:49'], ['일시정지 사유', '<span class="dim">없음</span>']],
+    quality: [['해석 실패', '12건'], ['크기 초과 거부', '2건 · 마지막 관측 10:05:31 · 이후 수집 계속'], ['확인된 손실', '0건'], ['누락 가능 구간', '<span class="dim">없음</span>'], ['서버 시계·시간대', '<span class="dim">경고 없음</span>']],
+    keysState: 'normal',
+  },
+  problem: {
+    title: '결제 · app-02 · app-*.log',
+    meta: ['파일 이름 규칙 /var/app/payment/app-*.log', '환경 운영', '등록 2026-10-02 10:04:11'],
+    admin: ['success', '사용', '설정 버전 2'],
+    obs: ['warning', '읽기 일시정지', '대기 공간 포화 · 10:02:11부터'],
+    report: ['2026-11-05 10:14:40', '에이전트 대기 512MB'],
+    progress: [['마지막 읽기', '10:02:10'], ['마지막 전송 확인(ACK)', '10:01:58'], ['대기', '512MB'], ['가장 오래된 대기', '09:58:40'], ['일시정지 사유', '대기 공간 포화 · 시작 10:02:11']],
+    progressCallout: ['warning', '원본 보존 위험', '읽기를 멈춘 동안 원본 파일이 회전·삭제되면 읽지 못한 부분을 잃을 수 있습니다. 전송이 회복되면 기존 대기를 그대로 두고 제한된 속도로 다시 읽습니다.'],
+    quality: [['해석 실패', '0건'], ['크기 초과 거부', '0건'], ['확인된 손실', '읽기 전에 원본 파일이 삭제됨 · app-2026-11-04.log · 읽지 못한 1.2MB · 건수 ' + unk], ['누락 가능 구간', '10:02:11 ~ 지금 · 사유 읽기 일시정지'], ['서버 시계·시간대', '<span class="dim">경고 없음</span>']],
+    keysState: 'normal',
+  },
+  stale: {
+    title: '주문 · app-02 · journald',
+    meta: ['journald 단위 order-api', '환경 운영', '등록 2026-10-12 15:20:03'],
+    admin: ['success', '사용', '설정 버전 1'],
+    obs: ['unknown', '관측 오래됨/미확인', '09:31:07 이후 보고가 없습니다'],
+    report: ['2026-11-05 09:31:07', '지금 대기량 미확인'],
+    progress: [['마지막 읽기', '09:31:02 ' + stale('09:31:07')], ['마지막 전송 확인(ACK)', '09:31:05'], ['에이전트 대기', '40MB ' + stale('09:31:07')], ['가장 오래된 대기', '09:28:40 ' + stale('09:31:07')], ['지금 대기량', unk]],
+    quality: [['해석 실패·거부', '0건 ' + stale('09:31:07') + ' <span class="dim">그 뒤는 미확인</span>'], ['확인된 손실', '0건 ' + stale('09:31:07')], ['누락 가능 구간', unk], ['서버 시계·시간대', '<span class="dim">경고 없음</span> ' + stale('09:31:07')]],
+    stateCallout: ['unknown', '관측 오래됨/미확인', '<strong>마지막 보고 뒤로 이 연결을 관측하지 못했습니다.</strong> 아래 값은 마지막 보고(09:31:07) 기준이며 지금 상태가 아닙니다. 진단을 받지 못한 동안의 거부·해석 실패는 0건이 아니라 미확인입니다.'],
+    diagNote: '09:31:07 이후 진단을 받지 못했습니다. 거부가 없었다는 뜻이 아닙니다.',
+    keysState: 'normal',
+  },
+  blocked: {
+    title: '결제 · app-01 · app.log',
+    meta: ['파일 /var/app/payment/app.log', '환경 운영', '등록 2026-10-02 09:58:20'],
+    admin: ['warning', '전송 차단', '키 폐기 중앙 확정 10:15:04 · 유효 키 없음'],
+    obs: ['danger', '전송 오류/보류', '인증 오류'],
+    report: ['2026-11-05 10:14:52', '키 차단 전 보고'],
+    progress: [['에이전트 대기', '0.3MB ' + stale('10:14:52')], ['지금 대기량', unk + ' <span class="dim">차단 뒤에도 에이전트는 대기 한도까지 새 로그를 읽어 보관할 수 있습니다</span>'], ['마지막 전송 확인(ACK)', '10:14:51']],
+    quality: [['해석 실패', '12건 ' + stale('10:14:52')], ['크기 초과 거부', '2건 ' + stale('10:14:52')], ['확인된 손실', '0건 ' + stale('10:14:52')], ['서버 시계·시간대', '<span class="dim">경고 없음</span>']],
+    stateCallout: ['warning', '전송 차단', '<strong>아래 값은 키 차단 전 마지막 보고(10:14:52) 기준이며 지금 상태가 아닙니다.</strong> 서버에서 읽기가 멈췄는지는 이 화면에서 알 수 없습니다. 대기 로그는 에이전트에 보존되고, 유효한 키를 적용하면 같은 로그를 다시 보냅니다.'],
+    keysState: 'revoked',
+  },
+  hold: {
+    title: '주문 · app-02 · app.log',
+    meta: ['파일 /var/app/order/app.log', '환경 운영', '등록 2026-10-12 15:20:03'],
+    admin: ['success', '사용', '설정 버전 2'],
+    obs: ['warning', '설정/복구 확인 필요', '복구 근거 없음 · 보류 시작 09:12:40'],
+    report: ['2026-11-05 10:13:20', '에이전트 대기 1.2MB'],
+    progress: [['마지막 읽기', '09:12:39'], ['마지막 전송 확인(ACK)', '10:13:18'], ['대기', '1.2MB · 지우지 않고 그대로 보냅니다'], ['일시정지 사유', '이어 읽을 근거가 없어 이 파일의 자동 읽기를 보류함']],
+    quality: [['해석 실패', '0건'], ['크기 초과 거부', '0건'], ['확인된 손실', '0건'], ['누락 가능 구간', '09:12:40 ~ 서버에서 적용할 때까지 · 건수 ' + unk], ['서버 시계·시간대', '<span class="dim">경고 없음</span>']],
+    stateCallout: ['warning', '설정/복구 확인 필요', `<strong>이어 읽을 근거가 없어 /var/app/order/app.log의 자동 읽기를 보류했습니다.</strong> 서버에서 「지금부터 다시 수집」을 적용하면 그때의 파일 끝부터 새 이벤트를 읽습니다. 보류 구간의 로그는 가져오지 않고, 보류하는 동안 원본이 회전·삭제되면 복구할 기회가 사라질 수 있습니다.
+      <div class="field" style="margin-top:var(--space-2)"><span class="field-label">로그 서버에서 실행할 명령(API 계약 초안 8.3절, 초안)</span>
+      <div class="secret-box"><code>logdock-agent resume-from-now --connection c_8f3k2 --file f_2b9a</code><button class="btn sm" data-copy>복사</button></div>
+      <span class="field-hint">웹에서는 에이전트에 실행을 지시하지 않습니다. 서버에서 적용한 뒤 이 화면에서 재개를 확인하세요. 연결·파일 ID는 합성 값입니다.</span></div>`],
+    keysState: 'normal',
+  },
+};
+
+const DIAG = [
+  ['10:05:31', '크기 초과 거부', '이벤트 크기 상한을 넘어 본문 전체를 거부함 · 이후 수집 계속', '2건'],
+  ['09:40:12', '해석 실패', '내장 형식으로 읽지 못함 · 본문은 그대로 전송', '12건'],
+  ['03:10:00 ~ 03:42:00', '진단 기록 공백', '에이전트가 이 기간 진단을 저장하지 못함 · 수집과 전송은 계속됨', unk],
+];
+
+let cur = 'base';
+let keyFlow = null; /* 키 폐기 진행 단계(확인 창 뒤) */
+let rotating = false; /* 키 교체 중(유효 키 2개) */
+
+function render() {
+  const d = S[cur];
+  $('#title').textContent = d.title;
+  $('#crumb-svc').textContent = d.title.split(' · ')[0];
+  document.title = `LogDock 시안 — 수집 연결 상세 · ${d.title}`;
+  $('#meta').innerHTML = d.meta.map((m) => `<span>${m}</span>`).join('<span aria-hidden="true">·</span>');
+  const blocked = cur === 'blocked';
+  $('#actions').innerHTML = '<div style="display:flex;gap:var(--space-2)">' + [
+    ['edit', '설정 수정'], ['rotate', blocked ? '새 키 발급' : '키 교체'], ['revoke', '키 폐기', blocked], ['archive', '보관'], ['purge', '구간 로그 삭제'],
+  ].map(([id, t, dis]) => `<button class="btn" data-act="${id}"${dis ? ' disabled aria-describedby="why-revoke"' : ''}>${t}</button>`).join('') + '</div>'
+    + (blocked ? '<span class="disabled-reason" id="why-revoke">키 폐기: 유효한 키가 없습니다. 새 키를 발급하면 쓸 수 있습니다.</span>' : '');
+  $('#stats').innerHTML = [
+    ['관리 상태', badge(d.admin[0], d.admin[1]), d.admin[2]],
+    ['관측 상태', badge(d.obs[0], d.obs[1]), d.obs[2]],
+    ['마지막 보고', `${d.report[0]} <span class="tertiary" style="font-weight:400;font-size:var(--text-sm)">(UTC+09:00)</span>`, d.report[1]],
+  ].map(([l, v, s]) => `<div class="card stat"><span class="stat-label">${l}</span><span class="stat-value">${v}</span><span class="stat-sub">${s}</span></div>`).join('');
+  $('#state-callout').innerHTML = d.stateCallout ? `<div class="callout ${d.stateCallout[0] === 'unknown' ? '' : d.stateCallout[0]}">${badge(d.stateCallout[0], d.stateCallout[1])}<div>${d.stateCallout[2]}</div></div>` : '';
+  $('#kv-progress').innerHTML = kv(d.progress);
+  $('#progress-end').textContent = d.progressCallout ? '읽기를 멈춤' : '';
+  $('#progress-callout').innerHTML = d.progressCallout ? `<div class="callout ${d.progressCallout[0]}">${badge(d.progressCallout[0], d.progressCallout[1])}<div>${d.progressCallout[2]}</div></div>` : '';
+  $('#kv-quality').innerHTML = kv(d.quality);
+  $('#kv-config').innerHTML = kv([['적용 확인 버전', '3 · 2026-10-28 14:03:12 확인'], ['제공한 최신 버전', '3'], ['형식', '일반 텍스트 · UTF-8'], ['로그 시간대', '미입력 · 에이전트 서버 시간대로 해석 <span class="quality">시간대 추정</span>'], ['추출 규칙', '<span class="dim">없음 · 내장 형식</span>']]);
+  const ev = [
+    ['done', '등록 완료', '2026-10-02 09:58:20'],
+    ['done', '설정 제공', '2026-10-28 14:00:41', '설정 버전 3'],
+    ['done', '에이전트 적용 확인', '2026-10-28 14:03:12', '설정 버전 3'],
+    cur === 'stale' ? ['unknown', '읽기', '미확인', '마지막 09:31:02 · 그 뒤 관측 없음'] : cur === 'hold' ? ['hold', '읽기', '보류', '복구 근거 없음 · 09:12:40부터'] : cur === 'problem' ? ['hold', '읽기', '일시정지', '대기 공간 포화 · 10:02:11부터'] : ['done', '읽기', '마지막 10:14:50'],
+    cur === 'blocked' ? ['fail', '중앙 수신 확인', '인증 오류', '키 차단 뒤 수신하지 않음'] : cur === 'stale' ? ['unknown', '중앙 수신 확인', '미확인', '마지막 09:31:05'] : ['done', '중앙 수신 확인', cur === 'problem' ? '마지막 10:01:58' : '마지막 10:14:51'],
+    ['done', '검색 가능 확인', cur === 'stale' ? '09:31:10' : cur === 'problem' ? '10:02:03' : '10:14:55', '<a href="sample-ui02-log-search.html">로그 탐색에서 보기</a>'],
+  ];
+  $('#evidence').innerHTML = ev.map(([k, t, time, desc]) => `<li class="step ${k}"><span class="step-mark" aria-hidden="true"></span><div class="step-title">${t}<span class="sr-only">${{ done: '완료', unknown: '미확인', hold: '보류', fail: '실패', wait: '대기' }[k]}</span><span class="t">${time}</span></div>${desc ? `<div class="step-desc">${desc}</div>` : ''}</li>`).join('');
+  renderKeys();
+  $('#diag tbody').innerHTML = (d.diagNote ? `<tr><td colspan="4"><div class="callout" style="margin:var(--space-2) 0">${badge('unknown', '미확인')}<div>${d.diagNote}</div></div></td></tr>` : '') +
+    DIAG.map(([t, k, c, n]) => `<tr><td>${t}</td><td>${k}</td><td class="dim">${c}</td><td class="end">${n}</td></tr>`).join('');
+  document.querySelectorAll('#demo button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.s === cur)));
+}
+
+function renderKeys() {
+  const revoked = cur === 'blocked' || keyFlow;
+  const newRow = rotating ? `<tr><td>새 키</td><td>2026-11-05 10:50:02</td><td>${badge('success', '유효')}</td><td class="dim">새 키 수신 ${unk} · 서버에 적용한 뒤 확인됩니다</td><td class="end"></td></tr>` : '';
+  const row = rotating
+    ? `<tr><td>기존 키</td><td>2026-10-02 09:58:20</td><td>${badge('success', '유효')}</td><td class="dim">교체 중 · 직접 폐기할 때까지 유효</td><td class="end"><button class="btn sm" data-act="revoke">기존 키 폐기</button></td></tr>` + newRow
+    : revoked
+    ? `<tr><td>지금 키</td><td>2026-10-02 09:58:20</td><td>${badge('neutral', '폐기')}</td><td class="dim">중앙 확정 10:15:04</td><td class="end"></td></tr>`
+    : `<tr><td>지금 키</td><td>2026-10-02 09:58:20</td><td>${badge('success', '유효')}</td><td class="dim">없음</td><td class="end"><button class="btn sm" data-act="revoke">키 폐기</button></td></tr>`;
+  const table = `<table class="datatable"><colgroup><col style="width:120px"><col style="width:180px"><col style="width:120px"><col><col style="width:110px"></colgroup>
+    <thead><tr><th scope="col">키</th><th scope="col">발급</th><th scope="col">상태</th><th scope="col">교체 진행</th><th scope="col"><span class="sr-only">동작</span></th></tr></thead><tbody>${row}</tbody></table>`;
+  const flow = keyFlow ? `<div style="padding:var(--space-3) var(--space-2) var(--space-2)"><div class="section-label" style="margin-bottom:var(--space-3)">키 폐기 진행</div><ol class="steps">${keyFlow}</ol>
+    <p class="field-hint" style="margin:var(--space-3) 0 0">서버에서 이 연결의 읽기를 멈추는 일은 서버 운영자가 직접 합니다. 중앙 확정만으로 서버의 읽기가 멈춘 것은 아닙니다.</p></div>` : '';
+  $('#keys').innerHTML = table + flow;
+}
+
+/* ── 확인 창 CM-07 ──────────────────────────────────────────── */
+let opener = null;
+function closeDialog() { $('#dialog-root').innerHTML = ''; document.removeEventListener('keydown', escClose); opener && opener.focus(); }
+function escClose(e) { if (e.key === 'Escape') closeDialog(); }
+function openConfirm({ title, target, impacts, action, danger, extra = '', onOk }) {
+  opener = document.activeElement;
+  $('#dialog-root').innerHTML = `<div class="dialog-backdrop"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="dialog-head"><h2 id="dlg-t">${title}</h2></div>
+    <div class="dialog-body">
+      <div class="field"><span class="field-label">대상</span><dl class="kv">${kv(target)}</dl></div>
+      ${extra}
+      <div class="field"><span class="field-label">영향</span><ul class="impact">${impacts.map((i) => `<li${i.startsWith('!') ? ' class="strong"' : ''}>${i.replace(/^!/, '')}</li>`).join('')}</ul></div>
+      <div class="field"><label class="field-label" for="pw">비밀번호 다시 입력</label><input class="input" id="pw" type="password" autocomplete="current-password" aria-describedby="pw-err"><span id="pw-err" class="field-error" hidden></span><span class="field-hint">시안: 4자 미만은 틀린 비밀번호로 처리합니다.</span></div>
+    </div>
+    <div class="dialog-foot"><button class="btn" id="dlg-cancel">취소</button><button class="btn ${danger ? 'danger' : 'primary'}" id="dlg-ok">${action}</button></div>
+  </div></div>`;
+  document.addEventListener('keydown', escClose);
+  $('#dlg-cancel').onclick = closeDialog;
+  $('.dialog-backdrop').onclick = (e) => { if (e.target.classList.contains('dialog-backdrop')) closeDialog(); };
+  $('#pw').focus();
+  $('#dlg-ok').onclick = () => {
+    if (extra && typeof onOk.validate === 'function' && !onOk.validate()) return;
+    const pw = $('#pw'), err = $('#pw-err');
+    if (pw.value.length < 4) { pw.setAttribute('aria-invalid', 'true'); err.hidden = false; err.textContent = pw.value ? '비밀번호가 맞지 않습니다.' : '비밀번호를 입력하세요.'; pw.focus(); return; }
+    const dlg = $('.dialog'), ok = $('#dlg-ok');
+    dlg.setAttribute('aria-busy', 'true'); ok.setAttribute('aria-busy', 'true'); ok.textContent = `${action} 중…`;
+    dlg.querySelectorAll('input, #dlg-cancel').forEach((el) => { el.disabled = true; });
+    document.removeEventListener('keydown', escClose); $('.dialog-backdrop').onclick = null;
+    setTimeout(() => { closeDialog(); onOk(); }, location.hash === '#busy' ? 600000 : 900); /* 시안: 서버 응답을 0.9초로 흉내 냄. #busy면 멈춰 둠 */
+  };
+}
+
+function toast(kind, label, title, text) {
+  const el = document.createElement('div');
+  el.className = `toast ${kind}`;
+  el.innerHTML = `<div class="toast-text"><span class="toast-kind">${label}</span><strong>${title}</strong>${text ? `<p>${text}</p>` : ''}</div><button class="btn ghost sm icon-only" aria-label="닫기"><svg class="icon"><use href="#i-x"/></svg></button>`;
+  el.querySelector('button').onclick = () => el.remove();
+  $('#toasts').prepend(el);
+  if (kind === '' || kind === 'note') setTimeout(() => el.remove(), 6000);
+}
+
+/* 새 키 1회 표시. 원문은 이 창에서 한 번만 보인다. 키 값은 합성 자리 표시다 */
+function openSecretOnce() {
+  opener = document.querySelector('[data-act="rotate"]');
+  $('#dialog-root').innerHTML = `<div class="dialog-backdrop"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="sk-t">
+    <div class="dialog-head"><h2 id="sk-t">새 키</h2></div>
+    <div class="dialog-body secret-once">
+      <div class="callout warning">${badge('warning', '한 번만 표시')}<div><strong>새 키 원문은 지금 한 번만 보여 줍니다.</strong> 닫으면 다시 볼 수 없습니다. 복사하지 못했으면 이 키를 폐기하고 새로 받아야 합니다.</div></div>
+      <div class="secret-box"><code>ldk_SAMPLE-not-a-real-key-4f2a9c71</code><button class="btn sm" data-copy><svg class="icon"><use href="#i-copy"/></svg>키 복사</button></div>
+      <ol class="steps">
+        <li class="step wait"><span class="step-mark"></span><div class="step-title">새 키를 로그 서버의 에이전트에 적용</div></li>
+        <li class="step wait"><span class="step-mark"></span><div class="step-title">키 목록에서 새 키 수신 확인</div></li>
+        <li class="step wait"><span class="step-mark"></span><div class="step-title">기존 키 직접 폐기</div><div class="step-desc">폐기할 때까지 기존 키도 유효합니다. 자동 종료 기한은 없습니다.</div></li>
+      </ol>
+      <label class="check-row"><input type="checkbox" class="check" id="sk-ok">키를 복사해 안전한 곳에 두었습니다</label>
+    </div>
+    <div class="dialog-foot"><button class="btn primary" id="sk-close" disabled>닫기</button></div>
+  </div></div>`;
+  $('#sk-ok').onchange = (e) => { $('#sk-close').disabled = !e.target.checked; };
+  $('#sk-close').onclick = () => { closeDialog(); rotating = true; renderKeys(); toast('', '성공', '새 키를 발급했습니다.', '서버에 적용하고 새 키 수신을 확인한 뒤 기존 키를 폐기하세요.'); };
+  $('#dialog-root [data-copy]').focus();
+}
+
+const ACTS = {
+  revoke: () => openConfirm({
+    title: '키 폐기', action: '키 폐기', danger: true,
+    target: [['연결', S[cur].title], ['키', '2026-10-02 발급 · 유효 <span class="dim">(원문은 보여 주지 않음)</span>']],
+    impacts: ['!중앙이 이 키로 들어오는 새 전송을 받지 않습니다.', '이미 저장한 로그는 그대로 검색됩니다.', '에이전트의 대기 로그는 지우지 않습니다. 유효한 키를 적용하면 같은 로그를 다시 보냅니다.', '서버에서 읽기를 멈추는 일은 서버 운영자가 직접 합니다.'],
+    onOk: () => {
+      keyFlow = `<li class="step done"><span class="step-mark"></span><div class="step-title">요청 접수<span class="t">완료 10:15:03</span></div></li>
+        <li class="step done"><span class="step-mark"></span><div class="step-title">중앙 확정<span class="t">완료 10:15:04</span></div><div class="step-desc">이 키의 새 전송 차단</div></li>
+        ${cur === 'stale'
+          ? '<li class="step unknown"><span class="step-mark"></span><div class="step-title">에이전트 관측<span class="t">미확인</span></div><div class="step-desc">마지막 보고 09:31:07 · 에이전트를 관측할 수 없음</div></li>'
+          : '<li class="step wait"><span class="step-mark"></span><div class="step-title">에이전트 관측<span class="t">대기</span></div><div class="step-desc">에이전트가 다음에 보고하면 확인</div></li>'}`;
+      renderKeys();
+      toast('', '성공', '키 폐기를 중앙에서 확정했습니다.', '이 키로 들어오는 새 전송을 받지 않습니다. 에이전트 관측은 진행 단계에서 확인하세요.');
+      $('#h-keys').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+  }),
+  rotate: () => openConfirm({
+    title: '키 교체', action: '키 교체',
+    target: [['연결', S[cur].title], ['지금 키', '2026-10-02 발급 · 유효']],
+    impacts: ['새 키를 한 번만 보여 줍니다.', '새 키를 적용하고 정상 수신을 확인한 뒤 기존 키를 직접 폐기합니다.', '교체 중에는 키가 2개이고 자동 종료 기한은 없습니다.'],
+    onOk: () => openSecretOnce(),
+  }),
+  edit: () => openConfirm({
+    title: '설정 수정', action: '설정 수정',
+    target: [['연결', S[cur].title], ['설정', '버전 3 → 4 · 형식 일반 텍스트 → 여러 줄']],
+    impacts: ['새 설정을 다시 복사해 에이전트에 적용해야 합니다.', '적용하는 동안 수집이 잠시 멈춥니다.', '다른 서버나 다른 로그는 새 연결로 등록합니다.'],
+    onOk: () => toast('hold', '보류', '감사 기록을 저장할 수 없어 설정 변경을 적용하지 않았습니다.', '기존 설정이 그대로 쓰입니다. 감사 기록이 복구된 뒤 다시 실행하세요. <a href="#">감사 이력 보기</a>'),
+  }),
+  archive: () => openConfirm({
+    title: '보관', action: '보관', danger: true,
+    target: [['연결', S[cur].title], ['남은 대기', '0.3MB ' + stale('10:14:52')]],
+    impacts: ['!중앙이 이 연결의 새 수신을 막습니다.', '과거 로그는 보관 기간(6개월)까지 검색됩니다.', '에이전트의 대기 로그는 지우지 않습니다.', '서버에서 읽기를 멈추는 일은 서버 운영자가 따로 합니다.'],
+    onOk: () => toast('', '성공', '보관을 중앙에서 확정했습니다.', '에이전트 관측은 다음 보고에서 확인합니다.'),
+  }),
+  purge: () => {
+    const ok = () => toast('', '성공', '구간 로그 삭제를 확정했습니다.', '실제 공간 회수까지 시간이 걸립니다. 같은 구간이 다시 전송돼도 저장하지 않습니다.');
+    ok.validate = () => {
+      const a = $('#ps'), b = $('#pe'), err = $('#pe-err');
+      const bad = b.value <= a.value;
+      b.setAttribute('aria-invalid', String(bad)); err.hidden = !bad;
+      if (bad) b.focus();
+      return !bad;
+    };
+    openConfirm({
+      title: '구간 로그 삭제', action: '구간 로그 삭제', danger: true,
+      target: [['연결', S[cur].title]],
+      extra: `<div class="field"><span class="field-label">구간 <span class="tertiary" style="font-weight:400">· UTC+09:00 · 시간 기준은 설계에서 정함</span></span>
+        <div class="range-row"><label class="field"><span class="field-hint">시작(포함)</span><input class="input num" id="ps" value="2026-11-05 10:00:00"></label><span class="sep">~</span>
+        <label class="field"><span class="field-hint">끝(제외)</span><input class="input num" id="pe" value="2026-11-05 09:00:00" aria-describedby="pe-err"></label></div>
+        <span class="field-error" id="pe-err" hidden>끝 시각은 시작 시각보다 뒤여야 합니다.</span></div>`,
+      impacts: ['!되돌릴 수 없습니다.', '에이전트 대기와 원본 파일은 지우지 않습니다.', '실제 공간 회수까지 시간이 걸립니다.', '같은 구간이 다시 전송돼도 저장하지 않습니다.'],
+      onOk: ok,
+    });
+  },
+};
+
+document.addEventListener('click', (e) => {
+  const c = e.target.closest('[data-copy]');
+  if (c) { const t = c.innerHTML; c.textContent = '복사함'; setTimeout(() => { c.innerHTML = t; }, 1500); return; }
+  const b = e.target.closest('[data-act]');
+  if (b && ACTS[b.dataset.act]) ACTS[b.dataset.act]();
+});
+$('#dl').onclick = () => toast('note', '안내', '설정 틀을 내려받았습니다.', '키 원문은 들어 있지 않습니다.');
+document.querySelectorAll('#demo button').forEach((b) => b.onclick = () => { cur = b.dataset.s; keyFlow = null; rotating = false; render(); });
+
+const themeBtn = document.getElementById('theme');
+function setTheme(t) { document.documentElement.dataset.theme = t; themeBtn.textContent = t === 'dark' ? '밝은 테마 보기' : '어두운 테마 보기'; }
+themeBtn.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+const q = new URLSearchParams(location.search);
+if (q.get('theme') === 'dark') setTheme('dark');
+if (S[q.get('state')]) cur = q.get('state');
+render();
+if (location.hash === '#purge') ACTS.purge();
+if (location.hash === '#revoke' || location.hash === '#busy') ACTS.revoke();
+if (location.hash === '#newkey') openSecretOnce();
+</script>
+</body>
+</html>

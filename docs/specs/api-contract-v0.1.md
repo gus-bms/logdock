@@ -864,7 +864,8 @@ CREATE TABLE notices (
     acknowledged_at timestamptz,
     item_count      integer,
     CONSTRAINT notices_kind CHECK (kind IN ('mail_connection_error', 'alert_eval_stopped', 'mail_final_failures',
-        'audit_unavailable', 'audit_gap', 'disk_warning', 'early_deletion', 'storage_unmeasurable'))
+        'audit_unavailable', 'audit_gap', 'disk_warning', 'early_deletion', 'storage_unmeasurable',
+        'ops_recipients_missing'))
 );
 -- 종류마다 떠 있는 배너는 하나. 지나간 일이 또 생기면 같은 행의 건수를 늘린다
 CREATE UNIQUE INDEX notices_open_uq ON notices (kind) WHERE cleared_at IS NULL AND acknowledged_at IS NULL;
@@ -1098,8 +1099,9 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
 | `disk_warning` | 로그 저장량이 경고 기준을 넘음(Q13-01) | 계속. 기준 아래로 내려감 | UI-13 |
 | `early_deletion` | 조기 삭제가 일어남(Q13-01) | 지나간 일. 사람이 확인함 | UI-13 |
 | `storage_unmeasurable` | 저장 공간 측정 실패가 `N`분 이어짐 | 계속. 측정이 다시 됨 | UI-13 |
+| `ops_recipients_missing` | 운영 수신 주소가 하나도 없음 | 계속. 주소가 하나 이상 생김 | UI-14 |
 
-`storage_unmeasurable`은 WQ-76에서 더한 종류라 화면 흐름 명세의 CM-01 배너 목록에는 아직 없다(4.6절).
+`storage_unmeasurable`(WQ-76)과 `ops_recipients_missing`(WQ-83, 2026-11-05 사용자 A안)은 정리표 검토에서 더한 종류이며 화면 흐름 명세 CM-01 배너 목록에도 2026-11-05 더했다.
 
 ### 4.5 오류 형식과 사유 코드
 
@@ -1148,7 +1150,8 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
 | WQ-33 | 꺼진 규칙도 상한에 센다 |
 | WQ-41 | 저장 전 주소도 테스트 메일을 보낼 수 있다 |
 | WQ-42·82 | 사람이 `받았음`을 누르면 `확인됨`이 된다 |
-| WQ-76 | 측정 실패가 `N`분 이어지면 전역 배너에 올린다. CM-01 배너 종류에 더하는 것은 화면 쪽과 함께 명세에 반영한다 |
+| WQ-76 | 측정 실패가 `N`분 이어지면 전역 배너에 올린다. 명세 CM-01 배너 목록에도 더했다(2026-11-05) |
+| WQ-83 | 화면 항목이지만 배너 종류가 늘어 여기 적는다. 운영 수신 주소가 하나도 없으면 `ops_recipients_missing`을 올린다(2026-11-05 사용자 A안) |
 | WQ-77 | 메일 연결 상태는 마지막 발송 시도 결과로 판정한다 |
 | WQ-79 | 비밀이 아닌 메일 서버 정보만 읽기 전용으로 돌려준다 |
 
@@ -1540,7 +1543,7 @@ stateDiagram-v2
 | 23 | 알림 규칙 목록·상세 항목과 입력 규칙(필터 없는 규칙 확인, 같은 이름 경고) | 4.3 | UI-06~08, TD-01, TD-05, Q12-01·03·12 |
 | 24 | 로그인 실패·시도 제한 코드와 내부 경로 복귀 | 4.3, 4.5 | Q10-03, TD-16, UI-01 |
 | 25 | 화면용 읽기 전용 설정, 메일 마지막 성공 전송 | 4.3 | SD-07, UI-13, UI-14, UI-16 |
-| 26 | 전역 배너 종류와 켜지고 내려가는 조건 | 4.4 | CM-01, WQ-76 |
+| 26 | 전역 배너 종류와 켜지고 내려가는 조건 | 4.4 | CM-01, WQ-76, WQ-83 |
 | 27 | 오류 본문의 요청 참조 | 4.5 | CM-04 |
 | 28 | 보관·재활성의 진행 단계 | 5.1 | CM-07 |
 | 29 | 알림의 관측 판단, 평가 주기, 재시작과 시계 조정 | 5.4 | Q12 5절, Q12-02, TD-12, F-07·08·22 |
