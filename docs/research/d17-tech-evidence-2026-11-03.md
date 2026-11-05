@@ -121,9 +121,10 @@ D17-06(서버 디스크와 object storage 중 어디에 저장할지)의 근거�
 | R47 | [DELETE](https://clickhouse.com/docs/sql-reference/statements/delete) | 경량 DELETE는 MergeTree 계열에서 쓴다. projection이 있는 테이블에서는 기본으로 동작하지 않고 MergeTree 설정 `lightweight_mutation_projection_mode`로 바꾼다. 많은 양을 경량 삭제하면 SELECT 성능이 떨어질 수 있다 | 구간 삭제(Q13-03)는 경량 삭제다. 주변 로그용 projection을 붙이면 이 설정을 함께 정해야 한다 |
 | R48 | [golang/go LICENSE](https://github.com/golang/go/blob/master/LICENSE), [ClickHouse LICENSE](https://github.com/ClickHouse/ClickHouse/blob/master/LICENSE)(GitHub 라이선스 API) | Go는 BSD-3-Clause, ClickHouse는 Apache-2.0이다 | 세 구성 요소 모두 허용형 라이선스다. 함께 배포하면 각 저작권·라이선스 고지를 넣는다 |
 | R49 | [PostgreSQL macOS 설치](https://www.postgresql.org/download/macosx/), [Homebrew postgresql@18](https://formulae.brew.sh/formula/postgresql@18) | 공식 다운로드 페이지는 Homebrew의 메이저별 `postgresql@NN` 설치를 안내한다. 2026-11-05 `postgresql@18`은 18.6이다 | 개발용 로컬 PostgreSQL을 메이저 18로 맞춰 설치할 수 있다 |
+| R50 | PostgreSQL 18 [Locale Support](https://www.postgresql.org/docs/18/locale.html), [createdb](https://www.postgresql.org/docs/18/app-createdb.html) | builtin 공급자는 `C`·`C.UTF-8`·`PG_UNICODE_FAST`만 지원한다. `C.UTF-8`은 UTF-8 DB에서만 쓰며 정렬은 코드 포인트 값만 쓰고, 정규식 문자 분류는 POSIX 호환, 대소문자 변환은 simple 방식이다. libc 공급자는 같은 로캘 이름이라도 플랫폼마다 동작이 다를 수 있다. `createdb`는 `--locale-provider`와 `--builtin-locale`로 고른다 | 개발 PC(macOS)와 중앙 서버(Linux)에서 `lower()` 유일성과 정렬이 같도록 관리 DB를 builtin `C.UTF-8`로 만든다 |
 
 이 절에서 확인하지 못한 것:
 
 - 에이전트를 올릴 서버의 kernel·아키텍처와 중앙 서버 배포판에서 고른 버전을 설치할 수 있는지.
-- DDL 초안의 실제 적용. 사용자가 개발용 PostgreSQL 18을 설치한 뒤 확인한다.
+- DDL 초안의 제약이 실제로 막는지. 테이블과 도메인 생성은 2026-11-05 사용자가 개발용 PostgreSQL 18.6에 적용해 확인했다.
 - PostgreSQL 19의 정식 출시일과 18과의 비호환 변경.
