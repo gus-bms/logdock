@@ -1,0 +1,15 @@
+# 중앙이 만들어 내려주는 연결 설정 예시. 값은 합성 값이다.
+# 키는 같은 폴더의 c_example1.key에 따로 두고 실행 계정만 읽게 한다(chmod 600).
+connection_id = "c_example1"
+config_version = 1
+ingest_url = "https://logdock.example.com:8443/ingest/v1"
+# ca_file = "/etc/logdock-agent/ca.pem"   # 사설 CA로 발급한 인증서일 때
+
+[target]
+type = "file"
+path = "/var/log/example-app/app.log"
+
+[format]
+type = "multiline"
+event_start = '^\d{4}-\d{2}-\d{2} '
+max_event_bytes = 1048576

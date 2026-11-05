@@ -79,6 +79,7 @@ npm run dev:web
 | `npm run dev:web` | React·Vite 개발 서버 |
 | `npm run build` | API·웹 빌드 |
 | `npm run typecheck` | TypeScript 검사 |
+| `go -C agent test -race ./...` | 측정용 에이전트 시제품(Go 1.27) 시험 |
 
 빌드·타입 검사 후 상태 확인 API의 HTTP 응답과 웹의 연결 상태를 확인할 수 있습니다.
 
@@ -88,6 +89,7 @@ npm run dev:web
 apps/
   api/                 NestJS API
   web/                 React·TypeScript·Vite 화면
+agent/                 측정용 Go 에이전트 시제품
 docs/
   README.md            문서 안내
   agent/               에이전트 작업 문서(시작점, todo·progress·hold·done, refs)

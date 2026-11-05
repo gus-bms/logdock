@@ -1,0 +1,8 @@
+# LogDock 에이전트 전체 설정 예시. 값은 합성 값이며 설치하는 서버에 맞게 바꾼다.
+connections_dir = "/etc/logdock-agent/connections"
+state_dir = "/var/lib/logdock-agent"
+
+# 아래는 정하지 않으면 시제품 기본값을 쓴다. 제품 수치는 측정(M7) 뒤 정한다.
+# queue_limit_bytes = 268435456
+# poll_interval_ms = 250
+# status_interval_ms = 30000

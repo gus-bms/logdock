@@ -137,6 +137,7 @@
 - 세대는 한 연결에서 순번을 새로 시작한 횟수다. 처음은 1이다.
 - 복구 근거가 없어 보류한 파일에 서버 운영자가 `지금부터 다시 수집`을 적용하거나(Q06), 에이전트의 상태 기록을 잃어 다시 설치하면 새 세대로 순번 1부터 시작한다. 새 세대의 첫 기록은 `boundary`이고 건너뛴 구간을 알 수 있는 만큼 담는다.
 - 옛 세대에 남은 유효 대기는 옛 세대 번호로 계속 보낸다. 수신 서버는 연결·세대마다 다음 순번을 따로 관리한다.
+- **세대 번호는 수신 서버가 정한다.** 에이전트는 새 대기를 시작할 때(최초 설치, 상태를 잃은 재설치, Q06 다시 수집) `POST /ingest/v1/generations`로 번호를 받는다. 연결 키로 인증하고 본문은 `protocol`·`connection_id`·`agent`다. 수신 서버는 그 연결에서 쓴 가장 큰 세대보다 1 큰 번호를 `ingest_progress`에 다음 순번 1로 만들고 `{"generation": n}`을 돌려준다. 상태를 잃은 에이전트는 마지막 세대를 모르므로, 번호를 스스로 정하면 옛 순번과 겹쳐 수신 서버가 중복으로 버리기 때문이다. 응답을 잃어 다시 요청하면 번호가 하나 건너뛸 수 있지만 문제없다. 에이전트는 받은 번호를 대기 상태에 확정한 뒤에만 보내고, 번호를 받기 전에도 읽기와 대기는 계속한다. 오류 응답은 2.4절 표를 따른다(다른 인스턴스가 쓰는 중이면 `409 instance_conflict`). 2026-11-05 에이전트 시제품 3단계에서 찾은 빈 곳을 4단계에서 메웠다.
 
 ### 2.7 상태 보고 `POST /ingest/v1/status`
 
@@ -152,7 +153,7 @@
   "queue": {"records": 120, "bytes": 4194304, "oldest_observed_at": "2026-11-05T01:18:40.000000Z", "limit_bytes": N},
   "send": {"state": "retrying", "reason": "storage_unavailable", "acked_through": 980, "last_ack_at": "2026-11-05T01:18:39.500000Z"},
   "rejected": {"event_too_large": 2, "since": "2026-11-05T00:41:02.000000Z", "limit_bytes": N},
-  "loss": [{"kind": "gone_before_read", "file_id": "f_2b88", "from": "2026-11-05T00:50:00Z", "to": "2026-11-05T00:52:00Z"}],
+  "loss": [{"kind": "gone_before_read", "file_id": "f_2b88", "offset": 1048576, "skipped_bytes": 20480, "observed_at": "2026-11-05T00:52:00Z"}],
   "resources": {"cpu_ratio": 0.02, "rss_bytes": 41943040, "disk_bytes": 4718592, "open_files": 12},
   "diag_write_error": false
 }
@@ -166,7 +167,7 @@
 | `queue` | 대기 기록 수·바이트, 가장 오래된 관측 시각, 한도 | UI-12 대기량. 보고가 없으면 미확인 |
 | `send` | 전송 상태와 사유, 에이전트가 아는 마지막 `acked_through`와 응답 시각 | UI-12 |
 | `rejected` | 크기 초과 건수, 집계 시작 시각, 적용 상한 | UI-12, D03 |
-| `loss` | 누락 의심 구간과 사유. 사유는 2.3절 경계 종류 가운데 누락이 생길 수 있는 `truncated`·`identity_reused`·`gone_before_read`·`new_file_tail`·`resume_after_hold`를 쓴다 | UI-04, UI-12 |
+| `loss` | 누락 의심 구간과 사유. 사유는 2.3절 경계 종류 가운데 누락이 생길 수 있는 `truncated`·`identity_reused`·`gone_before_read`·`new_file_tail`·`resume_after_hold`를 쓴다. 구간은 파일 위치(`offset`)와 잃은 바이트 수(`skipped_bytes`, 모르면 `skipped_unknown: true`), 에이전트가 알아챈 시각(`observed_at`)으로 보낸다. 읽지 못한 내용의 발생 시각은 에이전트가 알 수 없기 때문이다(2026-11-05 에이전트 시제품 5단계에서 정함) | UI-04, UI-12 |
 | `resources` | CPU·메모리·디스크·열린 파일 | UI-12 진단 |
 | `diag_write_error` | 진단 저장 실패 여부 | Q14, OB-04 |
 
@@ -238,6 +239,8 @@ max_event_bytes = N              # 정하지 않음(D03)
 - HTTP/1.1 keep-alive와 HTTP/2 중 무엇을 쓸지, 에이전트당 동시 연결 수.
 - 잘못된 UTF-8의 중앙 표시·검색, journald 커서와 대상 필드의 정확한 목록, journald의 Q06 다시 수집 절차(수집 명세 journald 입력).
 - 지원할 이전 규약 버전의 범위와 대기 형식 버전의 호환 규칙(Q16-08).
+- 상태 보고 사유에 원본을 읽다 난 그 밖의 입출력 오류(`read_error`, `read.state`)와 대기를 읽을 수 없는 손상(`queue_corrupt`, `send.state`)을 더할지. 에이전트 시제품은 이 값으로 각각 `held`를 보고한다.
+- 응답 전에 여러 묶음을 보내는 전송 창(2.5절)의 크기. 에이전트 시제품은 측정 전까지 연결마다 한 묶음씩 보낸다.
 - 검증 시나리오와의 문서 대조는 7절, 누락 조사는 9절에 있다. 실행 검증은 하지 않았다.
 
 ## 3 저장 구조
