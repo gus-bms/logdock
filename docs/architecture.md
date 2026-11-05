@@ -136,4 +136,4 @@ Q13 모든 서비스 공통 기본 보관 6개월은 각 로그 최초 중앙 �
 
 ## 검증 수준
 
-현재 코드 범위는 정적으로 확인했다. 문서 정합성과 이전 PDF 가독성 확인은 실제 수집·검색·권한·부하·HA·복구 시험과 다르다. [AT-01~AT-18](specs/collection-agent-v0.1.md), [IT-01~IT-25](specs/investigation-workflows-v0.1.md), [OT-01~OT-10](specs/platform-operations-v0.1.md)은 미실행 후속 검증 시나리오다. 이번 통합에서 후보 capability를 새로 조사하거나 설치·실험하지 않았다. 앱 빌드/타입 검사도 로그 연동 검증을 대신하지 않는다.
+현재 코드 범위는 정적으로 확인했다. 문서 정합성과 이전 PDF 가독성 확인은 실제 수집·검색·권한·부하·HA·복구 시험과 다르다. [AT-01~AT-18](specs/collection-agent-v0.1.md), [IT-01~IT-26](specs/investigation-workflows-v0.1.md), [OT-01~OT-10](specs/platform-operations-v0.1.md)은 미실행 후속 검증 시나리오다. 이번 통합에서 후보 capability를 새로 조사하거나 설치·실험하지 않았다. 앱 빌드/타입 검사도 로그 연동 검증을 대신하지 않는다.
