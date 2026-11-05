@@ -26,7 +26,7 @@
 | [Q12 기획안과 합의 결과](planning/q12-plan-v0.1.md) | 사용자 합의 11개·설계값 5개·설계 확정 21개·상태 전이·메일 전달·조사 링크·실패 시나리오·미실행 검증 |
 | [Q12 공식 근거 조사](research/q12-evidence-2026-11-02.md) | 2026-11-02 확인한 공식 자료 20건과 적용 범위·해석·미확인 증거. 정책 채택/실제 동작 검증과 구분 |
 | [D17 기술 선정안과 사용자 결정표](planning/d17-tech-selection-v0.1.md) | 수집기·저장소 비교, 연결별 순번 전달 설계, 사용자 결정 6개 모두 합의(Go 에이전트·ClickHouse·Go 수신 서버·PostgreSQL·실제 중앙 서버 측정·중앙 서버 디스크 저장), 측정 계획과 남는 위험 |
-| [D17 공식 근거 조사](research/d17-tech-evidence-2026-11-03.md) | 2026-11-03 확인한 공식 자료 37건(로그 저장 위치·PostgreSQL 트랜잭션 DDL·Docker json-file·journald 설정 포함)과 후보 버전·라이선스·미확인 항목. 채택/실제 동작 검증과 구분 |
+| [D17 공식 근거 조사](research/d17-tech-evidence-2026-11-03.md) | 2026-11-03 확인한 공식 자료 37건(로그 저장 위치·PostgreSQL 트랜잭션 DDL·Docker json-file·journald 설정 포함)과 후보 버전·라이선스·미확인 항목. 2026-11-05 버전 고정(Go 1.27·ClickHouse 26.8 LTS·PostgreSQL 18)과 근거 12건(R38~R49). 채택/실제 동작 검증과 구분 |
 | [제품 기능 명세 v0.1](specs/product-features-v0.1.md) | 제품 정의·사용 흐름·F01~F10 채택 후보 |
 | [수집·에이전트 명세 v0.1](specs/collection-agent-v0.1.md) | 자원 보호·전달·장애·보안·18개 검증 시나리오 |
 | [검색·조사 상세 v0.1](specs/investigation-workflows-v0.1.md) | 검색·문맥·실시간·저장/공유/export·화면/조회 계약·IT-01~IT-26 |

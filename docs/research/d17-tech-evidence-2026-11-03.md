@@ -1,6 +1,6 @@
 # D17 기술 후보 공식 자료 조사
 
-확인일: 2026-11-03. 대상은 수집기, 저장·검색 엔진, 로그 저장 위치, 관리 DB, 실행 수단이다. [기술 선정안](../planning/d17-tech-selection-v0.1.md)의 근거이며 채택 결정이나 실제 동작 검증이 아니다.
+확인일: 2026-11-03(8절 버전 고정은 2026-11-05). 대상은 수집기, 저장·검색 엔진, 로그 저장 위치, 관리 DB, 실행 수단이다. [기술 선정안](../planning/d17-tech-selection-v0.1.md)의 근거이며 채택 결정이나 실제 동작 검증이 아니다.
 
 ## 1 확인 방법과 경계
 
@@ -8,7 +8,7 @@
 
 ## 2 후보 버전과 라이선스
 
-2026-11-03 GitHub API의 저장소 라이선스 식별자와 최신 릴리스다. 값은 채택 시점에 다시 확인한다.
+2026-11-03 GitHub API의 저장소 라이선스 식별자와 최신 릴리스다. 값은 채택 시점에 다시 확인한다. 채택한 구성 요소의 고정 버전은 [8절](#8-버전-고정)에 있다.
 
 | 후보 | 최신 릴리스 | 라이선스 식별자 |
 | --- | --- | --- |
@@ -91,3 +91,39 @@ D17-06(서버 디스크와 object storage 중 어디에 저장할지)의 근거�
 - 부분 일치 속도, 압축률, 메모리, 에이전트 자원은 어느 후보도 측정하지 않았다.
 - object storage를 쓸 때의 실제 쓰기·검색 지연과 요청 비용, 저장 정책을 바꿔 계층을 더하는 절차는 시험하지 않았다.
 - 서버의 로컬 메타데이터를 잃었을 때 object storage의 데이터만으로 복구되는지 직접 설명한 공식 자료는 찾지 못했다. R32의 메타데이터 위치에서 추론했다.
+
+## 8 버전 고정
+
+2026-11-05 확인했다. D17에서 고른 Go·ClickHouse·PostgreSQL의 지원 정책과 현재 버전을 공식 페이지 본문, go.dev의 다운로드 목록 JSON, GitHub API로 읽었다. 기획 종료 기준의 "공식 자료 확인일·버전·license·지원 capability"를 채우기 위한 것이며 아무것도 설치하거나 실행하지 않았다.
+
+| 구성 요소 | 고정 | 2026-11-05 최신 패치 | 지원 기간 | 라이선스 | 고른 이유 |
+| --- | --- | --- | --- | --- | --- |
+| Go(에이전트·수신 서버) | 1.27 계열 | 1.27.3(2026-10-19) | Go 1.29가 나올 때까지(R38) | BSD-3-Clause(R48) | 지원 중인 두 계열(1.27·1.26) 가운데 지원이 더 오래 남았다 |
+| ClickHouse | 26.8 LTS 계열 | v26.8.34.13-lts(2026-10-22) | 첫 출시일 2026-08-27부터 1년(R43·R44) | Apache-2.0(R48) | 월간 stable은 최근 3개만 지원해 석 달 안팎마다 올려야 한다. LTS는 1년 지원이라 자주 올리기 어려운 자체 운영에 맞고, 필요한 기능(R45~R47)이 이 계열에 모두 있다 |
+| PostgreSQL(개발용 로컬과 중앙 모두) | 18 | 18.6 | 2030-11-14까지(R40) | PostgreSQL License(R41) | 정식 출시된 가장 새 메이저다. 19는 2026-10-15 RC 1이고 정식 출시 전이다. DDL 초안이 쓰는 기능을 18 문서로 확인했다(R42) |
+
+- **고정 단위:** 메이저와 LTS 계열만 고정하고 패치는 보안·버그 수정을 따라 올린다. 설치·측정·배포 기록에는 정확한 패치 번호를 남긴다.
+- **계열 변경:** Go 1.28 이상, ClickHouse 다음 LTS, PostgreSQL 19로 옮길 때는 지원이 끝나기 전에 이 절을 다시 정하고, 결과가 달라질 수 있는 측정([D17 기획안 8절](../planning/d17-tech-selection-v0.1.md#8-측정-계획))을 다시 한다.
+- **로컬과 중앙:** 개발용 로컬 PostgreSQL과 중앙 서버 PostgreSQL은 둘 다 18이다. 메이저가 다르면 DDL과 동작 차이를 개발 중에 놓칠 수 있다.
+- **범위 밖:** 조회 API·웹(NestJS·React)의 의존성과 Go·DB 드라이버 같은 라이브러리는 여기서 고정하지 않는다. 구현을 시작할 때 같은 방식으로 확인한다.
+
+| 근거 ID | 공식 자료 | 확인한 사실 | LogDock에 주는 영향 |
+| --- | --- | --- | --- |
+| R38 | [Go release history](https://go.dev/doc/devel/release), [다운로드 목록 JSON](https://go.dev/dl/?mode=json) | 각 메이저는 더 새 메이저 두 개가 나올 때까지 지원한다. 2026-11-05 지원 계열은 1.27(1.27.3, 2026-10-19)과 1.26(1.26.10)이다. 1.27.0은 2026-08-19에 나왔다 | 1.27 계열을 고른다 |
+| R39 | [Go 1.27 release notes](https://go.dev/doc/go1.27), [Minimum requirements](https://go.dev/wiki/MinimumRequirements) | Go 1.27은 macOS 13 이상이 필요하다. Go 1.24부터 Linux는 kernel 3.2 이상이다 | 개발 PC는 macOS 13 이상이어야 한다. 에이전트를 올릴 서버의 kernel 하한은 3.2다. 실제 대상 서버의 kernel은 확인하지 않았다 |
+| R40 | [PostgreSQL Versioning Policy](https://www.postgresql.org/support/versioning/) | 메이저는 첫 출시 뒤 5년 지원하고 minor는 적어도 석 달마다 낸다. 지원 표에서 18의 현재 minor는 18.6, 지원 종료는 2030-11-14다. 같은 페이지 머리 공지는 2026-10-15 PostgreSQL 19 RC 1 출시다 | 18을 고른다. 19로 옮기려면 메이저 업그레이드 절차가 필요하다 |
+| R41 | [PostgreSQL Licence](https://www.postgresql.org/about/licence/) | PostgreSQL License는 BSD·MIT와 비슷한 허용형 오픈소스 라이선스라고 설명한다. GitHub API는 식별자를 주지 않는다(NOASSERTION) | 2절에서 확인하지 않은 라이선스를 채운다 |
+| R42 | PostgreSQL 18 [문자열 함수](https://www.postgresql.org/docs/18/functions-string.html), [생성 열](https://www.postgresql.org/docs/18/ddl-generated-columns.html), [CREATE TABLE](https://www.postgresql.org/docs/18/sql-createtable.html), [부분 색인](https://www.postgresql.org/docs/18/indexes-partial.html), [NOTIFY](https://www.postgresql.org/docs/18/sql-notify.html) | `IS [NOT] [form] NORMALIZED`는 서버 인코딩이 UTF8일 때만 쓸 수 있다. 18에서 생성 열의 기본은 virtual이고 `STORED`를 적으면 저장 생성 열이다. `GENERATED { ALWAYS \| BY DEFAULT } AS IDENTITY`, 조건을 만족하는 행 사이에서만 유일성을 강제하는 부분 유일 색인, `NOTIFY`의 알림 전달이 18 문서에 있다 | API 계약 초안 DDL(3.4절)이 쓰는 기능이 18에 있다. `name_text` 도메인은 UTF8 DB가 전제다. `connections.target_identity`는 `STORED`를 적었으므로 기본값이 바뀌어도 저장 생성 열이다 |
+| R43 | [Which ClickHouse version to use in production?](https://clickhouse.com/docs/faq/operations/production) | 기본 추천은 대략 매달 나오는 stable이고, 최근 stable 3개만 진단과 버그 수정 백포트를 받는다. LTS는 1년에 두 번 나오고 첫 출시 뒤 1년 지원한다. 자주 올릴 수 없는 정책이 있거나 계속 올릴 자원이 부족하면 LTS를 고려하라고 하며, 처음에 LTS를 고른 팀도 필요한 새 기능 때문에 stable로 옮기는 경우가 많다고 덧붙인다 | LTS를 고른다. 새 기능이 필요해지면 다음 LTS를 기다리거나 이 절을 다시 정한다 |
+| R44 | [ClickHouse SECURITY.md](https://github.com/ClickHouse/ClickHouse/blob/master/SECURITY.md), [Changelog](https://clickhouse.com/docs/whats-new/changelog), GitHub 릴리스 API | 2026-11-05 보안 수정을 받는 버전은 26.10·26.9·26.8·26.3이다. 26.8 LTS는 2026-08-27, 26.3 LTS는 2026-03-26에 나왔다. 26.8 LTS의 최신 패치는 v26.8.34.13-lts(2026-10-22)다 | 26.8이 지원이 가장 오래 남은 LTS다 |
+| R45 | [JSON data type](https://clickhouse.com/docs/sql-reference/data-types/newjson) | 오픈소스 JSON 타입은 25.3에서 운영용(production ready)으로 표시됐고 그 전 버전에서는 운영에 권하지 않는다 | API 계약 초안 `logs.fields`의 `JSON` 후보를 26.8에서 쓸 수 있다. 타입별 `Map` 열과의 비교는 측정으로 정한다 |
+| R46 | [Text indexes](https://clickhouse.com/docs/engines/table-engines/mergetree-family/textindexes) | text 색인은 26.2부터 정식 기능(GA)이고 별도 설정 없이 쓴다. 토크나이저로 `ngrams(N)` 등을 고를 수 있다. 문구 검색 옵션(`support_phrase_search`)은 실험 기능이다 | M2의 본문 색인 후보에 n-gram 토크나이저 text 색인을 넣을 수 있다. 실험 옵션은 쓰지 않는다 |
+| R47 | [DELETE](https://clickhouse.com/docs/sql-reference/statements/delete) | 경량 DELETE는 MergeTree 계열에서 쓴다. projection이 있는 테이블에서는 기본으로 동작하지 않고 MergeTree 설정 `lightweight_mutation_projection_mode`로 바꾼다. 많은 양을 경량 삭제하면 SELECT 성능이 떨어질 수 있다 | 구간 삭제(Q13-03)는 경량 삭제다. 주변 로그용 projection을 붙이면 이 설정을 함께 정해야 한다 |
+| R48 | [golang/go LICENSE](https://github.com/golang/go/blob/master/LICENSE), [ClickHouse LICENSE](https://github.com/ClickHouse/ClickHouse/blob/master/LICENSE)(GitHub 라이선스 API) | Go는 BSD-3-Clause, ClickHouse는 Apache-2.0이다 | 세 구성 요소 모두 허용형 라이선스다. 함께 배포하면 각 저작권·라이선스 고지를 넣는다 |
+| R49 | [PostgreSQL macOS 설치](https://www.postgresql.org/download/macosx/), [Homebrew postgresql@18](https://formulae.brew.sh/formula/postgresql@18) | 공식 다운로드 페이지는 Homebrew의 메이저별 `postgresql@NN` 설치를 안내한다. 2026-11-05 `postgresql@18`은 18.6이다 | 개발용 로컬 PostgreSQL을 메이저 18로 맞춰 설치할 수 있다 |
+
+이 절에서 확인하지 못한 것:
+
+- 에이전트를 올릴 서버의 kernel·아키텍처와 중앙 서버 배포판에서 고른 버전을 설치할 수 있는지.
+- DDL 초안의 실제 적용. 사용자가 개발용 PostgreSQL 18을 설치한 뒤 확인한다.
+- PostgreSQL 19의 정식 출시일과 18과의 비호환 변경.
