@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI-03 이벤트 상세</title>
+<link rel="stylesheet" href="wireframe.css">
+<style>
+/* UI-03 전용: 목록 행의 키보드 초점 표시. wireframe.css에 행 초점 모양이 없어 이 파일에만 두고 검토 단계에 올린다 */
+.ui03-row-focus { outline: 3px solid var(--wf-ink); outline-offset: -3px; }
+</style>
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>UI-03 이벤트 상세</h1>
+  <p>로그 한 건의 출처·시각·레벨·본문·필드·stack trace와 품질 표시를 보고 복사한다. 로그 탐색(UI-02)이나 주변 로그(UI-04)에서 행을 누르면 그 화면 위에 패널로 열려 목록 위치를 잃지 않는다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">조사 명세 2·4·8절</span> <span class="wf-ref">Q09-04</span> <span class="wf-ref">SD-18</span> <span class="wf-ref">SD-25</span> <span class="wf-ref">SD-34</span> <span class="wf-ref">SD-36</span> · 기준: 화면 흐름 명세 5절 UI-03, 4절 CM-01·CM-04·CM-06</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">기본(패널 열림)</a></li>
+      <li><a href="#s2">본문 표시: 긴 행 접기·줄바꿈·JSON 펼침·ANSI</a></li>
+      <li><a href="#s3">시각·품질 표시가 붙은 로그</a></li>
+      <li><a href="#s4">필드를 눌러 조건에 추가</a></li>
+      <li><a href="#s5">본문과 필드 복사</a></li>
+      <li><a href="#s6">닫고 목록으로 돌아감</a></li>
+      <li><a href="#s7">보존 만료나 삭제로 가져올 수 없음</a></li>
+      <li><a href="#s8">세션 만료</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 기본(패널 열림)</h2>
+  <p class="wf-state-desc">UI-02 상태 1의 목록에서 <span class="wf-mono">10:14:50.123</span> 행을 누른 모습이다. 패널이 목록 오른쪽을 덮는다.</p>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item is-current" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div style="display: grid; grid-template-columns: 1fr 620px; align-items: stretch">
+      <div class="wf-screen-body wf-stack">
+        <h3 class="wf-page-title" style="margin-bottom: 0">로그 탐색</h3>
+        <div class="wf-placeholder" style="min-height: 64px">검색 영역(UI-02 상태 1과 같음)</div>
+        <div class="wf-status">
+          <span class="wf-status-name">완료</span>
+          <span class="wf-status-detail">
+            <span>적용 범위 2026-11-05 09:15:03 ~ 10:15:03 (UTC+09:00) · 발생 시각 기준</span>
+            <span>10:15:03까지 수신된 로그 기준</span>
+          </span>
+        </div>
+        <div class="wf-placeholder" style="min-height: 64px">발생량·분포(UI-02 상태 1과 같음)</div>
+        <table class="wf-table">
+          <thead><tr><th>기준 시각(UTC+09:00)</th><th>서비스</th><th>서버</th><th>레벨</th><th>본문 요약</th></tr></thead>
+          <tbody>
+            <tr><td class="wf-mono">2026-11-05 10:15:01.204</td><td>결제</td><td>app-01</td><td>ERROR</td><td class="wf-mono">{"msg":"payment gateway timeout"…</td></tr>
+            <tr><td class="wf-mono">2026-11-05 10:14:58.911</td><td>주문</td><td>app-02</td><td>ERROR</td><td class="wf-mono">{"msg":"upstream timeout calling…</td></tr>
+            <tr><td><span class="wf-mono">2026-11-05 10:14:52.030</span> <span class="wf-badge">시각 대체</span></td><td>결제</td><td>app-02</td><td>WARN</td><td class="wf-mono">{"msg":"retrying after gateway…</td></tr>
+            <tr class="is-on"><td class="wf-mono">2026-11-05 10:14:50.123</td><td>결제</td><td>app-01</td><td>ERROR</td><td class="wf-mono">{"msg":"payment request timeout"…</td></tr>
+            <tr><td><span class="wf-mono">2026-11-05 10:14:47.410</span> <span class="wf-badge">시각 의심</span></td><td>주문</td><td>app-01</td><td>WARN</td><td class="wf-mono">{"msg":"inventory lookup timeout"…</td></tr>
+            <tr><td><span class="wf-mono">2026-11-05 10:14:45.000</span> <span class="wf-badge">시간대 추정</span></td><td>주문</td><td>app-01</td><td>ERROR</td><td class="wf-mono">{"msg":"cart sync timeout"…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <aside class="wf-panel wf-stack" aria-label="이벤트 상세">
+        <div class="wf-row">
+          <h3 class="wf-section-title" style="margin-bottom: 0">이벤트 상세</h3>
+          <span class="wf-btn wf-btn--small wf-end">닫기 ×</span>
+        </div>
+        <div class="wf-row">
+          <a class="wf-btn wf-btn--strong" href="UI-04-nearby-logs.html">주변 로그</a>
+          <span class="wf-btn">본문 복사</span>
+          <span class="wf-btn">필드 복사</span>
+        </div>
+
+        <div>
+          <p class="wf-section-title">출처</p>
+          <dl class="wf-kv">
+            <dt>서비스</dt><dd>결제</dd>
+            <dt>서버</dt><dd>app-01</dd>
+            <dt>환경</dt><dd>운영</dd>
+            <dt>수집 연결</dt><dd><a href="UI-12-connection-detail.html">결제 · app-01 · app.log</a></dd>
+          </dl>
+        </div>
+
+        <div>
+          <p class="wf-section-title">시각</p>
+          <dl class="wf-kv">
+            <dt>기준 시각</dt><dd><span class="wf-mono">2026-11-05 10:14:50.123</span> · 시각 출처: 본문 시각</dd>
+            <dt>발생 시각</dt><dd class="wf-mono">2026-11-05 10:14:50.123 (UTC+09:00)</dd>
+            <dt>관측 시각</dt><dd class="wf-mono">2026-11-05 10:14:50.410 (UTC+09:00)</dd>
+            <dt>수신 시각</dt><dd class="wf-mono">2026-11-05 10:14:51.002 (UTC+09:00)</dd>
+          </dl>
+        </div>
+
+        <div>
+          <p class="wf-section-title">레벨</p>
+          <dl class="wf-kv">
+            <dt>정규화 값</dt><dd>ERROR</dd>
+            <dt>원본 값</dt><dd class="wf-mono">50</dd>
+          </dl>
+        </div>
+
+        <div class="wf-stack wf-stack--tight">
+          <div class="wf-row">
+            <p class="wf-section-title" style="margin-bottom: 0">본문</p>
+            <span class="wf-end wf-row"><span class="wf-check">☑ 줄바꿈</span><span class="wf-btn wf-btn--small">JSON 펼치기</span></span>
+          </div>
+          <p class="wf-mono" style="border: 1px solid var(--wf-line-2); padding: 8px; overflow-wrap: anywhere">{"msg":"payment request timeout","level":50,"order":{"id":"ORD-1042"},"http":{"method":"POST","path":"/payments","status":504},"err":{"type":"GatewayTimeoutError","message":"upstream timed out after 30000ms","stack":"GatewayTimeoutError: upstream timed out after 30000ms\n    at GatewayClient.request (gateway-client.js:88:11)\n    at async PaymentService.charge (payment-service.js:142:5)\n    at async OrderController.pay (order-controller.js:57:9)"},"time":"2026-11-05T10:14:50.123+09:00"}</p>
+        </div>
+
+        <div>
+          <p class="wf-section-title">필드</p>
+          <table class="wf-table">
+            <thead><tr><th>이름(점 경로)</th><th>값</th><th style="width: 96px"></th></tr></thead>
+            <tbody>
+              <tr><td class="wf-mono">msg</td><td class="wf-mono">payment request timeout</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+              <tr><td class="wf-mono">level</td><td class="wf-mono">50</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+              <tr><td class="wf-mono">order.id</td><td class="wf-mono">ORD-1042</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+              <tr><td class="wf-mono">http.method</td><td class="wf-mono">POST</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+              <tr><td class="wf-mono">http.path</td><td class="wf-mono">/payments</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+              <tr><td class="wf-mono">http.status</td><td class="wf-mono">504</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+              <tr><td class="wf-mono">err.type</td><td class="wf-mono">GatewayTimeoutError</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+              <tr><td class="wf-mono">err.message</td><td class="wf-mono">upstream timed out after 30000ms</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+              <tr><td class="wf-mono">err.stack</td><td class="wf-mono">GatewayTimeoutError: upstream timed out… (아래 stack trace)</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+              <tr><td class="wf-mono">time</td><td class="wf-mono">2026-11-05T10:14:50.123+09:00</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="wf-stack wf-stack--tight">
+          <div class="wf-row">
+            <p class="wf-section-title" style="margin-bottom: 0">stack trace</p>
+            <span class="wf-small wf-muted">err.stack · 4줄</span>
+            <span class="wf-btn wf-btn--small wf-end">접기</span>
+          </div>
+          <pre class="wf-mono" style="margin: 0; padding: 8px; border: 1px solid var(--wf-line-2); white-space: pre-wrap">GatewayTimeoutError: upstream timed out after 30000ms
+    at GatewayClient.request (gateway-client.js:88:11)
+    at async PaymentService.charge (payment-service.js:142:5)
+    at async OrderController.pay (order-controller.js:57:9)</pre>
+        </div>
+      </aside>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>UI-02 위에 패널로 열려 목록 위치를 잃지 않고, 뒤 목록에서 고른 행을 강조한다(5절 UI-03). 패널을 오른쪽에 두고 목록 일부를 덮는 배치와 너비는 와이어프레임 표기다. UI-04에서 행을 눌러도 같은 패널이 UI-04 위에 열린다.</li>
+    <li>출처(서비스·서버·환경·수집 연결)는 수집 연결 등록 정보에서 온다. 본문 안의 service·host 값은 출처를 바꾸지 않는다(조사 명세 3절, <span class="wf-ref">SD-11</span>). 수집 연결을 누르면 UI-12로 간다.</li>
+    <li>시각 영역은 CM-06 상태 3이다. 발생·관측·수신 시각과 시각 출처를 함께 보여 준다(<span class="wf-ref">SD-34</span>). 이 로그는 품질 표시가 없고, 표시가 붙은 모양은 상태 3이다.</li>
+    <li>레벨은 원본 값과 정규화 값을 함께 보인다. 숫자 <span class="wf-mono">50</span>은 Pino 계열 숫자로 읽어 ERROR가 됐다(<span class="wf-ref">SD-09</span>, <span class="wf-ref">SD-10</span>).</li>
+    <li>본문은 중앙에 보관된 앱 출력 본문이며 글자로만 그린다. 실행 가능한 HTML로 해석하지 않고, 본문 속 링크를 누를 수 있게 만들지 않는다(조사 명세 1·2절, <span class="wf-ref">SD-36</span>). 그림의 본문은 합성 예시다.</li>
+    <li>필드는 점 경로 이름과 값을 글자로만 보여 준다(<span class="wf-ref">SD-19</span>, <span class="wf-ref">SD-36</span>). 필드를 눌러 조건에 더하는 동작은 상태 4, 복사는 상태 5다. 필드 행마다 <span class="wf-term">조건에 추가</span>를 둔 것은 와이어프레임 표기다.</li>
+    <li><span class="wf-term">주변 로그</span>는 UI-04를 연다. 요청 ID로 여러 서비스를 묶어 보는 전환은 첫 출시 밖이라 두지 않는다(3절, 조사 명세 4절). 요청 ID는 UI-02의 일반 검색으로 찾는다(<span class="wf-ref">SD-23</span>).</li>
+    <li>이벤트를 열 때와 더 불러올 때 서버가 현재 허용 범위를 다시 검사한다(조사 명세 4절). 패널은 키보드로 열고 닫을 수 있어야 하며 쓰는 키는 설계에서 정한다(조사 명세 8절).</li>
+    <li><span class="wf-review">WQ-18 설계로 넘김:</span> stack trace로 따로 보여 줄 값을 무엇으로 정할지(JSON의 특정 필드, 여러 줄 이벤트의 이어진 줄) 문서에 없다. 그림은 <span class="wf-mono">err.stack</span> 필드 값을 줄 단위로 보여 줬다. <strong>기본안:</strong> 내장 필드 이름 목록(예: <span class="wf-term">err.stack</span>, <span class="wf-term">stack</span>)에 맞는 필드 값과 여러 줄 이벤트의 이어진 줄을 보인다. 목록은 Q08-07 내장 패턴과 함께 정한다.</li>
+    <li><span class="wf-review">WQ-19 설계로 넘김:</span> UI-04에서 연 상세의 <span class="wf-term">주변 로그</span>가 그 행을 가운데에 두고 UI-04를 다시 여는지 문서에 없다. <strong>기본안:</strong> 그 행을 가운데에 두고 UI-04를 새로 연다. 원래 검색으로 돌아가는 길은 유지한다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 본문 표시: 긴 행 접기·줄바꿈·JSON 펼침·ANSI</h2>
+  <p class="wf-state-desc">패널의 본문 영역만 그렸다.</p>
+  <div class="wf-grid-2">
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">긴 본문을 접음</span>
+      <div class="wf-row"><p class="wf-section-title" style="margin-bottom: 0">본문</p><span class="wf-end wf-row"><span class="wf-check">☑ 줄바꿈</span><span class="wf-btn wf-btn--small">JSON 펼치기</span></span></div>
+      <p class="wf-mono" style="border: 1px solid var(--wf-line-2); padding: 8px; overflow-wrap: anywhere">{"msg":"settlement batch timeout","level":50,"http":{"status":500},"items":[{"id":"ITM-0001","amount":12000},{"id":"ITM-0002","amount":8000},{"id":"ITM-0003","amount":4500},{"id":"ITM-0004",…</p>
+      <div class="wf-row"><span class="wf-help wf-grow">화면에서 처음 <span class="wf-n">N</span>자만 보여 줍니다. 저장된 본문은 잘리지 않았고 검색은 본문 전체로 합니다.</span><span class="wf-btn wf-btn--small">전체 보기</span></div>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">줄바꿈을 끔</span>
+      <div class="wf-row"><p class="wf-section-title" style="margin-bottom: 0">본문</p><span class="wf-end wf-row"><span class="wf-check">☐ 줄바꿈</span><span class="wf-btn wf-btn--small">JSON 펼치기</span></span></div>
+      <p class="wf-mono" style="border: 1px solid var(--wf-line-2); padding: 8px; white-space: nowrap; overflow: hidden">{"msg":"payment request timeout","level":50,"order":{"id":"ORD-1042"},"http":{"method":"POST","path":"/payments","status":504},"err":{"type":"GatewayTimeoutError"…</p>
+      <span class="wf-help">한 줄로 보여 주고 가로로 밀어 봅니다.</span>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">JSON을 펼침</span>
+      <div class="wf-row"><p class="wf-section-title" style="margin-bottom: 0">본문</p><span class="wf-end wf-row"><span class="wf-check">☑ 줄바꿈</span><span class="wf-btn wf-btn--small">JSON 접기</span></span></div>
+      <pre class="wf-mono" style="margin: 0; padding: 8px; border: 1px solid var(--wf-line-2); white-space: pre-wrap">{
+  "msg": "payment request timeout",
+  "level": 50,
+  "order": { "id": "ORD-1042" },
+  "http": { "method": "POST", "path": "/payments", "status": 504 },
+  "err": {
+    "type": "GatewayTimeoutError",
+    "message": "upstream timed out after 30000ms",
+    "stack": "GatewayTimeoutError: upstream timed out after 30000ms\n    at …"
+  },
+  "time": "2026-11-05T10:14:50.123+09:00"
+}</pre>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">ANSI 색 코드가 든 일반 텍스트 로그</span>
+      <div class="wf-row"><p class="wf-section-title" style="margin-bottom: 0">본문</p><span class="wf-end wf-row"><span class="wf-check">☑ 줄바꿈</span><span class="wf-btn wf-btn--small is-disabled">JSON 펼치기(JSON 아님)</span></span></div>
+      <p class="wf-mono" style="border: 1px solid var(--wf-line-2); padding: 8px">2026-11-05 10:14:45 ERROR cart sync timeout status=500</p>
+      <span class="wf-help">색 코드는 화면에 그릴 때만 처리했습니다. 저장된 본문에는 그대로 있습니다.</span>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>긴 행 접기·줄바꿈·JSON 펼침은 표시 동작이며 저장된 본문을 바꾸지 않는다(조사 명세 2절). 화면의 표시 생략과 D03의 이벤트 전체 거부를 구분하고 저장 본문이 잘렸다고 전제하지 않는다(조사 명세 8절). 검색은 저장 본문 전체를 비교한다(<span class="wf-ref">SD-14</span>).</li>
+    <li>긴 본문 표시량은 정하지 않았다(7절). 접기·줄바꿈·JSON 펼침 버튼의 모양과 위치는 와이어프레임 표기다.</li>
+    <li>ANSI 색 코드는 저장 본문에 그대로 두고 표시할 때만 처리한다. 단어 중간에 색 코드가 끼면 검색에서 찾지 못할 수 있다(<span class="wf-ref">SD-18</span>). 그림은 색 없이 글자만 남긴 모양이다. 회색조라 색은 그리지 않는다(8절).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 시각·품질 표시가 붙은 로그</h2>
+  <p class="wf-state-desc">패널의 위쪽만 그렸다. 표시는 CM-06 상태 4와 상태 7의 마크업이다.</p>
+  <div class="wf-grid-2">
+    <div class="wf-frame wf-stack">
+      <span class="wf-frame-label">시각 대체(UI-02 목록의 <span class="wf-mono">10:14:52.030</span> 행)</span>
+      <div class="wf-row"><span class="wf-badge">시각 대체</span><span class="wf-help">로그에서 발생 시각을 읽지 못해 관측 시각으로 검색합니다.</span></div>
+      <dl class="wf-kv">
+        <dt>기준 시각</dt><dd><span class="wf-mono">2026-11-05 10:14:52.030</span> · 시각 출처: 관측 시각</dd>
+        <dt>발생 시각</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span></dd>
+        <dt>관측 시각</dt><dd class="wf-mono">2026-11-05 10:14:52.030 (UTC+09:00)</dd>
+        <dt>수신 시각</dt><dd class="wf-mono">2026-11-05 10:14:53.110 (UTC+09:00)</dd>
+      </dl>
+      <dl class="wf-kv">
+        <dt>레벨</dt><dd>정규화 값 WARN · 원본 값 <span class="wf-mono">40</span></dd>
+      </dl>
+    </div>
+    <div class="wf-frame wf-stack">
+      <span class="wf-frame-label">해석 실패</span>
+      <div class="wf-row"><span class="wf-badge">해석 실패</span></div>
+      <dl class="wf-kv">
+        <dt>레벨</dt><dd>정규화 값 <span class="wf-badge wf-badge--unknown">미확인</span> · 원본 값 읽지 못함</dd>
+      </dl>
+      <div>
+        <p class="wf-section-title">필드</p>
+        <p class="wf-callout">JSON으로 읽지 못해 필드가 없습니다. 본문은 그대로 검색됩니다. 이 로그는 필드 조건에서 판정 불가로 빠지고, 레벨도 읽지 못해 레벨 조건에서도 판정 불가입니다.</p>
+      </div>
+      <div>
+        <p class="wf-section-title">본문</p>
+        <p class="wf-mono" style="border: 1px solid var(--wf-line-2); padding: 8px">{"level":"error","msg":"card declined","order":"ORD-1</p>
+      </div>
+      <div class="wf-row"><span class="wf-btn wf-btn--small is-disabled">필드 복사(필드 없음)</span></div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>상세에는 CM-06 표시를 글자로 붙이고 발생·관측·수신 시각과 시각 출처를 함께 보여 준다(4절 CM-06, <span class="wf-ref">SD-34</span>). 발생 시각을 관측 시각으로 바꿔 쓰지 않고 <span class="wf-term">미확인</span>으로 둔다(<span class="wf-ref">SD-01</span>).</li>
+    <li>해석 실패 로그는 필드 조건이 있는 검색에서는 판정 불가로 빠지므로, 본문·출처 조건만 쓴 검색이나 UI-02의 판정 불가 <span class="wf-term">보기</span>에서 연다(<span class="wf-ref">SD-22</span>). 필드가 없어 <span class="wf-term">필드 복사</span>는 쓸 수 없다고 적는다(와이어프레임 표기).</li>
+    <li><span class="wf-term">시각 의심</span>, <span class="wf-term">시간대 추정</span>, <span class="wf-term">필드 일부 생략</span>이 붙은 상세는 CM-06 상태 5·6·7과 같다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 필드를 눌러 조건에 추가</h2>
+  <div class="wf-grid-2">
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">패널의 필드 영역</span>
+      <div class="wf-toast-area"><div class="wf-toast"><span class="wf-toast-kind">성공</span><span class="wf-toast-text">조건에 <span class="wf-mono">order.id 같음 ORD-1042</span>를 더했습니다. 로그 탐색에서 검색을 눌러야 적용됩니다.</span><span class="wf-toast-close">닫기 ×</span></div></div>
+      <table class="wf-table">
+        <thead><tr><th>이름(점 경로)</th><th>값</th><th style="width: 96px"></th></tr></thead>
+        <tbody>
+          <tr><td class="wf-mono">msg</td><td class="wf-mono">payment request timeout</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+          <tr class="is-on"><td class="wf-mono">order.id</td><td class="wf-mono">ORD-1042</td><td><span class="wf-btn wf-btn--small wf-btn--strong">조건에 추가</span></td></tr>
+          <tr><td class="wf-mono">http.status</td><td class="wf-mono">504</td><td><span class="wf-btn wf-btn--small">조건에 추가</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">뒤에 있는 UI-02의 조건 편집기(필드 줄)</span>
+      <div class="wf-formrow">
+        <span class="wf-formrow-label">필드</span>
+        <div class="wf-stack wf-stack--tight">
+          <div class="wf-row"><span class="wf-input">http.status</span><span class="wf-select" style="min-width: 96px">이상</span><span class="wf-input" style="min-width: 120px">500</span><span class="wf-btn wf-btn--small">지우기</span></div>
+          <div class="wf-row"><span class="wf-input">order.id</span><span class="wf-select" style="min-width: 96px">같음</span><span class="wf-input" style="min-width: 120px">ORD-1042</span><span class="wf-btn wf-btn--small">지우기</span><span class="wf-badge wf-badge--quiet">고침</span></div>
+          <div class="wf-row"><span class="wf-btn wf-btn--small">+ 필드 조건</span></div>
+        </div>
+      </div>
+      <p class="wf-callout">고친 조건은 아직 검색하지 않았습니다. 검색을 누르면 고친 조건으로 찾습니다. 아래 결과는 적용된 조건의 결과입니다.</p>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>상세의 필드를 눌러 조건에 더한다(5절 UI-03, <span class="wf-ref">SD-25</span>). 더한 조건은 <span class="wf-term">검색</span>을 눌러야 적용되고, 그 전에는 <a href="UI-02-log-search.html#s11">UI-02 상태 11</a>처럼 편집 중인 조건과 적용된 조건을 구분해 보인다(조사 명세 2·3절).</li>
+    <li>조건을 더해도 패널은 열어 둔다(와이어프레임 표기). 배열 필드는 값 비교를 쓸 수 없어 있음·없음만 더할 수 있다(<span class="wf-ref">SD-19</span>, CM-03 상태 4).</li>
+    <li>필드 값 비교는 화면에 보이는 값 기준이고 글자는 대소문자까지 같아야 한다(<span class="wf-ref">SD-20</span>).</li>
+    <li><span class="wf-review">WQ-20 설계로 넘김:</span> 필드를 눌렀을 때 어떤 연산으로 더할지(같음만인지, 다름·있음·없음도 고르게 할지) 문서에 없다. 그림은 <span class="wf-term">같음</span>으로 더했다. <strong>기본안:</strong> <span class="wf-term">같음</span>으로 더하고 연산은 조건 편집기에서 바꾼다(그림대로).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 본문과 필드 복사</h2>
+  <div class="wf-frame wf-stack wf-w-md">
+    <span class="wf-frame-label">패널 위쪽 버튼 줄</span>
+    <div class="wf-toast-area"><div class="wf-toast"><span class="wf-toast-kind">성공</span><span class="wf-toast-text">본문을 복사했습니다.</span><span class="wf-toast-close">닫기 ×</span></div></div>
+    <div class="wf-row">
+      <a class="wf-btn wf-btn--strong" href="UI-04-nearby-logs.html">주변 로그</a>
+      <span class="wf-btn">본문 복사</span>
+      <span class="wf-btn">필드 복사</span>
+    </div>
+    <dl class="wf-kv">
+      <dt>본문 복사</dt><dd>이 로그 한 건의 본문을 복사합니다.</dd>
+      <dt>필드 복사</dt><dd>이 로그 한 건의 필드 이름(점 경로)과 값을 복사합니다.</dd>
+    </dl>
+  </div>
+  <ul class="wf-notes">
+    <li>상세에서 로그 한 건의 본문과 필드를 복사한다. 여러 건 내보내기가 아니다(<span class="wf-ref">Q09-04</span>). 지금 조회할 수 있는 내용만 담고 LogDock이 다시 가리지 않는다(조사 명세 2·6절).</li>
+    <li>파일 내보내기와 공유 링크는 첫 출시 밖이라 두지 않는다(3절). 본문 복사와 필드 복사를 버튼 둘로 나눈 것과 복사 뒤 안내 문구는 와이어프레임 표기다.</li>
+    <li><span class="wf-review">WQ-21 설계로 넘김:</span> 복사 형식이 문서에 없다. 본문을 저장된 그대로 넣는지, 필드를 어떤 형식으로 넣는지, ANSI 색 코드를 남기는지, 버튼을 하나로 할지 둘로 할지 정해야 한다. <strong>기본안:</strong> 본문은 저장된 그대로(ANSI 코드 포함) 복사하고 필드는 <span class="wf-term">점 경로=값</span> 줄로 복사한다. 버튼은 둘이다(그림대로).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 닫고 목록으로 돌아감</h2>
+  <div class="wf-frame wf-stack">
+    <span class="wf-frame-label">패널을 닫은 뒤의 로그 탐색(UI-02) 목록</span>
+    <p class="wf-small">적용된 조건, 선택한 행, 목록 스크롤 위치가 패널을 열기 전과 같다.</p>
+    <table class="wf-table">
+      <thead><tr><th style="width: 260px">기준 시각(UTC+09:00)</th><th>서비스</th><th>서버</th><th>레벨</th><th>본문 요약</th></tr></thead>
+      <tbody>
+        <tr><td class="wf-mono">2026-11-05 10:14:58.911</td><td>주문</td><td>app-02</td><td>ERROR</td><td class="wf-mono">{"msg":"upstream timeout calling payment","level":50,"http":{"status":502}…</td></tr>
+        <tr><td><span class="wf-mono">2026-11-05 10:14:52.030</span> <span class="wf-badge">시각 대체</span></td><td>결제</td><td>app-02</td><td>WARN</td><td class="wf-mono">{"msg":"retrying after gateway timeout","level":40,"attempt":2…</td></tr>
+        <tr class="is-on ui03-row-focus"><td class="wf-mono">2026-11-05 10:14:50.123 <span class="wf-small">◀ 초점</span></td><td>결제</td><td>app-01</td><td>ERROR</td><td class="wf-mono">{"msg":"payment request timeout","level":50,"order":{"id":"ORD-1042"}…</td></tr>
+        <tr><td><span class="wf-mono">2026-11-05 10:14:47.410</span> <span class="wf-badge">시각 의심</span></td><td>주문</td><td>app-01</td><td>WARN</td><td class="wf-mono">{"msg":"inventory lookup timeout","level":40…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="wf-notes">
+    <li>닫으면 원래 조건·선택 행·스크롤로 돌아가고 초점도 그 행으로 돌아간다(5절 UI-03, 조사 명세 8절). 목록을 다시 불러오지 않으므로 읽던 위치를 잃지 않는다(5절 UI-03 <span class="wf-term">목록 위치를 잃지 않는다</span>).</li>
+    <li>UI-04 위에서 연 패널을 닫으면 UI-04의 그 행으로 돌아간다(같은 규칙).</li>
+    <li>초점을 굵은 테두리와 <span class="wf-term">◀ 초점</span> 글자로 그린 것은 와이어프레임 표기다. 색만으로 구분하지 않는다(1절).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s7">
+  <h2 class="wf-state-title">상태 7. 보존 만료나 삭제로 가져올 수 없음</h2>
+  <p class="wf-state-desc">예전에 불러온 목록에서 행을 눌렀는데 그 사이 로그가 지워진 경우다.</p>
+  <div class="wf-frame" style="padding: 0">
+    <div style="display: grid; grid-template-columns: 1fr 620px">
+      <div class="wf-stack" style="padding: 16px">
+        <span class="wf-frame-label" style="margin-bottom: 0">뒤에 있는 UI-02 목록</span>
+        <table class="wf-table">
+          <thead><tr><th>기준 시각(UTC+09:00)</th><th>서비스</th><th>서버</th><th>레벨</th><th>본문 요약</th></tr></thead>
+          <tbody>
+            <tr><td class="wf-mono">2026-05-05 10:02:19.882</td><td>결제</td><td>app-02</td><td>ERROR</td><td class="wf-mono">{"msg":"payment gateway timeout"…</td></tr>
+            <tr class="is-on"><td class="wf-mono">2026-05-05 10:02:11.405</td><td>결제</td><td>app-01</td><td>ERROR</td><td class="wf-mono">{"msg":"payment request timeout"…</td></tr>
+            <tr><td class="wf-mono">2026-05-05 10:01:58.007</td><td>주문</td><td>app-01</td><td>WARN</td><td class="wf-mono">{"msg":"inventory lookup timeout"…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <aside class="wf-panel wf-stack" aria-label="이벤트 상세">
+        <div class="wf-row">
+          <h3 class="wf-section-title" style="margin-bottom: 0">이벤트 상세</h3>
+          <span class="wf-btn wf-btn--small wf-end">닫기 ×</span>
+        </div>
+        <p class="wf-callout wf-callout--strong">이 로그를 지금 가져올 수 없습니다. 보관 기간이 지났거나 삭제됐을 수 있습니다.</p>
+        <p>목록에 남은 줄은 검색했을 때 받은 정보입니다. 지금 조회할 수 있다는 뜻이 아닙니다.</p>
+        <dl class="wf-kv">
+          <dt>조회 가능 시작일</dt><dd>2026-05-05 (수신 시각 기준)</dd>
+        </dl>
+        <div class="wf-row">
+          <span class="wf-btn">같은 조건으로 다시 검색</span>
+          <span class="wf-btn is-disabled">주변 로그(가져올 수 없음)</span>
+          <span class="wf-btn is-disabled">복사(가져올 수 없음)</span>
+        </div>
+      </aside>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>보존 만료나 삭제로 가져올 수 없으면 목록에 남은 정보가 지금 조회 가능하다는 뜻이 아님을 표시한다. 본문·필드·주변 로그·복사를 보여 주지 않는다(5절 UI-03, 조사 명세 4절).</li>
+    <li>이벤트를 열 때 서버가 현재 허용 범위를 다시 검사한다(조사 명세 4절). 보관은 각 로그의 수신 시각부터 6개월이고 공간이 부족하면 더 일찍 지워질 수 있다(<span class="wf-ref">Q13</span>, <span class="wf-ref">Q13-01</span>). 연결·구간 단위 수동 삭제도 있다(<span class="wf-ref">Q13-03</span>).</li>
+    <li><span class="wf-term">같은 조건으로 다시 검색</span>은 UI-02에서 같은 조건을 지금 시점으로 다시 실행한다(와이어프레임 표기).</li>
+    <li><span class="wf-review">WQ-22 설계로 넘김:</span> 가져올 수 없는 사유(보존 만료·조기 삭제·수동 삭제)를 하나로 짚어 보여 줄지 문서에 없다. 그림은 가능성을 함께 적고 조회 가능 시작일을 붙였다. <strong>기본안:</strong> 기록으로 사유가 확인되면 그 사유 하나를 쓰고, 확인할 수 없으면 가능성을 함께 쓴다(그림대로).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s8">
+  <h2 class="wf-state-title">상태 8. 세션 만료</h2>
+  <div class="wf-frame wf-w-md" style="padding: 0">
+    <aside class="wf-panel wf-stack" aria-label="이벤트 상세">
+      <div class="wf-row">
+        <h3 class="wf-section-title" style="margin-bottom: 0">이벤트 상세</h3>
+        <span class="wf-btn wf-btn--small wf-end">닫기 ×</span>
+      </div>
+      <div class="wf-status">
+        <span class="wf-status-name">만료·접근 제한</span>
+        <span class="wf-status-detail"><span>로그인 세션이 만료됐습니다. 다시 로그인하면 이 화면으로 돌아옵니다.</span></span>
+        <span class="wf-status-actions"><a class="wf-btn" href="UI-01-login.html">다시 로그인</a></span>
+      </div>
+      <p class="wf-help">본문과 필드를 불러오지 않았습니다.</p>
+    </aside>
+  </div>
+  <ul class="wf-notes">
+    <li>세션이 끝난 뒤 행을 누르면 본문과 필드를 보여 주지 않고 CM-04 상태 9의 <span class="wf-term">만료·접근 제한</span> 문구로 다시 로그인을 안내한다(5절 UI-03). 다시 로그인은 UI-01 상태 4로 간다.</li>
+    <li>세션은 비활동 1시간 또는 로그인 후 최대 24시간에 끝난다(<span class="wf-ref">Q10-06</span>). 다시 로그인한 뒤 검색 조건까지 되살리는지는 UI-02 상태 9의 검토 항목과 같다.</li>
+    <li><span class="wf-review">WQ-23 설계로 넘김:</span> 패널을 열어 둔 채 세션이 끝나면 이미 보이던 본문과 필드를 화면에서 지울지 문서에 없다. <strong>기본안:</strong> 세션이 끝나면 보이던 본문과 필드를 화면에서 지우고 로그인 안내만 둔다.</li>
+  </ul>
+</section>
+
+</body>
+</html>

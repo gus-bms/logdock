@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CM-03 조건 편집기</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>CM-03 조건 편집기</h1>
+  <p>로그 탐색(UI-02), 저장 검색(UI-05), 알림 규칙 편집(UI-07)이 같이 쓰는 조건 편집기다. 출처(서비스·서버·환경·수집 대상)·레벨·본문·필드 조건을 넣는다. 같은 항목의 여러 값은 <strong>또는</strong>, 항목끼리는 <strong>그리고</strong>로 묶고 괄호 조합은 없다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q08-01</span> <span class="wf-ref">Q08-02</span> <span class="wf-ref">Q08-09</span> <span class="wf-ref">SD-09</span> <span class="wf-ref">SD-12</span> <span class="wf-ref">SD-13</span> <span class="wf-ref">SD-15</span> <span class="wf-ref">SD-19~SD-22</span> <span class="wf-ref">SD-25</span> <span class="wf-ref">SD-30</span> <span class="wf-ref">SD-37</span> · 기준: 화면 흐름 명세 4절, 조사 명세 3절</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">조건 없음</a></li>
+      <li><a href="#s2">조건을 넣은 예</a></li>
+      <li><a href="#s3">값 목록 펼침</a></li>
+      <li><a href="#s4">필드 이름 후보와 연산</a></li>
+      <li><a href="#s5">입력 오류</a></li>
+      <li><a href="#s6">조건 수 상한</a></li>
+      <li><a href="#s7">쓰는 곳에 따른 차이</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 조건 없음</h2>
+  <div class="wf-frame wf-w-lg">
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">출처</span>
+      <div class="wf-row">
+        <span class="wf-label">서비스</span><span class="wf-select is-empty">모두</span>
+        <span class="wf-label">서버</span><span class="wf-select is-empty">모두</span>
+        <span class="wf-label">환경</span><span class="wf-select is-empty">모두</span>
+        <span class="wf-row wf-row--nowrap"><span class="wf-label">수집 대상</span><span class="wf-select is-empty">모두</span></span>
+      </div>
+    </div>
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">레벨</span>
+      <div class="wf-row"><span class="wf-select is-empty">모두</span></div>
+    </div>
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">본문</span>
+      <div class="wf-row"><span class="wf-btn wf-btn--small">+ 본문 조건</span></div>
+    </div>
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">필드</span>
+      <div class="wf-row"><span class="wf-btn wf-btn--small">+ 필드 조건</span></div>
+    </div>
+    <p class="wf-callout" style="margin-top: 8px">조건 요약: 조건 없음. 시간 범위 안의 모든 로그를 찾습니다.</p>
+  </div>
+  <ul class="wf-notes">
+    <li>첫 출시는 시각적인 필터 입력만 둔다. 정규식과 직접 쿼리 입력은 그리지 않는다(3절, <span class="wf-ref">Q08-03</span>).</li>
+    <li>알림 규칙에서 필터가 하나도 없으면 UI-07이 경고한다(UI-07 그릴 상태).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 조건을 넣은 예</h2>
+  <div class="wf-frame wf-w-lg">
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">출처</span>
+      <div class="wf-stack wf-stack--tight">
+        <div class="wf-row"><span class="wf-label">서비스</span><span class="wf-chip">주문 <span class="wf-chip-x">×</span></span><span class="wf-chip">결제 <span class="wf-chip-x">×</span></span><span class="wf-select is-empty" style="min-width: 100px">더하기</span></div>
+        <div class="wf-row"><span class="wf-label">서버</span><span class="wf-select is-empty">모두</span><span class="wf-label">환경</span><span class="wf-chip">운영 <span class="wf-chip-x">×</span></span><span class="wf-select is-empty" style="min-width: 100px">더하기</span></div>
+        <div class="wf-row"><span class="wf-label">수집 대상</span><span class="wf-select is-empty">모두</span></div>
+      </div>
+    </div>
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">레벨</span>
+      <div class="wf-stack wf-stack--tight">
+        <div class="wf-row"><span class="wf-chip">ERROR <span class="wf-chip-x">×</span></span><span class="wf-select is-empty" style="min-width: 100px">더하기</span></div>
+        <span class="wf-help">ERROR는 레벨 <strong>미확인</strong> 로그를 포함하지 않습니다. 함께 보려면 미확인도 고르세요.</span>
+      </div>
+    </div>
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">본문</span>
+      <div class="wf-stack wf-stack--tight">
+        <div class="wf-row"><span class="wf-select" style="min-width: 88px">포함</span><span class="wf-input wf-input--wide">timeout</span><span class="wf-check">☐ 대소문자 구분</span><span class="wf-btn wf-btn--small">지우기</span></div>
+        <div class="wf-row"><span class="wf-select" style="min-width: 88px">제외</span><span class="wf-input wf-input--wide">health check</span><span class="wf-check">☐ 대소문자 구분</span><span class="wf-btn wf-btn--small">지우기</span></div>
+        <div class="wf-row"><span class="wf-btn wf-btn--small">+ 본문 조건</span></div>
+        <span class="wf-help">입력한 글자를 공백까지 한 덩어리로, 글자 그대로 찾습니다. % _ * ? \ 따옴표도 글자로 찾습니다. 기본은 대소문자를 구분하지 않습니다.</span>
+      </div>
+    </div>
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">필드</span>
+      <div class="wf-stack wf-stack--tight">
+        <div class="wf-row"><span class="wf-input">http.status</span><span class="wf-select" style="min-width: 96px">이상</span><span class="wf-input" style="min-width: 120px">500</span><span class="wf-btn wf-btn--small">지우기</span></div>
+        <div class="wf-row"><span class="wf-btn wf-btn--small">+ 필드 조건</span></div>
+        <span class="wf-help">필드 조건은 정상 해석한 로그에만 적용합니다. 해석 실패 로그는 판정 불가로 빠지고 결과에 건수를 따로 보여 줍니다.</span>
+      </div>
+    </div>
+    <p class="wf-callout" style="margin-top: 8px">조건 요약: (서비스 주문 또는 결제) 그리고 (환경 운영) 그리고 (레벨 ERROR) 그리고 (본문에 "timeout" 포함) 그리고 (본문에 "health check" 제외) 그리고 (http.status 500 이상)</p>
+  </div>
+  <ul class="wf-notes">
+    <li>같은 항목의 여러 값은 또는, 서로 다른 항목은 그리고다. 본문 조건 여러 개는 그리고다. 괄호로 묶는 조합은 없다(<span class="wf-ref">SD-13</span>).</li>
+    <li>본문은 글자 그대로 부분 일치로 찾고, 제외 조건을 쓸 수 있다(<span class="wf-ref">Q08-01</span>, <span class="wf-ref">Q08-02</span>, <span class="wf-ref">SD-15</span>). 대소문자 구분은 조건마다 고른다(와이어프레임 표기).</li>
+    <li>ERROR 필터는 레벨 미확인을 포함하지 않는다. 알림 규칙 화면에서는 이 안내가 반드시 보여야 한다(<span class="wf-ref">SD-09</span>).</li>
+    <li>필드 조건은 정상 해석한 로그에만 적용하고, 판정 불가는 결과에서 빼고 건수를 보여 준다(<span class="wf-ref">Q08-02</span>, <span class="wf-ref">SD-22</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 값 목록 펼침</h2>
+  <div class="wf-frame">
+    <div class="wf-grid-4">
+      <div class="wf-field">
+        <span class="wf-label">서비스</span>
+        <ul class="wf-listbox">
+          <li class="wf-option is-on">☑ 주문</li>
+          <li class="wf-option is-on">☑ 결제</li>
+          <li class="wf-option-group">보관된 서비스</li>
+          <li class="wf-option">☐ 배송 <span class="wf-badge wf-badge--quiet">보관됨</span></li>
+        </ul>
+      </div>
+      <div class="wf-field">
+        <span class="wf-label">서버</span>
+        <ul class="wf-listbox">
+          <li class="wf-option">☐ app-01</li>
+          <li class="wf-option">☐ app-02</li>
+          <li class="wf-option-group">표시명 없음</li>
+          <li class="wf-option">☐ <span class="wf-badge wf-badge--quiet">미입력</span></li>
+        </ul>
+      </div>
+      <div class="wf-field">
+        <span class="wf-label">환경</span>
+        <ul class="wf-listbox">
+          <li class="wf-option is-on">☑ 운영</li>
+          <li class="wf-option">☐ 개발</li>
+          <li class="wf-option-group">태그 없음</li>
+          <li class="wf-option">☐ <span class="wf-badge wf-badge--quiet">미입력</span></li>
+        </ul>
+      </div>
+      <div class="wf-field">
+        <span class="wf-label">레벨</span>
+        <ul class="wf-listbox">
+          <li class="wf-option">☐ TRACE</li>
+          <li class="wf-option">☐ DEBUG</li>
+          <li class="wf-option">☐ INFO</li>
+          <li class="wf-option">☐ WARN</li>
+          <li class="wf-option is-on">☑ ERROR</li>
+          <li class="wf-option">☐ FATAL</li>
+          <li class="wf-option-group">레벨을 읽지 못함</li>
+          <li class="wf-option">☐ <span class="wf-badge wf-badge--quiet">미확인</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="wf-frame wf-w-lg">
+    <span class="wf-frame-label">수집 대상 값 목록</span>
+    <div class="wf-field">
+      <span class="wf-label">수집 대상</span>
+      <span class="wf-input is-empty">서버나 경로로 찾기</span>
+      <ul class="wf-listbox">
+        <li class="wf-option-group">주문</li>
+        <li class="wf-option">☐ app-01 · <span class="wf-mono">/var/app/order/app.log</span></li>
+        <li class="wf-option">☐ <span class="wf-badge wf-badge--quiet">미입력</span> · <span class="wf-mono">/var/app/order/batch/app.log</span></li>
+        <li class="wf-option-group">결제</li>
+        <li class="wf-option">☐ app-01 · <span class="wf-mono">/var/log/nginx/access.log</span></li>
+        <li class="wf-option is-on">☑ app-01 · <span class="wf-mono">/var/log/nginx/error.log</span></li>
+        <li class="wf-option">☐ app-01 · <span class="wf-mono">/var/app/payment/app-*.log</span></li>
+        <li class="wf-option-group">보관된 연결</li>
+        <li class="wf-option">☐ app-02 · <span class="wf-mono">/var/app/order/app.log</span> <span class="wf-badge wf-badge--quiet">보관됨</span></li>
+      </ul>
+    </div>
+    <p class="wf-callout" style="margin-top: 8px">조건 요약: (수집 대상 app-01 · /var/log/nginx/error.log)</p>
+  </div>
+  <ul class="wf-notes">
+    <li><span class="wf-term">미확인</span>·<span class="wf-term">미입력</span>·<span class="wf-term">보관됨</span>은 일반 값과 따로 둔다. 레벨 미확인을 INFO로 바꾸지 않는다(<span class="wf-ref">SD-09</span>, <span class="wf-ref">SD-12</span>).</li>
+    <li><span class="wf-term">수집 대상</span>은 등록된 수집 연결 하나를 고른다. 같은 서버·서비스에 등록한 nginx 로그와 앱 로그를 나눠 볼 수 있다(<span class="wf-ref">Q08-09</span>, <span class="wf-ref">SD-37</span>). 후보는 서비스별로 묶고 서버 표시명과 대상을 함께 쓴다. 표시명이 없으면 <span class="wf-term">미입력</span>으로 쓴다.</li>
+    <li>다른 출처 항목과는 그리고로 묶는다. 고른 서비스에 속하지 않는 수집 대상을 함께 고르면 결과는 0건이다(<span class="wf-ref">SD-13</span>).</li>
+    <li>연결이 많으면 후보가 길어져 찾기 칸을 두었다(와이어프레임 표기). 찾기 방식과 표시명이 없는 연결끼리 구분하는 표시는 화면·API 설계에서 정한다(화면 흐름 명세 9절).</li>
+    <li>정규화 레벨은 TRACE, DEBUG, INFO, WARN, ERROR, FATAL과 미확인이다(<span class="wf-ref">SD-09</span>).</li>
+    <li>보관된 서비스·연결의 과거 로그는 보관 기간 안에서 검색된다. 키를 폐기해도 이미 저장한 로그는 검색된다(<span class="wf-ref">SD-12</span>).</li>
+    <li>로그 본문 안의 service·host 값은 출처를 바꾸지 않는다(조사 명세 3절). 출처는 수집 연결 등록 정보에서 온다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 필드 이름 후보와 연산</h2>
+  <div class="wf-frame">
+    <div class="wf-grid-3">
+      <div class="wf-field">
+        <span class="wf-label">필드 이름 입력 중</span>
+        <span class="wf-input is-focus">ht</span>
+        <ul class="wf-listbox">
+          <li class="wf-option-group">최근 받은 필드 이름</li>
+          <li class="wf-option is-focus">http.status</li>
+          <li class="wf-option">http.method</li>
+          <li class="wf-option">http.path</li>
+        </ul>
+      </div>
+      <div class="wf-field">
+        <span class="wf-label">숫자 필드 http.status의 연산</span>
+        <span class="wf-select is-focus">같음</span>
+        <ul class="wf-listbox">
+          <li class="wf-option is-on">같음</li>
+          <li class="wf-option">다름</li>
+          <li class="wf-option">있음</li>
+          <li class="wf-option">없음</li>
+          <li class="wf-option">이상</li>
+          <li class="wf-option">이하</li>
+          <li class="wf-option">초과</li>
+          <li class="wf-option">미만</li>
+        </ul>
+      </div>
+      <div class="wf-field">
+        <span class="wf-label">배열 필드 items의 연산</span>
+        <span class="wf-select is-focus">있음</span>
+        <ul class="wf-listbox">
+          <li class="wf-option is-disabled">같음 · 쓸 수 없음</li>
+          <li class="wf-option is-disabled">다름 · 쓸 수 없음</li>
+          <li class="wf-option is-on">있음</li>
+          <li class="wf-option">없음</li>
+          <li class="wf-option is-disabled">이상 · 쓸 수 없음</li>
+          <li class="wf-option is-disabled">이하 · 쓸 수 없음</li>
+          <li class="wf-option is-disabled">초과 · 쓸 수 없음</li>
+          <li class="wf-option is-disabled">미만 · 쓸 수 없음</li>
+        </ul>
+        <span class="wf-help">배열 필드는 항목 있음·없음만 쓸 수 있습니다. 값을 찾으려면 본문 조건을 쓰세요.</span>
+      </div>
+    </div>
+    <hr class="wf-hr">
+    <ul class="wf-help" style="padding-left: 18px">
+      <li>중첩 필드는 점 경로로 씁니다. 예: err.type</li>
+      <li>같음·다름은 화면에 보이는 값으로 비교합니다. 500을 넣으면 숫자 500과 글자 "500"이 함께 맞고, 그 밖의 글자는 대소문자까지 같아야 합니다.</li>
+      <li>있음은 키가 있으면 참입니다. null, 빈 글자, 0, false도 있음입니다. 숫자 범위는 숫자 값만 비교합니다.</li>
+    </ul>
+  </div>
+  <ul class="wf-notes">
+    <li>필드 이름 후보는 최근 수신 기준 목록에서 보여 준다. 이벤트 상세(UI-03)에서 필드를 눌러 조건을 더할 수도 있다(<span class="wf-ref">SD-25</span>).</li>
+    <li>연산은 같음·다름·있음·없음과 숫자 범위(이상·이하·초과·미만)다(4절 CM-03, <span class="wf-ref">SD-20</span>, <span class="wf-ref">SD-21</span>).</li>
+    <li>필드에 맞지 않는 연산은 비활성으로 두고 이유를 글자로 적는다(조사 명세 3절). 배열 값 비교와 날짜 범위 비교는 첫 출시 밖이라 목록에 넣지 않는다(3절, <span class="wf-ref">SD-19</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 입력 오류</h2>
+  <div class="wf-frame wf-w-lg">
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">본문</span>
+      <div class="wf-stack wf-stack--tight">
+        <div class="wf-row"><span class="wf-select" style="min-width: 88px">포함</span><span class="wf-input wf-input--wide is-error is-empty">찾을 글자</span><span class="wf-check">☐ 대소문자 구분</span><span class="wf-btn wf-btn--small">지우기</span></div>
+        <p class="wf-error">찾을 글자를 넣거나 이 조건을 지우세요.</p>
+      </div>
+    </div>
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">필드</span>
+      <div class="wf-stack wf-stack--tight">
+        <div class="wf-row"><span class="wf-input">http.status</span><span class="wf-select" style="min-width: 96px">이상</span><span class="wf-input is-error" style="min-width: 120px">abc</span><span class="wf-btn wf-btn--small">지우기</span></div>
+        <p class="wf-error">숫자 범위에는 숫자를 넣어야 합니다.</p>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>오류가 난 칸과 고칠 이유를 함께 보여 준다(조사 명세 3절).</li>
+    <li>검색 화면에서는 이전 결과를 <span class="wf-term">이전 조건의 결과</span>로 표시한다(CM-04 상태 10).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 조건 수 상한</h2>
+  <div class="wf-frame wf-w-lg">
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">본문</span>
+      <div class="wf-stack wf-stack--tight">
+        <div class="wf-row"><span class="wf-select" style="min-width: 88px">포함</span><span class="wf-input wf-input--wide">timeout</span><span class="wf-check">☐ 대소문자 구분</span><span class="wf-btn wf-btn--small">지우기</span></div>
+        <div class="wf-row wf-muted">… 조건 여러 개 …</div>
+        <div class="wf-row"><span class="wf-btn wf-btn--small is-disabled">+ 본문 조건(상한 도달)</span></div>
+      </div>
+    </div>
+    <div class="wf-formrow">
+      <span class="wf-formrow-label">필드</span>
+      <div class="wf-row"><span class="wf-btn wf-btn--small is-disabled">+ 필드 조건(상한 도달)</span></div>
+    </div>
+    <p class="wf-callout wf-callout--strong" style="margin-top: 8px">조건은 최대 <span class="wf-n">N</span>개까지 넣을 수 있습니다. 조건을 지운 뒤 더하세요. 검색식은 최대 <span class="wf-n">N</span>자입니다.</p>
+  </div>
+  <ul class="wf-notes">
+    <li>조건 수와 검색식 길이 상한은 측정 뒤 Q15에서 정한다(7절). 상한은 화면에 표시한다(조사 명세 3절).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s7">
+  <h2 class="wf-state-title">상태 7. 쓰는 곳에 따른 차이</h2>
+  <p class="wf-state-desc">편집기 자체는 같다. 편집기 밖에서 함께 보여 줄 것만 다르다.</p>
+  <table class="wf-table">
+    <thead><tr><th>쓰는 곳</th><th>편집기와 함께 보이는 것</th><th>근거</th></tr></thead>
+    <tbody>
+      <tr><td>로그 탐색(UI-02)</td><td>조건을 고친 뒤 <span class="wf-term">검색</span>으로 실행한다. 알림 조사 모드에서 조건을 고치면 모드를 벗어났다고 표시한다.</td><td>조사 명세 3절, UI-02</td></tr>
+      <tr><td>저장 검색(UI-05)</td><td>이름·시간 방식과 함께 저장한다. 저장 검색을 고쳐도 그 조건을 복사해 간 알림 규칙은 바뀌지 않는다.</td><td><span class="wf-ref">Q11-01</span> <span class="wf-ref">SD-30</span></td></tr>
+      <tr><td>알림 규칙 편집(UI-07)</td><td>집계가 중앙 수신 시각 기준이라는 표시, ERROR와 미확인 안내, 필터가 없을 때의 경고. 재인증은 요구하지 않는다.</td><td>UI-07, <span class="wf-ref">SD-09</span> <span class="wf-ref">TD-17</span></td></tr>
+    </tbody>
+  </table>
+  <ul class="wf-notes">
+    <li>세 곳 모두 같은 구조화 조건 형식을 쓰고 엔진 쿼리 문자열을 저장하지 않는다. 한쪽에서 복사해 간 뒤에는 서로 따로 바뀐다(<span class="wf-ref">SD-30</span>).</li>
+  </ul>
+</section>
+
+</body>
+</html>

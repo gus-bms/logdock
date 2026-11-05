@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI-12 수집 연결 상세</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>UI-12 수집 연결 상세</h1>
+  <p>연결 하나의 관리 상태·관측 상태, 수집 진행, 데이터 품질, 설정·키, 진단 이력을 보고 설정·키·보관·구간 삭제를 처리한다. 동작은 모두 CM-07 민감 작업 확인을 거친다. UI-10의 <span class="wf-term">열기</span>, UI-11의 7단계, UI-02의 수집 문제 요약에서 연다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">운영 명세 4·6절</span> <span class="wf-ref">Q05-01</span> <span class="wf-ref">Q05-02</span> <span class="wf-ref">Q06</span> <span class="wf-ref">Q07-07</span> <span class="wf-ref">Q10-07</span> <span class="wf-ref">Q10-08</span> <span class="wf-ref">Q10-10</span> <span class="wf-ref">Q10-11</span> <span class="wf-ref">Q10-14</span> <span class="wf-ref">Q12-07</span> <span class="wf-ref">Q13-03</span> <span class="wf-ref">Q14</span> <span class="wf-ref">Q16-05</span> <span class="wf-ref">SD-05</span> · 기준: 화면 흐름 명세 5절 UI-12, 6절, 4절 CM-01·CM-05·CM-07</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">기본</a></li>
+      <li><a href="#s2">수집 문제 표시</a></li>
+      <li><a href="#s3">설정 수정</a></li>
+      <li><a href="#s4">설정 내려받기</a></li>
+      <li><a href="#s5">키 교체</a></li>
+      <li><a href="#s6">키 폐기</a></li>
+      <li><a href="#s7">보관</a></li>
+      <li><a href="#s8">재활성</a></li>
+      <li><a href="#s9">구간 로그 삭제</a></li>
+      <li><a href="#s10">지금부터 다시 수집 안내</a></li>
+      <li><a href="#s11">미관측 중</a></li>
+      <li><a href="#s12">키 차단 뒤 마지막 보고</a></li>
+      <li><a href="#s13">대기량 미상</a></li>
+      <li><a href="#s14">감사 기록 장애로 변경 보류</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 기본</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item is-current" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body">
+      <p class="wf-small wf-muted" style="margin-bottom: 8px"><a href="UI-10-connections.html">수집 연결</a> › 결제</p>
+      <div class="wf-row wf-row--top" style="margin-bottom: 16px">
+        <div class="wf-stack wf-stack--tight">
+          <h3 class="wf-page-title" style="margin-bottom: 0">결제 · app-01 · app.log</h3>
+          <span class="wf-muted">파일 <span class="wf-mono">/var/app/payment/app.log</span> · 환경 운영 · 등록 2026-10-02 09:58:20</span>
+        </div>
+        <div class="wf-row wf-end">
+          <span class="wf-btn">설정 수정</span>
+          <span class="wf-btn">설정 내려받기</span>
+          <span class="wf-btn">키 교체</span>
+          <span class="wf-btn">키 폐기</span>
+          <span class="wf-btn">보관</span>
+          <span class="wf-btn">구간 로그 삭제</span>
+        </div>
+      </div>
+      <div class="wf-frame">
+        <div class="wf-grid-3">
+          <div class="wf-stack wf-stack--tight">
+            <span class="wf-label">관리 상태</span>
+            <span><span class="wf-badge">사용</span></span>
+            <span class="wf-help">설정 버전 3 · 원래 출처 결제 / app-01 / app.log</span>
+          </div>
+          <div class="wf-stack wf-stack--tight">
+            <span class="wf-label">관측 상태</span>
+            <span><span class="wf-badge">수집/전송 진행</span></span>
+            <span class="wf-help">마지막 읽기 10:14:50 · 마지막 전송 확인 10:14:51</span>
+          </div>
+          <div class="wf-stack wf-stack--tight">
+            <span class="wf-label">마지막 보고</span>
+            <span>2026-11-05 10:14:52 (UTC+09:00)</span>
+            <span class="wf-help">에이전트 대기 0.3MB · 가장 오래된 대기 10:14:49</span>
+          </div>
+        </div>
+      </div>
+      <div class="wf-grid-2" style="margin-top: 16px">
+        <div class="wf-frame">
+          <p class="wf-section-title">수집 진행</p>
+          <dl class="wf-kv">
+            <dt>마지막 읽기</dt><dd>10:14:50</dd>
+            <dt>마지막 전송 확인(ACK)</dt><dd>10:14:51</dd>
+            <dt>대기</dt><dd>0.3MB</dd>
+            <dt>가장 오래된 대기</dt><dd>10:14:49</dd>
+            <dt>일시정지 사유</dt><dd>없음</dd>
+          </dl>
+        </div>
+        <div class="wf-frame">
+          <p class="wf-section-title">데이터 품질과 시각</p>
+          <dl class="wf-kv">
+            <dt>해석 실패</dt><dd>12건 <span class="wf-muted">집계 2026-11-05 00:00:00부터</span></dd>
+            <dt>크기 초과 거부</dt><dd>2건 · 마지막 관측 10:05:31 · 적용 상한 <span class="wf-n">N</span> · 이후 수집 계속</dd>
+            <dt>확인된 손실</dt><dd>0건</dd>
+            <dt>누락 가능 구간</dt><dd>없음</dd>
+            <dt>서버 시계·시간대</dt><dd>경고 없음</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="wf-frame" style="margin-top: 16px">
+        <p class="wf-section-title">연결 확인 단계</p>
+        <ol class="wf-steps" aria-label="연결 확인 단계">
+          <li class="wf-step is-done"><span class="wf-step-name">등록 완료</span><span class="wf-step-state">2026-10-02 09:58:20</span></li>
+          <li class="wf-step is-done"><span class="wf-step-name">설정 제공</span><span class="wf-step-state">2026-10-28 14:00:41 · 설정 버전 3</span></li>
+          <li class="wf-step is-done"><span class="wf-step-name">에이전트 적용 확인</span><span class="wf-step-state">2026-10-28 14:03:12 · 설정 버전 3</span></li>
+          <li class="wf-step is-done"><span class="wf-step-name">읽기</span><span class="wf-step-state">마지막 10:14:50</span></li>
+          <li class="wf-step is-done"><span class="wf-step-name">중앙 수신 확인</span><span class="wf-step-state">마지막 10:14:51</span></li>
+          <li class="wf-step is-done"><span class="wf-step-name">검색 가능</span><span class="wf-step-state">확인 10:14:55 · <a href="UI-02-log-search.html">로그 탐색에서 보기</a></span></li>
+        </ol>
+        <p class="wf-help" style="margin-top: 8px">파일별 시작 경계: <span class="wf-mono">/var/app/payment/app.log</span> · 2026-10-02 10:20:06 · 18,204,331 byte · 쓰던 줄의 나머지 제외</p>
+      </div>
+      <div class="wf-grid-2" style="margin-top: 16px">
+        <div class="wf-frame">
+          <p class="wf-section-title">설정</p>
+          <dl class="wf-kv">
+            <dt>적용 확인 버전</dt><dd>3 · 2026-10-28 14:03:12 확인</dd>
+            <dt>제공한 최신 버전</dt><dd>3</dd>
+            <dt>형식</dt><dd>일반 텍스트 · UTF-8</dd>
+            <dt>로그 시간대</dt><dd><span class="wf-muted">미입력 · 에이전트 서버 시간대로 해석(시간대 추정)</span></dd>
+            <dt>추출 규칙</dt><dd><span class="wf-muted">없음 · 내장 형식</span></dd>
+          </dl>
+        </div>
+        <div class="wf-frame">
+          <p class="wf-section-title">키</p>
+          <table class="wf-table">
+            <thead><tr><th>키</th><th>발급</th><th>상태</th><th>교체 진행</th></tr></thead>
+            <tbody>
+              <tr><td>지금 키</td><td>2026-10-02 09:58:20</td><td>유효</td><td>없음</td></tr>
+            </tbody>
+          </table>
+          <p class="wf-help" style="margin-top: 8px">키 원문은 발급·교체 화면에서만 보여 주고 여기에는 없습니다. 연결당 유효 키 1개, 교체 중 2개까지입니다.</p>
+        </div>
+      </div>
+      <div class="wf-frame" style="margin-top: 16px">
+        <p class="wf-section-title">진단 이력</p>
+        <p class="wf-help" style="margin-bottom: 8px">본문 없이 오류·거부 요약만 남깁니다. 진단은 2026-10-29 08:00:00부터 볼 수 있습니다. 그 전 진단은 에이전트의 진단 한도로 정리됐습니다.</p>
+        <table class="wf-table">
+          <thead><tr><th style="width: 200px">관측 시각</th><th style="width: 140px">종류</th><th>내용</th><th style="width: 90px">건수</th></tr></thead>
+          <tbody>
+            <tr><td>10:05:31</td><td>크기 초과 거부</td><td>이벤트 크기 상한(<span class="wf-n">N</span>)을 넘어 본문 전체를 거부함 · 이후 수집 계속</td><td>2건</td></tr>
+            <tr><td>09:40:12</td><td>해석 실패</td><td>내장 형식으로 읽지 못함 · 본문은 그대로 전송</td><td>12건</td></tr>
+            <tr><td>03:10:00 ~ 03:42:00</td><td>진단 기록 공백</td><td>에이전트가 이 기간 진단을 저장하지 못함 · 수집과 전송은 계속됨</td><td><span class="wf-badge wf-badge--unknown">미확인</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>관리 상태와 관측 상태를 따로, 마지막 보고 시각과 함께 보여 준다(4절 CM-05). 머리 마크업은 CM-05 상태 1의 상세 머리 그대로다.</li>
+    <li>마지막 보고, 마지막 전송 확인(ACK), 대기 bytes와 가장 오래된 대기, 일시정지 사유, 해석 실패와 거부 건수, 확인된 손실과 누락 가능 구간, 서버 시계·시간대 경고를 보여 준다(5절 UI-12, 운영 명세 4절). 건수에는 집계 기간을 붙인다.</li>
+    <li>D03 크기 초과 거부는 메일 없이 이 화면에만 표시한다. 본문 없이 관측 시각·건수·적용 상한·이후 수집 상태를 쓴다(<span class="wf-ref">Q12-07</span>, D03). 이벤트 크기 상한은 정하지 않았다(7절).</li>
+    <li><span class="wf-term">연결 확인 단계</span>는 UI-11 7단계와 같은 증거다. <span class="wf-term">로그 탐색에서 보기</span>는 UI-02로 간다(6절).</li>
+    <li>설정은 제공한 최신 버전과 에이전트가 적용했다고 확인된 버전을 나눠 쓴다(운영 명세 1절 객체 표의 검증·적용·관측 버전 구분).</li>
+    <li>키는 발급일·상태·교체 진행만 보여 주고 원문은 없다(<span class="wf-ref">Q10-08</span>). 연결당 유효 키 1개, 교체 중 2개다(<span class="wf-ref">Q10-07</span>, 7절).</li>
+    <li>진단 이력은 본문 없는 요약이다. 진단 저장이 실패한 기간은 공백으로, 진단 한도로 정리돼 볼 수 없는 범위는 조회 가능 시작으로 표시한다(<span class="wf-ref">Q14</span>, 5절 UI-12).</li>
+    <li>동작은 모두 CM-07을 거친다(5절 UI-12). 동작 버튼을 머리 오른쪽에 모았다(와이어프레임 표기).</li>
+    <li>시각은 UTC+09:00이고 날짜가 없는 시각은 2026-11-05다. 건수·용량·위치는 합성 표시 값이다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 수집 문제 표시</h2>
+  <p class="wf-state-desc">상태 1의 <span class="wf-term">수집 진행</span>과 <span class="wf-term">데이터 품질과 시각</span> 영역에 문제가 있을 때의 모습이다.</p>
+  <div class="wf-grid-2">
+    <div class="wf-frame">
+      <span class="wf-frame-label">수집 진행 · 결제 · app-02 · app-*.log, 읽기 일시정지 중</span>
+      <div class="wf-row" style="margin-bottom: 8px"><span class="wf-muted">관측</span><span class="wf-badge">읽기 일시정지</span></div>
+      <dl class="wf-kv">
+        <dt>일시정지 사유</dt><dd>대기 공간 포화 · 시작 10:02:11</dd>
+        <dt>대기</dt><dd>512MB · 가장 오래된 대기 09:58:40</dd>
+        <dt>마지막 전송 확인(ACK)</dt><dd>10:01:58</dd>
+        <dt>원본 보존</dt><dd>읽기를 멈춘 동안 원본 파일이 회전·삭제되면 읽지 못한 부분을 잃을 수 있습니다.</dd>
+      </dl>
+      <p class="wf-help" style="margin-top: 8px">전송이 회복되면 기존 대기를 그대로 두고 제한된 속도로 다시 읽습니다.</p>
+    </div>
+    <div class="wf-frame">
+      <span class="wf-frame-label">데이터 품질과 시각 · 같은 연결</span>
+      <dl class="wf-kv">
+        <dt>해석 실패</dt><dd>0건 <span class="wf-muted">집계 2026-11-05 00:00:00부터</span></dd>
+        <dt>크기 초과 거부</dt><dd>0건</dd>
+        <dt>확인된 손실</dt><dd>읽기 전에 원본 파일이 삭제됨 · <span class="wf-mono">app-2026-11-04.log</span> · 읽지 못한 1.2MB · 건수 <span class="wf-badge wf-badge--unknown">미확인</span></dd>
+        <dt>누락 가능 구간</dt><dd>10:02:11 ~ 지금 · 사유 읽기 일시정지</dd>
+        <dt>서버 시계·시간대</dt><dd>경고 없음</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="wf-frame wf-w-lg" style="margin-top: 16px">
+    <span class="wf-frame-label">데이터 품질과 시각 · 주문 · 미입력 · batch/app.log, 시각 확인 필요</span>
+    <div class="wf-row" style="margin-bottom: 8px"><span class="wf-muted">관측</span><span class="wf-badge">시각 확인 필요</span></div>
+    <ul>
+      <li>에이전트 보고 시각이 중앙 시각과 4분 12초 다릅니다. 로그 서버의 시계를 확인하세요.</li>
+      <li>이 연결의 로그 시각이 관측 시각과 일정하게 9시간 어긋납니다. 로그 시간대 설정을 확인하세요(설정 수정).</li>
+    </ul>
+    <p class="wf-help" style="margin-top: 8px">수집은 멈추지 않습니다.</p>
+  </div>
+  <ul class="wf-notes">
+    <li>일시정지 사유·시작 시각·대기와 원본 보존 위험을 함께 보여 준다(운영 명세 4절, D01). 전송이 회복되면 기존 대기를 보존한 채 제한된 속도로 재개한다(<span class="wf-ref">D01</span>).</li>
+    <li>확인된 손실과 누락 가능 구간을 나누고, 정확히 센 값과 모르는 건수를 구분해 <span class="wf-term">미확인</span>으로 쓴다(운영 명세 4절, 수집 명세 09).</li>
+    <li>서버 시계 오차는 에이전트 보고 시각과 중앙 시각의 차이로, 시간대 문제는 연결의 로그 시각이 관측 시각과 일정하게 어긋나는 것으로 경고하고 수집은 멈추지 않는다(<span class="wf-ref">SD-05</span>). 경고 기준은 정하지 않았고 그림의 차이 값은 합성이다.</li>
+    <li>세 프레임은 서로 다른 연결의 예이며 상태 1의 같은 영역에 들어간다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 설정 수정</h2>
+  <div class="wf-frame wf-stack wf-w-lg">
+    <span class="wf-frame-label">설정 수정 · 결제 · app-01 · app.log</span>
+    <p class="wf-section-title" style="margin-bottom: 0">설정 수정</p>
+    <div>
+      <div class="wf-formrow"><span class="wf-formrow-label">수집 대상</span><div class="wf-stack wf-stack--tight"><span class="wf-input wf-input--wide wf-mono is-disabled">/var/app/payment/app.log</span><span class="wf-help">다른 서버나 전혀 다른 로그를 수집하려면 <a href="UI-11-connection-register.html">새 연결로 등록</a>하세요.</span></div></div>
+      <div class="wf-formrow"><span class="wf-formrow-label">형식</span><span class="wf-seg"><span>일반 텍스트</span><span>JSON</span><span class="is-on">여러 줄</span></span></div>
+      <div class="wf-formrow"><span class="wf-formrow-label">새 이벤트 시작 규칙</span><span class="wf-input wf-input--wide is-focus">시작 규칙(문법은 설계에서 정함)</span></div>
+      <div class="wf-formrow"><span class="wf-formrow-label">로그 시간대</span><div class="wf-stack wf-stack--tight"><span class="wf-select is-empty">선택 안 함</span><span class="wf-help">비우면 에이전트 서버 시간대로 해석하고 시간대 추정을 표시합니다.</span></div></div>
+      <div class="wf-formrow"><span class="wf-formrow-label">추출 규칙</span><div class="wf-stack wf-stack--tight"><span class="wf-input wf-input--wide is-empty">비워 두면 내장 형식으로 읽습니다</span><span class="wf-help">이후 로그에만 적용됩니다.</span></div></div>
+    </div>
+    <p class="wf-callout">저장하면 새 설정 버전을 만듭니다. 새 설정을 다시 복사해 로그 서버의 에이전트에 적용해야 하고, 적용하는 동안 수집이 잠시 멈춥니다.</p>
+    <div class="wf-row"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary wf-end">저장</span></div>
+  </div>
+  <div class="wf-screen" style="margin-top: 16px">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="설정 수정 확인">
+        <div class="wf-modal-head">설정 수정</div>
+        <div class="wf-modal-body">
+          <div>
+            <p class="wf-section-title">대상</p>
+            <dl class="wf-kv">
+              <dt>연결</dt><dd>결제 · app-01 · app.log</dd>
+              <dt>설정</dt><dd>버전 3 → 4 · 형식 일반 텍스트 → 여러 줄</dd>
+            </dl>
+          </div>
+          <div>
+            <p class="wf-section-title">영향</p>
+            <ul>
+              <li>새 설정을 다시 복사해 에이전트에 적용해야 합니다.</li>
+              <li>적용하는 동안 수집이 잠시 멈춥니다.</li>
+              <li>다른 서버나 다른 로그는 새 연결로 등록합니다.</li>
+            </ul>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">비밀번호 다시 입력</span>
+            <span class="wf-input is-focus">••••••••••••••••</span>
+          </div>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">설정 수정</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="wf-frame wf-stack wf-w-lg" style="margin-top: 16px">
+    <span class="wf-frame-label">확정 뒤</span>
+    <div class="wf-toast-area"><div class="wf-toast"><span class="wf-toast-kind">성공</span><span class="wf-toast-text">설정 버전 4를 만들었습니다. 로그 서버의 에이전트에 적용하기 전까지는 설정 버전 3으로 수집합니다.</span><span class="wf-toast-close">닫기 ×</span></div></div>
+    <dl class="wf-kv">
+      <dt>제공한 최신 버전</dt><dd>4 · 10:52:10</dd>
+      <dt>적용 확인 버전</dt><dd>3 <span class="wf-muted">버전 4 적용 확인 대기</span></dd>
+    </dl>
+    <div class="wf-row"><span class="wf-btn">설정 복사</span><span class="wf-btn">설정 내려받기</span><span class="wf-help">키 원문은 넣지 않습니다.</span></div>
+  </div>
+  <ul class="wf-notes">
+    <li>설정 수정은 CM-07을 거친다. 영향 문구는 CM-07 상태 7의 <span class="wf-term">설정 변경</span> 행을 따른다.</li>
+    <li>새 설정은 사용자가 다시 복사해 에이전트에 적용해야 하고, 적용 때 에이전트가 재시작해 수집이 잠시 멈춘다. 진행 기록과 대기는 보존한다(<span class="wf-ref">Q16-05</span>). 웹에서 원격으로 적용하지 않는다(3절).</li>
+    <li>다른 서버나 전혀 다른 로그로 바꾸려면 새 연결로 등록한다(<span class="wf-ref">Q07-05</span>). 그래서 수집 대상은 이 화면에서 고칠 수 없게 그렸다.</li>
+    <li>추출 규칙 변경은 이후 로그에만 적용된다(<span class="wf-ref">Q08-07</span>). 다시 받는 설정에는 키 원문이 없다(<span class="wf-ref">Q10-08</span>).</li>
+    <li><span class="wf-review">WQ-62 설계로 넘김:</span> 같은 입력으로 볼 수 있는 경로 수정(예: 파일명 규칙을 고침)을 설정 수정으로 허용할지는 <span class="wf-ref">Q07-05</span> 후속 설계로 남아 있다. <strong>기본안:</strong> Q07-05 후속 설계다. 기본안은 파일명 규칙을 고치는 것처럼 같은 입력으로 볼 수 있는 수정만 허용한다.</li>
+    <li><span class="wf-review">WQ-63 설계로 넘김:</span> 환경 태그와 서버 표시명을 이 화면에서 고칠 수 있는지, 고치면 에이전트에 다시 적용해야 하는지 문서에 없다. 환경을 바꾸면 새 이벤트부터 적용 경계를 남긴다는 검토안만 있다(운영 명세 1절). <strong>기본안:</strong> 이 화면에서 고칠 수 있고 중앙 표시 정보라 에이전트에 다시 적용하지 않는다. 새 이벤트부터 적용 경계를 남긴다(운영 명세 1절 검토안).</li>
+    <li>수정 폼을 상세 위에 여는 영역으로 그렸다(와이어프레임 표기).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 설정 내려받기</h2>
+  <div class="wf-frame wf-stack wf-w-lg">
+    <span class="wf-frame-label">상세의 설정 영역</span>
+    <dl class="wf-kv">
+      <dt>연결</dt><dd>결제 · app-01 · app.log</dd>
+      <dt>설정</dt><dd>버전 3</dd>
+    </dl>
+    <div class="wf-row"><span class="wf-btn">설정 내려받기</span><span class="wf-help">키 원문을 뺀 설정 틀만 내려받습니다. 키는 들어 있지 않습니다.</span></div>
+  </div>
+  <ul class="wf-notes">
+    <li>설정 내려받기는 키 원문을 뺀 설정 틀만 준다(5절 UI-12, <span class="wf-ref">Q10-08</span>). 키를 잃었으면 <span class="wf-term">키 교체</span>로 새 키를 받는다.</li>
+    <li><span class="wf-review">WQ-64 문서로 정리:</span> 5절 UI-12는 이 동작도 CM-07을 거친다고 적었지만, 4절 CM-07의 사용 목록과 CM-07 상태 7 표에는 설정 내려받기가 없다. 변경이 아닌 이 동작을 감사 기록 장애 때 보류할지도 함께 정해야 한다. <strong>정리:</strong> CM-07을 거치지 않고 감사 장애 때도 보류하지 않는다. 비밀 값이 없고 변경이 아니며 Q10-05 민감 작업에 없다. 명세 UI-12와 위 그림을 고쳤다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 키 교체</h2>
+  <div class="wf-screen">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="키 교체 확인">
+        <div class="wf-modal-head">키 교체</div>
+        <div class="wf-modal-body">
+          <div>
+            <p class="wf-section-title">대상</p>
+            <dl class="wf-kv">
+              <dt>연결</dt><dd>결제 · app-01 · app.log</dd>
+              <dt>지금 키</dt><dd>2026-10-02 발급 · 유효(원문은 보여 주지 않음)</dd>
+            </dl>
+          </div>
+          <div>
+            <p class="wf-section-title">영향</p>
+            <ul>
+              <li>새 키를 한 번만 보여 줍니다.</li>
+              <li>새 키를 적용하고 정상 수신을 확인한 뒤 기존 키를 직접 폐기합니다.</li>
+              <li>교체 중에는 키가 2개이고 자동 종료 기한은 없습니다. 기존 키는 직접 폐기할 때까지 유효합니다.</li>
+            </ul>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">비밀번호 다시 입력</span>
+            <span class="wf-input is-focus">••••••••••••••••</span>
+          </div>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">키 교체</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="wf-frame wf-stack" style="margin-top: 16px">
+    <span class="wf-frame-label">확정 뒤 새 키를 한 번 보여 줌</span>
+    <p class="wf-callout wf-callout--strong">새 키 원문은 지금 한 번만 보여 줍니다. 닫으면 다시 볼 수 없습니다. 복사하지 못했으면 새 키를 발급해 교체해야 합니다.</p>
+    <div class="wf-row">
+      <span class="wf-label">새 키</span>
+      <span class="wf-input wf-input--wide wf-mono">ldk_••••</span>
+      <span class="wf-btn">키 복사</span>
+      <span class="wf-btn">설정 복사</span>
+      <span class="wf-btn">설정 내려받기</span>
+    </div>
+    <ol>
+      <li>새 키를 로그 서버의 에이전트에 적용합니다.</li>
+      <li>아래 키 목록에서 새 키의 정상 수신을 확인합니다.</li>
+      <li>기존 키를 직접 폐기합니다. 폐기할 때까지 기존 키도 유효합니다.</li>
+    </ol>
+  </div>
+  <div class="wf-grid-2" style="margin-top: 16px">
+    <div class="wf-frame wf-stack">
+      <span class="wf-frame-label">교체 중 키 목록 · 새 키 수신을 확인함</span>
+      <table class="wf-table">
+        <thead><tr><th>키</th><th>발급</th><th>상태</th><th>교체 진행</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>기존 키</td><td>2026-10-02 09:58:20</td><td>유효</td><td>교체 중 · 직접 폐기할 때까지 유효</td><td><span class="wf-btn wf-btn--small">기존 키 폐기</span></td></tr>
+          <tr><td>새 키</td><td>2026-11-05 10:50:02</td><td>유효</td><td>새 키 수신 확인 10:58:40</td><td></td></tr>
+        </tbody>
+      </table>
+      <div class="wf-row"><span class="wf-btn is-disabled">키 교체(교체 중에는 유효 키가 이미 2개)</span><span class="wf-help">자동 종료 기한은 없습니다.</span></div>
+    </div>
+    <div class="wf-frame wf-stack">
+      <span class="wf-frame-label">교체 중 키 목록 · 새 키 수신을 아직 확인하지 못함</span>
+      <table class="wf-table">
+        <thead><tr><th>키</th><th>발급</th><th>상태</th><th>교체 진행</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>기존 키</td><td>2026-10-02 09:58:20</td><td>유효</td><td>교체 중 · 직접 폐기할 때까지 유효</td><td><span class="wf-btn wf-btn--small">기존 키 폐기</span></td></tr>
+          <tr><td>새 키</td><td>2026-11-05 10:50:02</td><td>유효</td><td>새 키 수신 <span class="wf-badge wf-badge--unknown">미확인</span></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>키 교체는 CM-07을 거친다. 영향 문구는 CM-07 상태 7의 <span class="wf-term">키 교체</span> 행을 따른다.</li>
+    <li>새 키는 한 번만 보여 준다. 사용자가 서버에 적용하고 정상 수신을 확인한 뒤 기존 키를 직접 폐기해 교체를 끝낸다. 교체 중에는 키가 2개이고 자동 종료 기한은 없다(<span class="wf-ref">Q10-10</span>, 5절 UI-12).</li>
+    <li>연결당 유효 키는 1개, 교체 중 2개까지라 교체 중에는 키를 더 발급하지 않는다(<span class="wf-ref">Q10-07</span>, <span class="wf-ref">Q10-08</span>, 7절).</li>
+    <li>새 키의 정상 수신을 무엇으로 확인할지는 후속 설계다(<span class="wf-ref">Q10-10</span>). 그림은 새 키로 받은 수신 시각을 쓴 예이고, 확인하지 못했으면 <span class="wf-term">미확인</span>으로 쓴다(Q05·Q07·Q10 기획안 5절).</li>
+    <li><span class="wf-term">기존 키 폐기</span>는 상태 6의 키 폐기 흐름을 탄다. 키를 바꿔도 기존 대기와 이벤트 식별은 바뀌지 않는다(<span class="wf-ref">Q10-07</span>).</li>
+    <li><span class="wf-review">WQ-65 설계로 넘김:</span> 교체 중 새 키를 복사하지 못하면 유효 키가 이미 2개라 바로 새 키를 받을 수 없다. 받지 못한 새 키를 먼저 폐기하고 다시 교체하는 순서를 안내할지 문서에 없다. <strong>기본안:</strong> 받지 못한 새 키를 먼저 폐기하고 다시 교체하라고 안내한다(Q10-07 키 2개 제한, Q10-08).</li>
+    <li>그림의 <span class="wf-mono">ldk_••••</span>는 자리 표시다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 키 폐기</h2>
+  <div class="wf-screen">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="키 폐기 확인">
+        <div class="wf-modal-head">키 폐기</div>
+        <div class="wf-modal-body">
+          <div>
+            <p class="wf-section-title">대상</p>
+            <dl class="wf-kv">
+              <dt>연결</dt><dd>결제 · app-01 · app.log</dd>
+              <dt>키</dt><dd>2026-10-02 발급 · 유효(원문은 보여 주지 않음)</dd>
+            </dl>
+          </div>
+          <div>
+            <p class="wf-section-title">영향</p>
+            <ul>
+              <li>중앙이 이 키로 들어오는 새 전송을 받지 않습니다.</li>
+              <li>이미 저장한 로그는 그대로 검색됩니다.</li>
+              <li>에이전트의 대기 로그는 지우지 않습니다. 유효한 키를 적용하면 같은 로그를 다시 보냅니다.</li>
+              <li>서버에서 읽기를 멈추는 일은 서버 운영자가 직접 합니다.</li>
+            </ul>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">비밀번호 다시 입력</span>
+            <span class="wf-input is-focus">••••••••••••••••</span>
+          </div>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">키 폐기</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="wf-frame" style="margin-top: 16px">
+    <span class="wf-frame-label">에이전트가 보고하고 있을 때</span>
+    <ol class="wf-steps">
+      <li class="wf-step is-done"><span class="wf-step-name">요청 접수</span><span class="wf-step-state">완료 10:15:03</span></li>
+      <li class="wf-step is-done"><span class="wf-step-name">중앙 확정</span><span class="wf-step-state">완료 10:15:04 · 이 키의 새 전송 차단</span></li>
+      <li class="wf-step is-current is-waiting"><span class="wf-step-name">에이전트 관측</span><span class="wf-step-state">대기 · 에이전트가 다음에 보고하면 확인</span></li>
+    </ol>
+  </div>
+  <div class="wf-frame">
+    <span class="wf-frame-label">에이전트를 관측할 수 없을 때</span>
+    <ol class="wf-steps">
+      <li class="wf-step is-done"><span class="wf-step-name">요청 접수</span><span class="wf-step-state">완료 10:15:03</span></li>
+      <li class="wf-step is-done"><span class="wf-step-name">중앙 확정</span><span class="wf-step-state">완료 10:15:04 · 이 키의 새 전송 차단</span></li>
+      <li class="wf-step is-waiting"><span class="wf-step-name">에이전트 관측</span><span class="wf-step-state">미확인 · 마지막 보고 09:31:07</span></li>
+    </ol>
+    <p class="wf-help" style="margin-top: 8px">서버에서 이 연결의 읽기를 멈추는 일은 서버 운영자가 직접 합니다. 중앙 확정만으로 서버의 읽기가 멈춘 것은 아닙니다.</p>
+  </div>
+  <div class="wf-frame">
+    <span class="wf-frame-label">중앙 확정을 하지 못했을 때</span>
+    <div class="wf-toast-area"><div class="wf-toast wf-toast--fail"><span class="wf-toast-kind">실패</span><span class="wf-toast-text">키 폐기를 확정하지 못했습니다. 이 키로 들어오는 전송을 아직 받을 수 있습니다. 다시 시도하세요. 사고 대응 중이면 기다리지 말고 서버에서 이 연결의 읽기를 멈추세요.</span><span class="wf-toast-close">닫기 ×</span></div></div>
+    <ol class="wf-steps">
+      <li class="wf-step is-done"><span class="wf-step-name">요청 접수</span><span class="wf-step-state">완료 10:15:03</span></li>
+      <li class="wf-step is-current"><span class="wf-step-name">중앙 확정</span><span class="wf-step-state">실패 · 키가 아직 유효할 수 있음</span></li>
+      <li class="wf-step is-waiting"><span class="wf-step-name">에이전트 관측</span><span class="wf-step-state">대기</span></li>
+    </ol>
+    <div class="wf-row" style="margin-top: 12px"><span class="wf-btn wf-btn--strong">키 폐기 다시 시도</span></div>
+  </div>
+  <ul class="wf-notes">
+    <li>키 폐기(사고 대응 포함)는 CM-07을 거친다. 확인 창은 CM-07 상태 1, 진행 단계는 CM-07 상태 4 마크업 그대로다.</li>
+    <li>중앙 폐기를 먼저 하고 서버에서 이 연결의 로컬 읽기를 멈추는 일은 서버 운영자가 한다. 중앙 조치가 실패하거나 끊겨도 로컬 중지를 늦추지 않는다(<span class="wf-ref">Q05-02</span>).</li>
+    <li><span class="wf-term">요청 접수</span>, <span class="wf-term">중앙 확정</span>, <span class="wf-term">에이전트 관측</span>을 나눠 표시하고 확정하지 못하면 완료로 표시하지 않는다(<span class="wf-ref">Q05-02</span>, <span class="wf-ref">Q10-11</span>). 중앙 확정 실패 프레임은 이 원칙으로 더한 것이다(와이어프레임 표기).</li>
+    <li>중앙 확정 전에 저장을 마친 로그는 유지되고, 대기 로그는 보존돼 원래 연결의 유효 키로 같은 식별로 다시 보낸다(<span class="wf-ref">Q10-11</span>). 이미 저장한 로그는 계속 검색된다(<span class="wf-ref">SD-12</span>).</li>
+    <li>유효 키가 하나뿐인 연결의 키를 폐기하면 관리 상태가 <span class="wf-term">전송 차단</span>이 된다(CM-05 상태 2). 그 뒤의 모습은 상태 12다.</li>
+    <li><span class="wf-review">WQ-66 설계로 넘김:</span> 유효 키가 없는 연결(폐기 뒤)에서 새 키를 받는 동작이 <span class="wf-term">키 교체</span>인지 별도 키 발급인지 문서에 없다. 4절 CM-07은 키 발급과 교체를 따로 적었다. <strong>기본안:</strong> 유효 키가 없으면 <span class="wf-term">키 발급</span>, 있으면 <span class="wf-term">키 교체</span>로 나눈다(CM-07 목록과 같음).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s7">
+  <h2 class="wf-state-title">상태 7. 보관</h2>
+  <div class="wf-screen">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="보관 확인">
+        <div class="wf-modal-head">보관</div>
+        <div class="wf-modal-body">
+          <div>
+            <p class="wf-section-title">대상</p>
+            <dl class="wf-kv">
+              <dt>연결</dt><dd>결제 · app-01 · app.log</dd>
+              <dt>남은 대기</dt><dd>0.3MB <span class="wf-muted">마지막 보고 기준 10:14:52</span></dd>
+            </dl>
+          </div>
+          <div>
+            <p class="wf-section-title">영향</p>
+            <ul>
+              <li>중앙이 이 연결의 새 수신을 막습니다.</li>
+              <li>과거 로그는 보관 기간(6개월)까지 검색됩니다.</li>
+              <li>에이전트의 대기 로그는 지우지 않습니다.</li>
+              <li>서버에서 읽기를 멈추는 일은 서버 운영자가 따로 합니다.</li>
+            </ul>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">비밀번호 다시 입력</span>
+            <span class="wf-input is-focus">••••••••••••••••</span>
+          </div>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">보관</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="wf-frame" style="margin-top: 16px">
+    <span class="wf-frame-label">확정 뒤 진행 단계</span>
+    <ol class="wf-steps">
+      <li class="wf-step is-done"><span class="wf-step-name">요청 접수</span><span class="wf-step-state">완료 10:22:40</span></li>
+      <li class="wf-step is-done"><span class="wf-step-name">중앙 확정</span><span class="wf-step-state">완료 10:22:41 · 이 연결의 새 수신 차단</span></li>
+      <li class="wf-step is-current is-waiting"><span class="wf-step-name">에이전트 관측</span><span class="wf-step-state">대기 · 에이전트가 다음에 보고하면 확인</span></li>
+    </ol>
+  </div>
+  <ul class="wf-notes">
+    <li>보관은 CM-07을 거친다. 영향 문구는 CM-07 상태 7의 <span class="wf-term">보관</span> 행을 따르고 진행 단계는 CM-07 상태 4 마크업이다.</li>
+    <li>보관하면 중앙 새 수신을 막고 과거 로그는 보관 기간(6개월)까지 검색된다(5절 UI-12, <span class="wf-ref">Q07-07</span>, <span class="wf-ref">Q13</span>).</li>
+    <li>보관은 운영자가 명시적으로 고른다. 로그가 없거나 에이전트가 끊겼다는 이유로 자동 보관하지 않는다(<span class="wf-ref">Q07-07</span>).</li>
+    <li>로컬 읽기 중단은 서버에서 따로 하고 관측도 따로 표시한다. 중앙 확정만으로 서버의 읽기가 멈췄다고 쓰지 않는다(<span class="wf-ref">Q07-07</span>, CM-07 상태 4).</li>
+    <li>남은 대기는 지우지 않는다(<span class="wf-ref">Q07-07</span>, <span class="wf-ref">Q05-03</span>). 보관할 때 남은 대기를 보낼지 보류할지는 UI-10 상태 7의 검토 항목과 같다.</li>
+    <li>보관을 마치면 이 연결은 UI-10의 보관됨 보기로 옮겨 가고 상세에는 <span class="wf-term">재활성</span>이 보인다(상태 8). 감사 기록 장애 중에는 보류한다(<span class="wf-ref">Q10-14</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s8">
+  <h2 class="wf-state-title">상태 8. 재활성</h2>
+  <div class="wf-frame">
+    <span class="wf-frame-label">보관된 연결의 상세 머리 · 결제 · app-02 · app.log</span>
+    <div class="wf-row wf-row--top" style="margin-bottom: 12px">
+      <div class="wf-stack wf-stack--tight">
+        <h3 class="wf-page-title" style="margin-bottom: 0">결제 · app-02 · app.log</h3>
+        <span class="wf-muted">파일 <span class="wf-mono">/var/app/payment/app.log</span> · 환경 운영 · 보관 2026-10-28 09:00:00</span>
+      </div>
+      <div class="wf-row wf-end">
+        <span class="wf-btn">설정 내려받기</span>
+        <span class="wf-btn">재활성</span>
+        <span class="wf-btn">구간 로그 삭제</span>
+      </div>
+    </div>
+    <div class="wf-grid-3">
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">관리 상태</span>
+        <span><span class="wf-badge">보관</span></span>
+      </div>
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">관측 상태</span>
+        <span><span class="wf-badge">중단/보관</span></span>
+        <span class="wf-help">남은 대기 <span class="wf-badge wf-badge--unknown">미확인</span></span>
+      </div>
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">마지막 보고</span>
+        <span>2026-10-28 09:00:00 (UTC+09:00)</span>
+      </div>
+    </div>
+  </div>
+  <div class="wf-screen" style="margin-top: 16px">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="재활성 확인">
+        <div class="wf-modal-head">재활성</div>
+        <div class="wf-modal-body">
+          <div>
+            <p class="wf-section-title">대상</p>
+            <dl class="wf-kv">
+              <dt>연결</dt><dd>결제 · app-02 · app.log</dd>
+              <dt>보관</dt><dd>2026-10-28 09:00:00 (UTC+09:00)</dd>
+            </dl>
+          </div>
+          <div>
+            <p class="wf-section-title">영향</p>
+            <ul>
+              <li>같은 등록으로 돌아갑니다.</li>
+              <li>옛 키는 살아나지 않습니다.</li>
+              <li>이어 읽을 근거가 없으면 <span class="wf-term">설정/복구 확인 필요</span>로 읽기를 보류합니다.</li>
+            </ul>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">비밀번호 다시 입력</span>
+            <span class="wf-input is-focus">••••••••••••••••</span>
+          </div>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">재활성</span></div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>재활성은 CM-07을 거친다. 영향 문구는 CM-07 상태 7의 <span class="wf-term">재활성</span> 행을 따른다.</li>
+    <li>재활성은 같은 등록으로 돌아가며 옛 키는 살아나지 않는다(5절 UI-12, <span class="wf-ref">Q07-07</span>). 원래 서버·입력과 지금 유효한 자격·설정·위치를 확인한 뒤 진행하고, 이어 읽을 근거가 없으면 <span class="wf-ref">Q06</span>의 보류를 따른다(<span class="wf-ref">Q07-07</span>).</li>
+    <li>보관된 연결의 남은 대기는 짐작해 쓰지 않고 <span class="wf-term">미확인</span>으로 쓴다(CM-05 상태 2).</li>
+    <li><span class="wf-review">WQ-67 설계로 넘김:</span> 재활성 직후의 관리 상태 이름과 새 키를 받는 흐름이 문서에 없다(UI-10 상태 10과 같은 항목). <strong>기본안:</strong> WQ-56과 같다.</li>
+    <li><span class="wf-review">WQ-68 설계로 넘김:</span> 보관된 연결에서 쓸 수 있는 동작(설정 수정, 키 교체·폐기 등)이 문서에 없다. 그림에는 <span class="wf-term">설정 내려받기</span>, <span class="wf-term">재활성</span>, <span class="wf-term">구간 로그 삭제</span>만 두었다. <strong>기본안:</strong> 설정 내려받기, 재활성, 구간 로그 삭제만 둔다(그림대로). 수신을 이미 막아서 키 교체·폐기는 두지 않는다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s9">
+  <h2 class="wf-state-title">상태 9. 구간 로그 삭제</h2>
+  <div class="wf-frame wf-stack wf-w-lg">
+    <span class="wf-frame-label">구간 지정</span>
+    <p class="wf-section-title" style="margin-bottom: 0">구간 로그 삭제</p>
+    <dl class="wf-kv"><dt>연결</dt><dd>결제 · app-01 · app.log</dd></dl>
+    <div class="wf-row wf-row--top">
+      <div class="wf-field"><span class="wf-label">시작</span><span class="wf-input wf-mono">2026-11-05 09:00:00</span></div>
+      <div class="wf-field"><span class="wf-label">끝</span><span class="wf-input wf-mono">2026-11-05 10:00:00</span></div>
+      <div class="wf-field"><span class="wf-label">시간대</span><span class="wf-input is-disabled">UTC+09:00</span></div>
+      <div class="wf-field"><span class="wf-label">시간 기준</span><span class="wf-select is-disabled">설계에서 정함</span></div>
+    </div>
+    <p class="wf-help">이 연결의 중앙 로그만 지웁니다.</p>
+    <div class="wf-row"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--strong wf-end">구간 로그 삭제</span></div>
+  </div>
+  <div class="wf-screen" style="margin-top: 16px">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="구간 로그 삭제 확인">
+        <div class="wf-modal-head">구간 로그 삭제</div>
+        <div class="wf-modal-body">
+          <div>
+            <p class="wf-section-title">대상</p>
+            <dl class="wf-kv">
+              <dt>연결</dt><dd>결제 · app-01 · app.log</dd>
+              <dt>구간</dt><dd>2026-11-05 09:00:00 ~ 10:00:00 (UTC+09:00)</dd>
+            </dl>
+          </div>
+          <div>
+            <p class="wf-section-title">영향</p>
+            <ul>
+              <li>되돌릴 수 없습니다.</li>
+              <li>에이전트 대기와 원본 파일은 지우지 않습니다.</li>
+              <li>실제 공간 회수까지 시간이 걸립니다.</li>
+              <li>같은 구간이 다시 전송돼도 저장하지 않습니다.</li>
+            </ul>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">비밀번호 다시 입력</span>
+            <span class="wf-input is-focus">••••••••••••••••</span>
+          </div>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">구간 로그 삭제</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="wf-frame wf-w-lg" style="margin-top: 16px">
+    <span class="wf-frame-label">확정 뒤</span>
+    <div class="wf-toast-area"><div class="wf-toast"><span class="wf-toast-kind">성공</span><span class="wf-toast-text">구간 로그 삭제를 확정했습니다. 실제 공간 회수까지 시간이 걸립니다. 같은 구간이 다시 전송돼도 저장하지 않습니다.</span><span class="wf-toast-close">닫기 ×</span></div></div>
+  </div>
+  <ul class="wf-notes">
+    <li>이 연결과 시간 구간을 지정해 중앙 로그를 지운다. 로그 한 건씩 골라 지우는 동작은 없다(<span class="wf-ref">Q13-03</span>, 3절).</li>
+    <li>확인 단계에서 되돌릴 수 없다는 것, 에이전트 대기와 원본 파일은 지우지 않는다는 것, 실제 공간 회수까지 시간이 걸린다는 것, 같은 구간이 다시 전송돼도 저장하지 않는다는 것을 보여 준다(5절 UI-12, CM-07 상태 7).</li>
+    <li>구간의 시간 기준(발생·수신 시각)과 경계 포함 방식은 설계에서 정한다(<span class="wf-ref">Q13-03</span>). 그림은 시간 기준 칸을 비워 두었다.</li>
+    <li>공용 계정이라 삭제한 사람을 구분하지 못한다. 감사 기록 장애 중에는 일반 민감 변경으로 보류한다(<span class="wf-ref">Q13-03</span>, <span class="wf-ref">Q10-14</span>). 삭제한 구간은 알림 조사 모드에서 <span class="wf-term">수동 삭제</span> 사유로 보인다(5절 UI-02).</li>
+    <li><span class="wf-review">WQ-69 설계로 넘김:</span> 삭제 확정 뒤 검색에서 빠지는 시점과 공간 회수 진행을 이 화면에 보여 줄지 문서에 없다. CM-07 상태 7은 이 작업에 진행 단계를 두지 않았다. <strong>기본안:</strong> 확정하면 바로 검색에서 뺀다(엔진 능력은 설계에서 확인). 공간 회수는 UI-13의 저장량으로만 보인다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s10">
+  <h2 class="wf-state-title">상태 10. 지금부터 다시 수집 안내</h2>
+  <div class="wf-frame wf-stack">
+    <span class="wf-frame-label">주문 · app-02 · app.log, 이어 읽을 근거가 없어 읽기를 보류한 경우</span>
+    <div class="wf-grid-3">
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">관리 상태</span>
+        <span><span class="wf-badge">사용</span></span>
+      </div>
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">관측 상태</span>
+        <span><span class="wf-badge">설정/복구 확인 필요</span></span>
+        <span class="wf-help">복구 근거 없음 · 보류 시작 09:12:40</span>
+      </div>
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">마지막 보고</span>
+        <span>2026-11-05 10:13:20 (UTC+09:00)</span>
+      </div>
+    </div>
+    <p class="wf-callout wf-callout--strong">이어 읽을 근거가 없어 이 파일의 자동 읽기를 보류했습니다.</p>
+    <div class="wf-grid-2">
+      <div class="wf-frame">
+        <p class="wf-section-title">누락 영향</p>
+        <dl class="wf-kv">
+          <dt>대상</dt><dd class="wf-mono">/var/app/order/app.log</dd>
+          <dt>보류 시작</dt><dd>09:12:40</dd>
+          <dt>누락 가능 구간</dt><dd>09:12:40 ~ 서버에서 적용할 때까지</dd>
+          <dt>누락 건수</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span></dd>
+          <dt>기존 대기</dt><dd>1.2MB · 지우지 않고 그대로 보냅니다</dd>
+        </dl>
+        <p class="wf-help" style="margin-top: 8px">보류하는 동안 원본 파일이 회전·삭제되면 복구할 기회가 사라질 수 있습니다.</p>
+      </div>
+      <div class="wf-frame wf-stack">
+        <p class="wf-section-title" style="margin-bottom: 0">지금부터 다시 수집</p>
+        <p>서버에서 적용하면 에이전트가 적용할 때 확인한 파일 끝 위치부터 새 이벤트를 읽습니다. 경계에 걸친 쓰던 이벤트는 제외하고, 보류 구간의 로그는 가져오지 않습니다.</p>
+        <p class="wf-section-title" style="margin-bottom: 0">서버에서 적용할 방법</p>
+        <div class="wf-placeholder" style="min-height: 64px">로그 서버에서 실행할 절차(설치·운영 설계에서 정함)</div>
+        <p class="wf-help">웹에서는 에이전트에 실행을 지시하지 않습니다. 서버에서 적용한 뒤 이 화면에서 재개를 확인하세요.</p>
+      </div>
+    </div>
+  </div>
+  <div class="wf-frame wf-w-lg" style="margin-top: 16px">
+    <span class="wf-frame-label">서버에서 적용한 뒤</span>
+    <div class="wf-row" style="margin-bottom: 8px"><span class="wf-muted">관측</span><span class="wf-badge">수집/전송 진행</span><span class="wf-muted">마지막 보고 10:40:30</span></div>
+    <dl class="wf-kv">
+      <dt>다시 수집 적용</dt><dd>10:40:02 · 새 시작 위치 52,118 byte · 사유 복구 근거 없음</dd>
+      <dt>누락 가능 구간</dt><dd>09:12:40 ~ 10:40:02 · 건수 <span class="wf-badge wf-badge--unknown">미확인</span></dd>
+    </dl>
+  </div>
+  <ul class="wf-notes">
+    <li>복구 근거가 없어 <span class="wf-term">설정/복구 확인 필요</span>가 되면 누락 영향과 대상, 서버에서 적용할 방법을 안내한다. 웹에서 에이전트에 실행을 지시하지 않는다(5절 UI-12, 3절).</li>
+    <li>서버에서 <span class="wf-term">지금부터 다시 수집</span>을 적용하면 에이전트가 그때 확인한 파일 끝 위치부터 새 이벤트를 읽고 쓰던 이벤트는 제외한다. 기존 유효 대기는 원래 식별로 보존해 보낸다. 정상 재시작이나 유효한 복원에는 쓰지 않는다(<span class="wf-ref">Q06</span>).</li>
+    <li>대상, 적용 시각, 새 위치, 제외 사유, 확인 가능한 누락 범위를 남기고 모르는 건수는 <span class="wf-term">미확인</span>으로 쓴다(<span class="wf-ref">Q06</span>). 보류 중 원본 회전·삭제로 복구 기회가 사라질 수 있다는 경계도 보여 준다(수집 명세 D02 복구 상태 유실).</li>
+    <li>서버에서 실행할 절차와 권한은 후속 설계라 빈 자리로 그렸다(<span class="wf-ref">Q06</span>).</li>
+    <li>흐름은 UI-10에서 <span class="wf-term">설정/복구 확인 필요</span> 확인 → 이 안내 → 서버에서 적용 → 이 화면에서 재개 확인이다(6절 수집 복구 확인 필요).</li>
+    <li><span class="wf-review">WQ-70 문서로 정리:</span> <span class="wf-ref">Q10-05</span>는 <span class="wf-ref">Q06</span> 수동 재개를 대상·영향 확인과 비밀번호 재확인을 받는 민감 작업으로 적었지만, 화면 흐름 명세는 웹에서 지시하지 않고 안내만 한다. 웹에 누락 확인 같은 확인 단계를 둘지 두 문서를 맞춰야 한다. <strong>정리:</strong> 웹에 실행 동작이 없어 재인증 대상이 생기지 않는다. 웹에서 실행하는 기능이 생기면 Q10-05를 적용한다고 명세 UI-12에 적었다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s11">
+  <h2 class="wf-state-title">상태 11. 미관측 중</h2>
+  <div class="wf-frame">
+    <span class="wf-frame-label">주문 · app-02 · journald, 마지막 보고 뒤로 관측하지 못함</span>
+    <div class="wf-grid-3">
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">관리 상태</span>
+        <span><span class="wf-badge">사용</span></span>
+      </div>
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">관측 상태</span>
+        <span><span class="wf-badge wf-badge--unknown">관측 오래됨/미확인</span></span>
+        <span class="wf-help">2026-11-05 09:31:07 이후 보고가 없습니다.</span>
+      </div>
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">마지막 보고</span>
+        <span>2026-11-05 09:31:07 (UTC+09:00)</span>
+      </div>
+    </div>
+    <hr class="wf-hr">
+    <dl class="wf-kv">
+      <dt>에이전트 대기</dt><dd>40MB <span class="wf-muted">마지막 보고 기준 09:31:07</span></dd>
+      <dt>가장 오래된 대기</dt><dd>09:28:40 <span class="wf-muted">마지막 보고 기준 09:31:07</span></dd>
+      <dt>마지막 전송 확인</dt><dd>09:31:05</dd>
+      <dt>지금 대기량</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span></dd>
+      <dt>해석 실패·거부</dt><dd>0건 <span class="wf-muted">마지막 보고 기준 09:31:07 · 그 뒤는 미확인</span></dd>
+      <dt>진단 이력</dt><dd>09:31:07 이후 진단을 받지 못했습니다. 거부가 없었다는 뜻이 아닙니다.</dd>
+    </dl>
+  </div>
+  <ul class="wf-notes">
+    <li>마지막 값을 지금 값처럼 보이지 않게 값마다 <span class="wf-term">마지막 보고 기준</span>을 붙인다(5절 UI-12, CM-05 상태 5). 위쪽 마크업은 CM-05 상태 5의 상세 머리 그대로다.</li>
+    <li>진단을 받지 못한 동안의 거부·해석 실패는 0건으로 보지 않고 <span class="wf-term">미확인</span>으로 쓴다(D03, 수집 명세 OB-04).</li>
+    <li>관측 오래됨 판정 기준은 정하지 않았다(7절). 관측 불가가 10분 지속되면 운영 메일 1통으로 알리고(<span class="wf-ref">Q12-06</span>), 관측이 끊겼다는 이유로 자동 보관하지 않는다(<span class="wf-ref">Q07-07</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s12">
+  <h2 class="wf-state-title">상태 12. 키 차단 뒤 마지막 보고</h2>
+  <div class="wf-frame">
+    <span class="wf-frame-label">결제 · app-01 · app.log, 하나뿐인 키를 폐기한 뒤</span>
+    <div class="wf-grid-3">
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">관리 상태</span>
+        <span><span class="wf-badge">전송 차단</span></span>
+        <span class="wf-help">키 폐기 중앙 확정 10:15:04 · 유효 키 없음</span>
+      </div>
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">관측 상태</span>
+        <span><span class="wf-badge">전송 오류/보류</span></span>
+        <span class="wf-help">인증 오류</span>
+      </div>
+      <div class="wf-stack wf-stack--tight">
+        <span class="wf-label">마지막 보고</span>
+        <span>2026-11-05 10:14:52 (UTC+09:00)</span>
+        <span class="wf-help">키 차단 전 보고</span>
+      </div>
+    </div>
+    <p class="wf-callout" style="margin-top: 12px">아래 값은 키 차단 전 마지막 보고(10:14:52) 기준이며 지금 상태가 아닙니다. 서버에서 읽기가 멈췄는지는 이 화면에서 알 수 없습니다.</p>
+    <dl class="wf-kv" style="margin-top: 12px">
+      <dt>에이전트 대기</dt><dd>0.3MB <span class="wf-muted">마지막 보고 기준 10:14:52</span></dd>
+      <dt>지금 대기량</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span> <span class="wf-muted">차단 뒤에도 에이전트는 대기 한도까지 새 로그를 읽어 보관할 수 있습니다.</span></dd>
+      <dt>마지막 전송 확인</dt><dd>10:14:51</dd>
+    </dl>
+    <p class="wf-help" style="margin-top: 8px">대기 로그는 에이전트에 보존됩니다. 유효한 키를 적용하면 같은 로그를 다시 보냅니다.</p>
+  </div>
+  <ul class="wf-notes">
+    <li>키를 차단한 뒤에는 마지막 보고를 지금 현황처럼 표시하지 않는다(Q05·Q07·Q10 기획안 5절, 5절 UI-12).</li>
+    <li><span class="wf-term">전송 차단</span>은 중앙이 새 전송을 받지 않는다는 뜻이고 서버의 읽기 중단과 구분한다. 읽기 중지는 서버 운영자가 따로 한다(CM-05 상태 2, <span class="wf-ref">Q05-02</span>). 관리·관측 조합은 CM-05 상태 4의 예를 따랐다.</li>
+    <li>키 오류로 전송이 보류돼도 명시 중지가 없으면 에이전트는 대기 한도까지 새 로그를 읽어 보관한다(<span class="wf-ref">Q05-01</span>). 그래서 지금 대기량은 <span class="wf-term">미확인</span>이다.</li>
+    <li>대기 로그는 보존되고 원래 연결의 유효 키로 같은 식별로 다시 보낸다(<span class="wf-ref">Q10-11</span>). 새 키를 받는 동작은 상태 6의 검토 항목이다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s13">
+  <h2 class="wf-state-title">상태 13. 대기량 미상</h2>
+  <div class="wf-grid-2">
+    <div class="wf-frame">
+      <span class="wf-frame-label">배송 · app-01 · app.log, 보관 뒤</span>
+      <div class="wf-row" style="margin-bottom: 8px">
+        <span class="wf-muted">관리</span><span class="wf-badge">보관</span>
+        <span class="wf-muted">관측</span><span class="wf-badge">중단/보관</span>
+      </div>
+      <dl class="wf-kv">
+        <dt>마지막 보고</dt><dd>2026-10-30 18:00:00 (UTC+09:00)</dd>
+        <dt>대기</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span></dd>
+        <dt>가장 오래된 대기</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span></dd>
+      </dl>
+      <p class="wf-help" style="margin-top: 8px">남은 대기를 알 수 없습니다. 대기가 없거나 지워졌다는 뜻이 아닙니다.</p>
+    </div>
+    <div class="wf-frame">
+      <span class="wf-frame-label">주문 · app-01 · app-*.log, 보고를 받은 적 없음</span>
+      <div class="wf-row" style="margin-bottom: 8px">
+        <span class="wf-muted">관리</span><span class="wf-badge">등록·연결 대기</span>
+        <span class="wf-muted">관측</span><span class="wf-badge">연결 대기</span>
+      </div>
+      <dl class="wf-kv">
+        <dt>마지막 보고</dt><dd>없음</dd>
+        <dt>대기</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span></dd>
+        <dt>가장 오래된 대기</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span></dd>
+      </dl>
+      <p class="wf-help" style="margin-top: 8px">에이전트 보고를 받은 적이 없어 대기량을 모릅니다.</p>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>대기량을 모르면 0으로 쓰지 않고 <span class="wf-term">미확인</span>으로 쓴다(5절 UI-12, 1절). 남은 대기를 모르는 것은 0이 아니다(Q05·Q07·Q10 기획안 5절).</li>
+    <li>보관 뒤에도 대기 0, 삭제 완료, 서버 중지 완료를 짐작해 쓰지 않는다(CM-05 상태 2).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s14">
+  <h2 class="wf-state-title">상태 14. 감사 기록 장애로 변경 보류</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item is-current" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-banners" role="region" aria-label="전역 배너">
+      <p class="wf-banner"><strong class="wf-banner-kind">감사 기록 장애</strong><span class="wf-banner-text">2026-11-05 10:31:00 (UTC+09:00)부터 감사 기록을 저장하지 못하고 있습니다. 로그인·검색·수집은 계속됩니다. 키 발급, 등록·설정 변경, 비밀번호 변경, 알림 규칙 변경 등은 보류되니 복구된 뒤 다시 실행하세요.</span><a class="wf-banner-link" href="UI-15-audit-log.html">감사 이력 보기</a></p>
+    </div>
+    <div class="wf-screen-body">
+      <h3 class="wf-page-title">결제 · app-01 · app.log</h3>
+      <div class="wf-grid-2">
+        <div class="wf-frame">
+          <span class="wf-frame-label">설정 수정을 시도한 경우</span>
+          <div class="wf-toast-area"><div class="wf-toast wf-toast--hold"><span class="wf-toast-kind">보류</span><span class="wf-toast-text">감사 기록을 저장할 수 없어 설정 변경을 적용하지 않았습니다. 기존 설정이 그대로 쓰입니다. 감사 기록이 복구된 뒤 다시 실행하세요. <a href="UI-15-audit-log.html">감사 이력 보기</a></span><span class="wf-toast-close">닫기 ×</span></div></div>
+          <ol class="wf-steps">
+            <li class="wf-step is-done"><span class="wf-step-name">요청 접수</span><span class="wf-step-state">완료 10:40:12</span></li>
+            <li class="wf-step is-current"><span class="wf-step-name">보류</span><span class="wf-step-state">감사 기록 장애로 적용하지 않음</span></li>
+          </ol>
+        </div>
+        <div class="wf-frame">
+          <span class="wf-frame-label">긴급 키 폐기를 한 경우</span>
+          <p class="wf-callout">감사 기록 장애 중입니다. 키 폐기는 차단 상태를 확정할 수 있으면 진행하고, 이 작업은 감사 이력에 공백으로 남습니다.</p>
+          <ol class="wf-steps" style="margin-top: 12px">
+            <li class="wf-step is-done"><span class="wf-step-name">요청 접수</span><span class="wf-step-state">완료 10:41:30</span></li>
+            <li class="wf-step is-done"><span class="wf-step-name">중앙 확정</span><span class="wf-step-state">완료 10:41:31 · 감사 기록 공백</span></li>
+            <li class="wf-step is-current is-waiting"><span class="wf-step-name">에이전트 관측</span><span class="wf-step-state">대기</span></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>감사 기록 장애 중에는 설정 수정, 키 교체, 보관·재활성, 구간 로그 삭제 같은 일반 민감 변경을 적용 전에 보류한다(<span class="wf-ref">Q10-14</span>, <span class="wf-ref">Q13-03</span>). 보류 결과는 CM-07 상태 5처럼 CM-08 토스트로 알린다.</li>
+    <li>긴급 키 폐기는 실제 차단 상태를 확정 저장할 수 있으면 허용하고 감사 공백과 실제 결과를 나눠 보여 준다. 확정하지 못하면 완료로 표시하지 않는다(<span class="wf-ref">Q10-14</span>, CM-07 상태 6 마크업).</li>
+    <li>장애는 CM-01 전역 배너로도 알리고 수집과 검색은 계속된다. 보류한 변경은 복구돼도 자동으로 적용하지 않고 사용자가 다시 실행한다(2026-11-05 <span class="wf-ref">Q10-14</span> 후속 합의).</li>
+  </ul>
+</section>
+
+</body>
+</html>

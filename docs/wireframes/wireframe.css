@@ -1,0 +1,226 @@
+@charset "utf-8";
+/*
+ * LogDock 와이어프레임 공통 스타일
+ *
+ * - 와이어프레임 전용이다. 실제 화면 구현 코드로 쓰지 않는다(화면 흐름 명세 8절).
+ * - 회색조 저충실도다. 색·글꼴·아이콘 디자인을 하지 않고 상태는 글자로 구분한다.
+ * - 모든 묶음이 이 파일을 그대로 쓰고 고치지 않는다. 필요한 모양이 없으면 화면 파일 안의
+ *   <style>에 두고 검토 단계에 올린다.
+ *
+ * 페이지 구조
+ *   body.wf
+ *     header.wf-doc          파일 제목(화면 ID와 이름), 설명, 근거(p.wf-meta), 상태 목차(nav.wf-toc)
+ *     section.wf-state       상태 하나. h2.wf-state-title → 그림 → ul.wf-notes
+ *       div.wf-screen        데스크톱 Chrome 한 화면(가로 1280px). nav.wf-topbar부터 그린다
+ *         div.wf-screen-body 화면 본문
+ *       div.wf-frame         요소 하나만 그릴 때의 틀
+ *       div.wf-toast-area    토스트(CM-08). 화면 오른쪽 위에 겹쳐 뜨는 작업 결과 알림을
+ *                            그 상태 그림의 맨 위 오른쪽에 그린다
+ *
+ * 표기
+ *   .wf-n       정하지 않은 수치 N(화면 흐름 명세 7절)
+ *   .wf-ref     합의·설계 ID(예: Q12-06, SD-22)
+ *   .wf-term    화면 문구와 상태 이름을 주석에서 가리킬 때(예: 완료 0건)
+ *   .wf-mono    파일 이름·코드·시각처럼 글자 폭을 맞춰야 하는 값
+ *   .wf-review  문서에 없어 검토 단계에서 정할 점. 글 앞에 "검토 항목:"을 쓴다.
+ *               처리를 정하면 "WQ-nn 설계로 넘김:"·"WQ-nn 문서로 정리:"로 바꾼다(정리표)
+ *   .wf-badge   상태 이름. 색 대신 테두리와 글자로 구분한다
+ *
+ * 상태 표현
+ *   .is-current 현재 메뉴   .is-on 고른 값   .is-focus 입력 중   .is-error 오류 칸
+ *   .is-disabled 쓸 수 없음(이유를 글자로 함께 쓴다)   .wf-dim 지금 조건의 결과가 아닌 영역
+ */
+
+:root {
+  --wf-ink: #1a1a1a;
+  --wf-ink-2: #4a4a4a;
+  --wf-ink-3: #767676;
+  --wf-line: #959595;
+  --wf-line-2: #c9c9c9;
+  --wf-fill: #f1f1f1;
+  --wf-fill-2: #e2e2e2;
+  --wf-fill-3: #cfcfcf;
+  --wf-paper: #ffffff;
+  --wf-bg: #f7f7f7;
+  --wf-screen-width: 1280px;
+  --wf-font: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --wf-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body.wf {
+  margin: 0;
+  padding: 32px 40px 96px;
+  background: var(--wf-bg);
+  color: var(--wf-ink);
+  font: 14px/1.5 var(--wf-font);
+}
+/* 기본값은 :where()로 우선순위를 0으로 둔다. 아래 .wf-* 규칙이 항상 이긴다 */
+:where(.wf) a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+:where(.wf) :where(h1, h2, h3, h4) { margin: 0; line-height: 1.3; }
+:where(.wf) p { margin: 0; }
+:where(.wf) :where(ul, ol) { margin: 0; padding-left: 20px; }
+
+/* ── 문서 머리 ───────────────────────────────────── */
+.wf-doc { max-width: var(--wf-screen-width); margin-bottom: 40px; }
+.wf-doc-nav { font-size: 13px; color: var(--wf-ink-2); margin-bottom: 12px; }
+.wf-doc h1 { font-size: 24px; margin-bottom: 8px; }
+.wf-doc > p { margin-bottom: 6px; color: var(--wf-ink-2); max-width: 960px; }
+.wf-meta { font-size: 13px; color: var(--wf-ink-3); }
+.wf-toc { margin-top: 16px; padding: 12px 16px; background: var(--wf-paper); border: 1px solid var(--wf-line-2); max-width: 960px; }
+.wf-toc ol { columns: 2; column-gap: 32px; }
+.wf-toc li { margin: 2px 0; }
+
+/* ── 상태 묶음과 그림 틀 ─────────────────────────── */
+.wf-state { max-width: var(--wf-screen-width); margin: 0 0 48px; padding-top: 24px; border-top: 2px solid var(--wf-ink); }
+.wf-state-title { font-size: 18px; margin-bottom: 6px; }
+.wf-state-desc { color: var(--wf-ink-2); margin-bottom: 12px; max-width: 960px; }
+.wf-screen { width: var(--wf-screen-width); background: var(--wf-paper); border: 2px solid var(--wf-ink); position: relative; }
+.wf-screen-body { padding: 20px 24px 28px; min-height: 140px; }
+.wf-page-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+.wf-frame { background: var(--wf-paper); border: 1px solid var(--wf-line); padding: 20px; position: relative; }
+.wf-frame + .wf-frame { margin-top: 16px; }
+/* 그리드·가로줄 안에서는 칸끼리 위아래 여백을 두지 않는다 */
+:is(.wf-grid-2, .wf-grid-3, .wf-grid-4, .wf-row) > .wf-frame + .wf-frame { margin-top: 0; }
+.wf-frame-label { display: block; font-size: 12px; color: var(--wf-ink-3); margin-bottom: 10px; }
+.wf-w-sm { width: 480px; }
+.wf-w-md { width: 720px; }
+.wf-w-lg { width: 960px; }
+.wf-placeholder {
+  display: flex; align-items: center; justify-content: center; min-height: 96px;
+  border: 1px dashed var(--wf-ink-3); color: var(--wf-ink-2); font-size: 13px; text-align: center;
+  background: repeating-linear-gradient(45deg, var(--wf-paper) 0 8px, var(--wf-fill) 8px 16px);
+}
+
+/* ── 주석 ────────────────────────────────────────── */
+.wf-notes { margin-top: 12px; padding: 12px 16px 12px 34px; background: var(--wf-paper); border-left: 4px solid var(--wf-line); font-size: 13px; color: var(--wf-ink-2); max-width: 1100px; }
+.wf-notes li + li { margin-top: 4px; }
+.wf-ref { font: 12px var(--wf-mono); padding: 0 4px; border: 1px solid var(--wf-line-2); background: var(--wf-fill); white-space: nowrap; }
+.wf-n { font-family: var(--wf-mono); font-weight: 700; padding: 0 3px; border: 1px dashed var(--wf-ink-2); }
+.wf-term { font-weight: 600; color: var(--wf-ink); padding: 0 3px; background: var(--wf-fill-2); white-space: nowrap; }
+.wf-review { font-weight: 700; color: var(--wf-ink); }
+
+/* ── 상단 메뉴와 전역 배너(CM-01) ────────────────── */
+.wf-topbar { display: flex; align-items: stretch; gap: 28px; height: 52px; padding: 0 24px; border-bottom: 2px solid var(--wf-ink); background: var(--wf-paper); }
+.wf-brand { display: flex; align-items: center; font-weight: 800; font-size: 16px; }
+.wf-menu { display: flex; gap: 2px; list-style: none; margin: 0; padding: 0; }
+.wf-menu > li { position: relative; display: flex; }
+.wf-menu-item { display: flex; align-items: center; gap: 6px; padding: 0 12px; text-decoration: none; border-bottom: 4px solid transparent; white-space: nowrap; }
+.wf-menu-item.is-current { font-weight: 700; border-bottom-color: var(--wf-ink); }
+.wf-menu-item.is-open { background: var(--wf-fill-2); }
+.wf-menu-count { font-size: 12px; padding: 0 6px; border: 1px solid var(--wf-ink); border-radius: 10px; background: var(--wf-fill-2); font-weight: 600; }
+.wf-menu-end { margin-left: auto; }
+.wf-dropdown { position: absolute; top: 100%; left: 0; min-width: 220px; list-style: none; margin: 0; padding: 4px 0; background: var(--wf-paper); border: 1px solid var(--wf-ink); box-shadow: 3px 3px 0 var(--wf-fill-3); z-index: 2; }
+.wf-dropdown a { display: block; padding: 8px 14px; text-decoration: none; }
+.wf-banners { border-bottom: 1px solid var(--wf-line); }
+.wf-banner { display: flex; align-items: baseline; gap: 12px; padding: 10px 24px; background: var(--wf-fill-2); border-top: 1px solid var(--wf-line); }
+.wf-banner:first-child { border-top: 0; }
+.wf-banner-kind { flex: none; font-weight: 700; padding: 0 6px; border: 2px solid var(--wf-ink); background: var(--wf-paper); }
+.wf-banner-text { flex: 1; }
+.wf-banner-link { flex: none; font-weight: 600; }
+
+/* ── 입력과 버튼 ─────────────────────────────────── */
+.wf-btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border: 1px solid var(--wf-ink); background: var(--wf-paper); font-size: 14px; white-space: nowrap; text-decoration: none; }
+.wf-btn--primary { background: var(--wf-ink); color: var(--wf-paper); font-weight: 600; }
+.wf-btn--strong { border-width: 2px; font-weight: 700; }
+.wf-btn--small { height: 26px; padding: 0 10px; font-size: 13px; }
+.wf-btn.is-disabled { border-style: dashed; border-color: var(--wf-line); background: var(--wf-fill); color: var(--wf-ink-3); font-weight: 400; }
+.wf-field { display: flex; flex-direction: column; gap: 4px; }
+.wf-label { font-size: 13px; font-weight: 600; }
+.wf-input, .wf-select { display: inline-flex; align-items: center; min-width: 160px; height: 32px; padding: 0 10px; border: 1px solid var(--wf-ink-2); background: var(--wf-paper); white-space: nowrap; }
+.wf-select::after { content: "▾"; margin-left: auto; padding-left: 10px; color: var(--wf-ink-2); }
+.wf-input.is-empty, .wf-select.is-empty { color: var(--wf-ink-3); }
+.wf-input.is-focus, .wf-select.is-focus { outline: 2px solid var(--wf-ink); outline-offset: 1px; }
+.wf-input.is-error, .wf-select.is-error { border: 3px double var(--wf-ink); }
+.wf-input.is-disabled, .wf-select.is-disabled { border-style: dashed; background: var(--wf-fill); color: var(--wf-ink-3); }
+.wf-input--short { min-width: 64px; width: 64px; }
+.wf-input--wide { min-width: 280px; }
+.wf-help { font-size: 12px; color: var(--wf-ink-3); }
+.wf-error { font-size: 13px; font-weight: 700; padding-left: 8px; border-left: 4px solid var(--wf-ink); }
+.wf-check, .wf-radio { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.wf-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border: 1px solid var(--wf-ink-2); background: var(--wf-fill); font-size: 13px; white-space: nowrap; }
+.wf-chip-x { color: var(--wf-ink-3); }
+.wf-seg { display: inline-flex; align-self: flex-start; border: 1px solid var(--wf-ink); background: var(--wf-paper); }
+.wf-seg > span { padding: 4px 12px; border-left: 1px solid var(--wf-ink); white-space: nowrap; }
+.wf-seg > span:first-child { border-left: 0; }
+.wf-seg > .is-on { background: var(--wf-ink); color: var(--wf-paper); font-weight: 600; }
+.wf-tabs { display: flex; border-bottom: 1px solid var(--wf-ink); }
+.wf-tabs > span { padding: 6px 14px; border: 1px solid transparent; border-bottom: 0; margin-bottom: -1px; white-space: nowrap; }
+.wf-tabs > .is-on { border-color: var(--wf-ink); background: var(--wf-paper); font-weight: 700; }
+.wf-popover { background: var(--wf-paper); border: 1px solid var(--wf-ink); box-shadow: 4px 4px 0 var(--wf-fill-3); padding: 16px; }
+.wf-listbox { list-style: none; margin: 0; padding: 4px 0; min-width: 200px; background: var(--wf-paper); border: 1px solid var(--wf-ink); box-shadow: 3px 3px 0 var(--wf-fill-3); }
+.wf-option { display: flex; align-items: center; gap: 8px; padding: 5px 12px; }
+.wf-option.is-on { font-weight: 700; }
+.wf-option.is-focus { background: var(--wf-fill-2); }
+.wf-option.is-disabled { color: var(--wf-ink-3); }
+.wf-option-group { padding: 6px 12px 2px; font-size: 12px; font-weight: 700; color: var(--wf-ink-3); }
+
+/* 라벨 열과 입력 열로 나눈 폼 줄. 조건 편집기(CM-03)와 편집 화면에서 쓴다 */
+.wf-formrow { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: start; padding: 10px 0; border-top: 1px solid var(--wf-line-2); }
+.wf-formrow:first-child { border-top: 0; }
+.wf-formrow-label { font-weight: 700; padding-top: 5px; }
+
+/* ── 표시 ────────────────────────────────────────── */
+.wf-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border: 1px solid var(--wf-ink); background: var(--wf-paper); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.wf-badge--strong { background: var(--wf-ink); color: var(--wf-paper); }
+.wf-badge--unknown { border-style: dashed; }
+.wf-badge--quiet { border-color: var(--wf-line); color: var(--wf-ink-2); font-weight: 400; }
+.wf-kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+.wf-kv dt { color: var(--wf-ink-2); }
+.wf-kv dd { margin: 0; }
+.wf-table { width: 100%; border-collapse: collapse; background: var(--wf-paper); font-size: 13px; }
+.wf-table th, .wf-table td { border: 1px solid var(--wf-line-2); padding: 6px 10px; text-align: left; vertical-align: top; }
+.wf-table th { background: var(--wf-fill); font-weight: 700; }
+.wf-table tr.is-on td { background: var(--wf-fill-2); }
+.wf-mono { font-family: var(--wf-mono); font-size: 12.5px; }
+.wf-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 14px; border: 2px solid var(--wf-ink); background: var(--wf-fill); }
+.wf-status-name { font-weight: 800; font-size: 15px; }
+.wf-status-detail { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--wf-ink-2); }
+.wf-status-actions { margin-left: auto; display: flex; gap: 8px; }
+.wf-callout { padding: 10px 14px; border: 1px solid var(--wf-ink-2); background: var(--wf-fill); }
+.wf-callout--strong { border: 2px solid var(--wf-ink); font-weight: 600; }
+.wf-dim { opacity: 0.45; }
+.wf-steps { display: flex; list-style: none; margin: 0; padding: 0; }
+.wf-step { flex: 1; padding: 10px 12px; border: 1px solid var(--wf-ink-2); border-left-width: 0; background: var(--wf-paper); }
+.wf-step:first-child { border-left-width: 1px; }
+.wf-step-name { display: block; font-weight: 700; }
+.wf-step-state { display: block; font-size: 12px; color: var(--wf-ink-2); }
+.wf-step.is-done { background: var(--wf-fill-2); }
+.wf-step.is-current { outline: 2px solid var(--wf-ink); outline-offset: -2px; }
+.wf-step.is-waiting { border-style: dashed; }
+.wf-skeleton { display: inline-block; height: 10px; width: 100%; background: var(--wf-fill-2); }
+
+/* 확인 창. .wf-overlay는 창 뒤 화면을 가린 영역이다 */
+.wf-overlay { display: flex; justify-content: center; padding: 40px 0; background: var(--wf-fill-3); }
+.wf-modal { width: 600px; background: var(--wf-paper); border: 2px solid var(--wf-ink); box-shadow: 6px 6px 0 var(--wf-ink-3); }
+.wf-modal-head { padding: 14px 20px; border-bottom: 1px solid var(--wf-line); font-weight: 800; font-size: 16px; }
+.wf-modal-body { display: flex; flex-direction: column; gap: 14px; padding: 16px 20px; }
+.wf-modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--wf-line); }
+.wf-panel { background: var(--wf-paper); border-left: 2px solid var(--wf-ink); padding: 16px 20px; }
+
+/* 토스트(CM-08). 방금 한 작업의 결과만 띄운다. 종류는 글자로 쓰고 실패·보류는 테두리를 굵게 한다 */
+.wf-toast-area { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-bottom: 12px; }
+.wf-toast { display: flex; align-items: flex-start; gap: 10px; width: 440px; max-width: 100%; padding: 10px 12px; background: var(--wf-paper); border: 1px solid var(--wf-ink); box-shadow: 4px 4px 0 var(--wf-fill-3); }
+.wf-toast--fail, .wf-toast--hold { border-width: 2px; }
+.wf-toast-kind { flex: none; font-weight: 700; padding: 0 6px; border: 1px solid var(--wf-ink); }
+.wf-toast--fail .wf-toast-kind, .wf-toast--hold .wf-toast-kind { border-width: 2px; background: var(--wf-fill-2); }
+.wf-toast-text { flex: 1; }
+.wf-toast-close { flex: none; font-size: 12px; color: var(--wf-ink-3); }
+
+/* ── 배치 ────────────────────────────────────────── */
+.wf-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.wf-row--top { align-items: flex-start; }
+.wf-row--nowrap { flex-wrap: nowrap; }
+.wf-stack { display: flex; flex-direction: column; gap: 12px; }
+.wf-stack--tight { gap: 6px; }
+.wf-grow { flex: 1; }
+.wf-end { margin-left: auto; }
+.wf-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.wf-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.wf-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start; }
+.wf-section-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.wf-hr { border: 0; border-top: 1px solid var(--wf-line-2); margin: 12px 0; }
+.wf-muted { color: var(--wf-ink-3); }
+.wf-small { font-size: 12px; }
+.wf-strong { font-weight: 700; }

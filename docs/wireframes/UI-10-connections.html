@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI-10 수집 연결 목록</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>UI-10 수집 연결 목록</h1>
+  <p>서비스별로 묶은 수집 연결과 관리 상태·관측 상태를 보고, 서비스 이름과 보관을 관리한다. 상단 메뉴의 <span class="wf-term">수집 연결</span>에서 연다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q07-01</span> <span class="wf-ref">Q07-03</span> <span class="wf-ref">Q07-07</span> <span class="wf-ref">Q07-08</span> <span class="wf-ref">Q05·Q07·Q10 기획안 3·5절</span> <span class="wf-ref">운영 명세 4절</span> · 기준: 화면 흐름 명세 5절 UI-10, 4절 CM-01·CM-05·CM-07, 6절</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">기본</a></li>
+      <li><a href="#s2">연결이 하나도 없음</a></li>
+      <li><a href="#s3">상태 필터</a></li>
+      <li><a href="#s4">조치가 필요한 연결</a></li>
+      <li><a href="#s5">관측 오래됨</a></li>
+      <li><a href="#s6">서비스 이름 변경</a></li>
+      <li><a href="#s7">서비스 보관 전 영향 확인</a></li>
+      <li><a href="#s8">서비스 보관 뒤 진행 단계</a></li>
+      <li><a href="#s9">보관된 서비스와 연결 보기</a></li>
+      <li><a href="#s10">서비스 재활성 확인</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 기본</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item is-current" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body">
+      <div class="wf-row" style="margin-bottom: 16px">
+        <h3 class="wf-page-title" style="margin-bottom: 0">수집 연결</h3>
+        <a class="wf-btn wf-btn--primary wf-end" href="UI-11-connection-register.html">새 연결 등록</a>
+      </div>
+      <div class="wf-row" style="margin-bottom: 16px">
+        <span class="wf-seg"><span class="is-on">사용 중</span><span>보관됨</span></span>
+        <span class="wf-select">상태 필터: 전체</span>
+        <span class="wf-help wf-end">시각은 UTC+09:00 · 날짜가 없는 시각은 2026-11-05</span>
+      </div>
+      <div class="wf-stack">
+        <div class="wf-frame">
+          <div class="wf-row" style="margin-bottom: 10px">
+            <span class="wf-section-title" style="margin-bottom: 0">결제</span>
+            <span class="wf-muted">연결 3</span>
+            <span class="wf-btn wf-btn--small wf-end">이름 변경</span>
+            <span class="wf-btn wf-btn--small">서비스 보관</span>
+          </div>
+          <table class="wf-table">
+            <thead><tr><th>수집 대상</th><th>서버 표시명</th><th>환경</th><th>관리 상태</th><th>관측 상태</th><th>마지막 보고</th><th>대기량</th><th>상세</th></tr></thead>
+            <tbody>
+              <tr><td><span class="wf-muted">파일</span> <span class="wf-mono">/var/app/payment/app.log</span></td><td>app-01</td><td>운영</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge">수집/전송 진행</span></td><td>10:14:52</td><td>0.3MB</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+              <tr><td><span class="wf-muted">파일명 규칙</span> <span class="wf-mono">/var/app/payment/app-*.log</span></td><td>app-02</td><td>운영</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge">읽기 일시정지</span> <span class="wf-small">대기 공간 포화</span></td><td>10:14:40</td><td>512MB</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+              <tr><td><span class="wf-muted">journald</span> <span class="wf-small wf-muted">대상 표기 미정</span></td><td>app-01</td><td>운영</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge">관측됨·무로그</span></td><td>10:14:50</td><td>0MB</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wf-frame">
+          <div class="wf-row" style="margin-bottom: 10px">
+            <span class="wf-section-title" style="margin-bottom: 0">주문</span>
+            <span class="wf-muted">연결 4</span>
+            <span class="wf-btn wf-btn--small wf-end">이름 변경</span>
+            <span class="wf-btn wf-btn--small">서비스 보관</span>
+          </div>
+          <table class="wf-table">
+            <thead><tr><th>수집 대상</th><th>서버 표시명</th><th>환경</th><th>관리 상태</th><th>관측 상태</th><th>마지막 보고</th><th>대기량</th><th>상세</th></tr></thead>
+            <tbody>
+              <tr><td><span class="wf-muted">journald</span> <span class="wf-small wf-muted">대상 표기 미정</span></td><td>app-02</td><td>운영</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge wf-badge--unknown">관측 오래됨/미확인</span></td><td>09:31:07</td><td>40MB(마지막 보고 기준)</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+              <tr><td><span class="wf-muted">파일</span> <span class="wf-mono">/var/app/order/app.log</span></td><td>app-02</td><td>운영</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge">설정/복구 확인 필요</span></td><td>10:13:20</td><td>1.2MB</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+              <tr><td><span class="wf-muted">파일</span> <span class="wf-mono">/var/app/order/batch/app.log</span></td><td><span class="wf-muted">미입력</span></td><td><span class="wf-muted">미입력</span></td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge">시각 확인 필요</span></td><td>10:14:49</td><td>0.1MB</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+              <tr><td><span class="wf-muted">파일명 규칙</span> <span class="wf-mono">/var/app/order/app-*.log</span></td><td>app-01</td><td>운영</td><td><span class="wf-badge">등록·연결 대기</span></td><td><span class="wf-badge">연결 대기</span></td><td>없음</td><td><span class="wf-badge wf-badge--unknown">미확인</span></td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>연결은 서비스별로 묶고, 연결마다 수집 대상(파일, 파일명 규칙, journald), 서버 표시명, 환경 태그, 관리 상태, 관측 상태, 마지막 보고 시각, 대기량을 보여 준다(5절 UI-10).</li>
+    <li>관리 상태와 관측 상태는 CM-05 표시를 따로 쓰고 하나의 <span class="wf-term">정상</span> 표시로 합치지 않는다(4절 CM-05, 운영 명세 4절). 행 마크업은 CM-05 상태 4의 조합 예를 따랐다.</li>
+    <li>서버 표시명과 환경 태그는 선택 입력이라 비어 있으면 <span class="wf-term">미입력</span>으로 쓴다(<span class="wf-ref">Q07-08</span>, <span class="wf-ref">SD-12</span>).</li>
+    <li>대기량을 모르면 0으로 쓰지 않고 <span class="wf-term">미확인</span>으로, 관측이 오래된 연결의 값에는 <span class="wf-term">마지막 보고 기준</span>을 붙인다. 에이전트가 0으로 보고한 값만 <span class="wf-mono">0MB</span>로 쓴다(1절, 운영 명세 4절).</li>
+    <li>journald 대상의 입력·표기 형태는 API 설계에서 정한다(5절 UI-11 2단계). 그림은 입력 종류만 적고 대상 자리를 비워 두었다.</li>
+    <li><span class="wf-term">열기</span>는 UI-12, <span class="wf-term">새 연결 등록</span>은 UI-11을 연다. 연결을 다른 서비스로 옮기거나 연결 등록을 완전히 삭제하는 동작은 두지 않는다(3절).</li>
+    <li>상단 메뉴의 <span class="wf-term">조치 필요 3</span>은 CM-01 상태 1 마크업을 그대로 쓴 예시 값이다. 어떤 상태를 셀지는 상태 4의 검토 항목을 따른다.</li>
+    <li>서비스 묶음 머리에 <span class="wf-term">이름 변경</span>과 <span class="wf-term">서비스 보관</span>을, 목록 위에 사용 중·보관됨 전환과 상태 필터를 둔다(와이어프레임 표기).</li>
+    <li>서비스·서버·경로는 합성 예시다. 같은 서버의 같은 로그가 두 번 나오지 않게 서비스마다 폴더를 나눴다(<span class="wf-ref">Q07-06</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 연결이 하나도 없음</h2>
+  <div class="wf-frame">
+    <span class="wf-frame-label">화면 본문. 상단 메뉴는 상태 1과 같고, 조치가 필요한 연결이 없어 수를 표시하지 않는다</span>
+    <div class="wf-row" style="margin-bottom: 16px">
+      <h3 class="wf-page-title" style="margin-bottom: 0">수집 연결</h3>
+      <a class="wf-btn wf-btn--primary wf-end" href="UI-11-connection-register.html">새 연결 등록</a>
+    </div>
+    <div class="wf-frame wf-stack" style="align-items: center; text-align: center; padding: 48px 20px">
+      <p class="wf-strong">아직 수집 연결이 없습니다.</p>
+      <p>연결을 등록하면 서비스와 수집 대상을 정하고 키와 설정을 받습니다.<br>받은 설정을 로그 서버의 에이전트에 적용하면 수집을 시작합니다.</p>
+      <a class="wf-btn wf-btn--primary" href="UI-11-connection-register.html">새 연결 등록</a>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>연결이 없으면 등록 안내와 <span class="wf-term">새 연결 등록</span>만 보여 준다(5절 UI-10). 등록은 UI-11의 7단계로 진행한다.</li>
+    <li>설정은 사용자가 로그 서버에 적용하고 중앙은 원격으로 적용하지 않는다(5절 UI-11 7단계). 안내 문구도 그 순서로 썼다.</li>
+    <li>보관된 연결도 없는 경우라 사용 중·보관됨 전환과 상태 필터를 숨겼다. 보관된 연결만 있으면 보관됨 전환을 남긴다(와이어프레임 표기).</li>
+    <li>조치가 필요한 연결이 없으면 상단 메뉴에 수를 표시하지 않는다(CM-01 상태 1 주석).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 상태 필터</h2>
+  <div class="wf-frame">
+    <span class="wf-frame-label">목록 위 필터를 펼친 모습과 거른 결과</span>
+    <div class="wf-row">
+      <span class="wf-seg"><span class="is-on">사용 중</span><span>보관됨</span></span>
+      <span class="wf-select is-focus">상태 필터: 2개 선택</span>
+      <span class="wf-chip">읽기 일시정지 <span class="wf-chip-x">×</span></span>
+      <span class="wf-chip">설정/복구 확인 필요 <span class="wf-chip-x">×</span></span>
+    </div>
+    <div class="wf-row wf-row--top" style="margin-top: 6px; gap: 24px">
+      <ul class="wf-listbox" style="width: 280px; margin-left: 132px" aria-label="상태 필터">
+        <li class="wf-option-group">빠른 선택</li>
+        <li class="wf-option">☐ 조치 필요</li>
+        <li class="wf-option-group">관리 상태</li>
+        <li class="wf-option">☐ 등록·연결 대기</li>
+        <li class="wf-option">☐ 사용</li>
+        <li class="wf-option">☐ 종료 진행</li>
+        <li class="wf-option">☐ 전송 차단</li>
+        <li class="wf-option-group">관측 상태</li>
+        <li class="wf-option">☐ 연결 대기</li>
+        <li class="wf-option">☐ 관측됨·무로그</li>
+        <li class="wf-option">☐ 수집/전송 진행</li>
+        <li class="wf-option is-on">☑ 읽기 일시정지</li>
+        <li class="wf-option is-on is-focus">☑ 설정/복구 확인 필요</li>
+        <li class="wf-option">☐ 디스크 사용 불가</li>
+        <li class="wf-option">☐ 이벤트 거부 관측</li>
+        <li class="wf-option">☐ 전송 오류/보류</li>
+        <li class="wf-option">☐ 복구 중</li>
+        <li class="wf-option">☐ 관측 오래됨/미확인</li>
+        <li class="wf-option">☐ 시각 확인 필요</li>
+        <li class="wf-option">☐ 중단/보관</li>
+      </ul>
+      <div class="wf-stack wf-grow">
+        <div class="wf-frame">
+          <p class="wf-section-title">결제 <span class="wf-muted wf-small">연결 3 중 1</span></p>
+          <table class="wf-table">
+            <thead><tr><th>수집 대상</th><th>서버 표시명</th><th>관리 상태</th><th>관측 상태</th><th>마지막 보고</th><th>대기량</th></tr></thead>
+            <tbody>
+              <tr><td><span class="wf-muted">파일명 규칙</span> <span class="wf-mono">/var/app/payment/app-*.log</span></td><td>app-02</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge">읽기 일시정지</span></td><td>10:14:40</td><td>512MB</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wf-frame">
+          <p class="wf-section-title">주문 <span class="wf-muted wf-small">연결 4 중 1</span></p>
+          <table class="wf-table">
+            <thead><tr><th>수집 대상</th><th>서버 표시명</th><th>관리 상태</th><th>관측 상태</th><th>마지막 보고</th><th>대기량</th></tr></thead>
+            <tbody>
+              <tr><td><span class="wf-muted">파일</span> <span class="wf-mono">/var/app/order/app.log</span></td><td>app-02</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge">설정/복구 확인 필요</span></td><td>10:13:20</td><td>1.2MB</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>상태 필터의 값은 CM-05의 관리 상태와 관측 상태 이름 그대로이고 여러 개를 고를 수 있다(5절 UI-10, 4절 CM-05).</li>
+    <li>같은 묶음 안에서 여러 값을 고르면 하나라도 맞는 연결을, 관리 상태와 관측 상태를 함께 고르면 둘 다 맞는 연결을 보여 준다. 고른 값은 칩으로 보이고 <span class="wf-mono">×</span>로 뺀다(와이어프레임 표기).</li>
+    <li><span class="wf-term">보관</span>은 사용 중·보관됨 전환으로 고르므로 사용 중 보기의 관리 상태 목록에서 뺐다(와이어프레임 표기).</li>
+    <li><span class="wf-term">조치 필요</span> 빠른 선택은 상단 메뉴의 수와 같은 기준이며 기준은 상태 4의 검토 항목이다.</li>
+    <li>맞는 연결이 없는 서비스 묶음은 숨기고, 묶음마다 거른 수를 함께 쓴다(와이어프레임 표기).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 조치가 필요한 연결</h2>
+  <p class="wf-state-desc">상단 메뉴의 <span class="wf-term">조치 필요</span> 수를 눌러 들어온 예다. 아래 그림은 후보 가운데 관측 상태 세 개를 센 경우를 보여 줄 뿐이며, 셀 상태는 그림 아래 후보 표에서 정한다.</p>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item is-current" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body">
+      <div class="wf-row" style="margin-bottom: 16px">
+        <h3 class="wf-page-title" style="margin-bottom: 0">수집 연결</h3>
+        <a class="wf-btn wf-btn--primary wf-end" href="UI-11-connection-register.html">새 연결 등록</a>
+      </div>
+      <div class="wf-row" style="margin-bottom: 16px">
+        <span class="wf-seg"><span class="is-on">사용 중</span><span>보관됨</span></span>
+        <span class="wf-select">상태 필터: 조치 필요</span>
+        <span class="wf-chip">조치 필요 <span class="wf-chip-x">×</span></span>
+        <span class="wf-muted">조치가 필요한 연결 3개</span>
+      </div>
+      <div class="wf-stack">
+        <div class="wf-frame">
+          <p class="wf-section-title">결제 <span class="wf-muted wf-small">연결 3 중 1</span></p>
+          <table class="wf-table">
+            <thead><tr><th>수집 대상</th><th>서버 표시명</th><th>환경</th><th>관리 상태</th><th>관측 상태</th><th>마지막 보고</th><th>대기량</th><th>상세</th></tr></thead>
+            <tbody>
+              <tr><td><span class="wf-muted">파일명 규칙</span> <span class="wf-mono">/var/app/payment/app-*.log</span></td><td>app-02</td><td>운영</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge">읽기 일시정지</span> <span class="wf-small">대기 공간 포화 · 10:02:11부터</span></td><td>10:14:40</td><td>512MB</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="wf-frame">
+          <p class="wf-section-title">주문 <span class="wf-muted wf-small">연결 4 중 2</span></p>
+          <table class="wf-table">
+            <thead><tr><th>수집 대상</th><th>서버 표시명</th><th>환경</th><th>관리 상태</th><th>관측 상태</th><th>마지막 보고</th><th>대기량</th><th>상세</th></tr></thead>
+            <tbody>
+              <tr><td><span class="wf-muted">journald</span> <span class="wf-small wf-muted">대상 표기 미정</span></td><td>app-02</td><td>운영</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge wf-badge--unknown">관측 오래됨/미확인</span> <span class="wf-small">09:31:07 이후 보고 없음</span></td><td>09:31:07</td><td>40MB(마지막 보고 기준)</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+              <tr><td><span class="wf-muted">파일</span> <span class="wf-mono">/var/app/order/app.log</span></td><td>app-02</td><td>운영</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge">설정/복구 확인 필요</span> <span class="wf-small">복구 근거 없음</span></td><td>10:13:20</td><td>1.2MB</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <table class="wf-table" style="margin-top: 16px">
+    <caption style="text-align: left; font-weight: 700; padding-bottom: 6px">WQ-50 기본안: <span class="wf-term">조치 필요</span>로 셀 상태</caption>
+    <thead><tr><th style="width: 90px">구분</th><th style="width: 230px">상태</th><th>넣는 쪽 근거</th><th>빼는 쪽 근거</th></tr></thead>
+    <tbody>
+      <tr><td>관측 상태</td><td><span class="wf-badge">설정/복구 확인 필요</span></td><td>자동 읽기를 보류하고, 서버에서 적용해야 다시 읽는다(<span class="wf-ref">Q06</span>)</td><td>—</td></tr>
+      <tr><td>관측 상태</td><td><span class="wf-badge">디스크 사용 불가</span></td><td>대기를 쓰지 못해 읽기·전송이 멈춘다(<span class="wf-ref">D05</span>)</td><td>—</td></tr>
+      <tr><td>관측 상태</td><td><span class="wf-badge">전송 오류/보류</span></td><td>키 문제로 보류된 대기에 조치 필요 표시를 유지한다(<span class="wf-ref">Q05-03</span>, 운영 명세 6절)</td><td>재시도 가능한 일시 오류는 스스로 회복할 수 있다</td></tr>
+      <tr><td>관측 상태</td><td><span class="wf-badge">읽기 일시정지</span></td><td>원본이 회전·삭제되면 읽지 못한 부분을 잃을 수 있다(<span class="wf-ref">D01</span>)</td><td>전송이 회복되면 제한된 속도로 다시 읽는다</td></tr>
+      <tr><td>관측 상태</td><td><span class="wf-badge wf-badge--unknown">관측 오래됨/미확인</span></td><td>지금 상태를 모르고, 10분 지속되면 운영 메일 대상이다(<span class="wf-ref">Q12-06</span>)</td><td>서버 재시작 같은 짧은 공백일 수 있다</td></tr>
+      <tr><td>관측 상태</td><td><span class="wf-badge">시각 확인 필요</span></td><td>서버 시계나 로그 시간대 설정을 고쳐야 한다(<span class="wf-ref">SD-05</span>)</td><td>수집은 멈추지 않는다</td></tr>
+      <tr><td>관측 상태</td><td><span class="wf-badge">이벤트 거부 관측</span></td><td>거부된 본문은 중앙에서 조사할 수 없다(<span class="wf-ref">D03</span>)</td><td>이후 수집은 계속되고 메일도 보내지 않는다(<span class="wf-ref">Q12-07</span>)</td></tr>
+      <tr><td>관측 상태</td><td><span class="wf-badge">연결 대기</span></td><td>서버에 설정을 적용하지 않았을 수 있다</td><td>등록 직후 거치는 단계다</td></tr>
+      <tr><td>관측 상태</td><td><span class="wf-badge">복구 중</span></td><td>새 로그보다 오래된 로그가 먼저 보일 수 있다</td><td>밀린 대기를 스스로 보내는 중이다</td></tr>
+      <tr><td>관측 상태</td><td><span class="wf-badge">관측됨·무로그</span> <span class="wf-badge">수집/전송 진행</span> <span class="wf-badge">중단/보관</span></td><td>—</td><td>조용한 연결을 장애로 보지 않는다(<span class="wf-ref">Q07-07</span>). 나머지는 정상 진행이거나 운영자가 고른 상태다</td></tr>
+      <tr><td>관리 상태</td><td><span class="wf-badge">전송 차단</span></td><td>남은 대기와 서버의 읽기 중지를 확인해야 한다(<span class="wf-ref">Q05-02</span>)</td><td>운영자가 직접 만든 상태다</td></tr>
+      <tr><td>관리 상태</td><td><span class="wf-badge">종료 진행</span></td><td>중지 완료와 남은 전송을 나눠 확인해야 한다(CM-05 상태 2)</td><td>운영자가 직접 요청한 상태다</td></tr>
+      <tr><td>관리 상태</td><td><span class="wf-badge">등록·연결 대기</span> <span class="wf-badge">보관</span></td><td>보관 뒤에도 대기가 남을 수 있다</td><td>등록 직후이거나 운영자가 고른 상태다</td></tr>
+      <tr><td>그 밖</td><td>키 교체 중(유효 키 2개)</td><td>기존 키를 직접 폐기해야 교체가 끝난다(<span class="wf-ref">Q10-10</span>)</td><td>자동 종료 기한이 없는 정상 진행이다</td></tr>
+    </tbody>
+  </table>
+  <ul class="wf-notes">
+    <li><span class="wf-review">WQ-50 설계로 넘김:</span> 상단 메뉴 <span class="wf-term">수집 연결</span>의 <span class="wf-term">조치 필요</span> 수(CM-01)와 이 상태는 같은 기준을 써야 하는데, 어떤 관리·관측 상태를 셀지 문서에 없다. 위 표는 후보와 양쪽 근거다. 상태가 얼마나 이어지면 셀지(예: <span class="wf-term">연결 대기</span>가 오래 이어짐)와 관리 상태 밖의 조건(키 교체 중)을 넣을지도 함께 정한다. <strong>기본안:</strong> WQ-01과 같다. 위 표의 상태를 센다.</li>
+    <li>그림은 후보 가운데 <span class="wf-term">설정/복구 확인 필요</span>, <span class="wf-term">관측 오래됨/미확인</span>, <span class="wf-term">읽기 일시정지</span>를 센 예시이며, 메뉴의 수와 목록이 같은 기준으로 맞물리는 모습만 보여 준다.</li>
+    <li>메뉴의 수를 누르면 <span class="wf-term">조치 필요</span> 필터를 건 이 목록을 연다. 필터를 지우면 상태 1로 돌아간다(와이어프레임 표기).</li>
+    <li>행을 열면 UI-12에서 원인과 할 일을 본다. <span class="wf-term">설정/복구 확인 필요</span>는 UI-12의 누락 안내와 서버 적용 방법으로 이어진다(6절 수집 복구 확인 필요).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 관측 오래됨</h2>
+  <div class="wf-frame">
+    <span class="wf-frame-label">서버 app-02의 에이전트 보고가 09:31:07 뒤로 끊긴 예</span>
+    <div class="wf-row" style="margin-bottom: 10px">
+      <span class="wf-section-title" style="margin-bottom: 0">주문</span>
+      <span class="wf-muted">연결 4</span>
+      <span class="wf-btn wf-btn--small wf-end">이름 변경</span>
+      <span class="wf-btn wf-btn--small">서비스 보관</span>
+    </div>
+    <table class="wf-table">
+      <thead><tr><th>수집 대상</th><th>서버 표시명</th><th>환경</th><th>관리 상태</th><th>관측 상태</th><th>마지막 보고</th><th>대기량</th><th>상세</th></tr></thead>
+      <tbody>
+        <tr><td><span class="wf-muted">journald</span> <span class="wf-small wf-muted">대상 표기 미정</span></td><td>app-02</td><td>운영</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge wf-badge--unknown">관측 오래됨/미확인</span><br><span class="wf-small">09:31:07 이후 보고 없음(판정 기준 <span class="wf-n">N</span>)</span></td><td>09:31:07</td><td>40MB(마지막 보고 기준)</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+        <tr><td><span class="wf-muted">파일</span> <span class="wf-mono">/var/app/order/app.log</span></td><td>app-02</td><td>운영</td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge wf-badge--unknown">관측 오래됨/미확인</span><br><span class="wf-small">09:31:07 이후 보고 없음(판정 기준 <span class="wf-n">N</span>)</span></td><td>09:31:07</td><td>1.2MB(마지막 보고 기준)</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+        <tr><td><span class="wf-muted">파일</span> <span class="wf-mono">/var/app/order/batch/app.log</span></td><td><span class="wf-muted">미입력</span></td><td><span class="wf-muted">미입력</span></td><td><span class="wf-badge">사용</span></td><td><span class="wf-badge">수집/전송 진행</span></td><td>10:14:49</td><td>0.1MB</td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+        <tr><td><span class="wf-muted">파일명 규칙</span> <span class="wf-mono">/var/app/order/app-*.log</span></td><td>app-01</td><td>운영</td><td><span class="wf-badge">등록·연결 대기</span></td><td><span class="wf-badge">연결 대기</span></td><td>없음</td><td><span class="wf-badge wf-badge--unknown">미확인</span></td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="wf-notes">
+    <li>마지막 보고 뒤로 판정 기준이 지나도록 보고가 없으면 <span class="wf-term">관측 오래됨/미확인</span>으로 쓴다. 판정 기준은 정하지 않았다(7절, D16).</li>
+    <li>마지막으로 받은 값은 지금 값처럼 보이지 않게 <span class="wf-term">마지막 보고 기준</span>을 붙이고, 받은 적 없는 값은 <span class="wf-term">미확인</span>으로 쓴다(운영 명세 4절, CM-05 상태 5).</li>
+    <li>관측이 끊겨도 관리 상태는 <span class="wf-term">사용</span> 그대로 두고 자동으로 보관하지 않는다(<span class="wf-ref">Q07-07</span>).</li>
+    <li>관측 불가가 10분 지속되면 운영 수신 주소로 묶어서 운영 메일 1통을 보낸다(<span class="wf-ref">Q12-06</span>, 7절). 10분은 관측 불가로 판정한 뒤의 유예라 판정 기준 <span class="wf-n">N</span>과 별개다(Q12 기획안).</li>
+    <li>같은 서버의 연결이 함께 끊긴 모습은 합성 예시다. 서버나 에이전트 단위로 묶어 보여 주는 표시는 두지 않았다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 서비스 이름 변경</h2>
+  <div class="wf-screen">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="서비스 이름 변경">
+        <div class="wf-modal-head">서비스 이름 변경</div>
+        <div class="wf-modal-body">
+          <dl class="wf-kv">
+            <dt>지금 이름</dt><dd>결제</dd>
+            <dt>연결</dt><dd>3개</dd>
+          </dl>
+          <div class="wf-field">
+            <span class="wf-label">새 이름</span>
+            <span class="wf-input is-focus">결제 API</span>
+          </div>
+          <p class="wf-callout">이름만 바뀝니다. 연결, 기존 로그, 저장 검색과 알림 규칙의 대상은 그대로이고 화면에는 새 이름으로 보입니다.</p>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">이름 변경</span></div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>서비스 이름은 사람이 알아보는 별칭이다. 바꿔도 연결, 기존 로그와 원래 출처, 저장 검색·알림 규칙의 대상은 그대로이고 화면의 서비스 이름만 지금 이름으로 보인다(<span class="wf-ref">Q07-03</span>, 5절 UI-10).</li>
+    <li>이름을 바꿔도 로그 본문이나 저장 검색의 본문 검색어는 바꾸지 않는다(Q05·Q07·Q10 기획안 3절).</li>
+    <li><span class="wf-review">WQ-51 설계로 넘김:</span> 이름 규칙(길이·쓸 수 있는 글자)과 같은 이름을 허용할지는 설계로 넘겼고(<span class="wf-ref">Q07-02</span>), 이전 이름 표시도 후속 설계다(<span class="wf-ref">Q07-03</span>). 이름이 겹칠 때의 화면은 그리지 않았다. <strong>기본안:</strong> 이미 Q07-02 설계 인계다. 이름이 겹칠 때의 화면은 그 설계와 함께 그린다.</li>
+    <li><span class="wf-review">WQ-52 설계로 넘김:</span> 5절 UI-10은 보관·재활성만 CM-07로 적었다. 이름 변경에 비밀번호를 다시 받을지, 감사 기록 장애 때 보류할지(<span class="wf-ref">Q10-12</span>의 주요 설정 변경에 드는지) 문서에 없다. 그림은 CM-07 없이 확인 창만 그렸다. <strong>기본안:</strong> 기존 합의 적용: 알림 규칙 변경과 같다(TD-17). 재인증 없이 감사 기록을 남기고 감사 장애 때 보류한다.</li>
+    <li>창에서 새 이름을 받는다(와이어프레임 표기).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s7">
+  <h2 class="wf-state-title">상태 7. 서비스 보관 전 영향 확인</h2>
+  <p class="wf-state-desc">서비스 <span class="wf-term">주문</span>의 <span class="wf-term">서비스 보관</span>을 누른 예다.</p>
+  <div class="wf-screen">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="서비스 보관 확인">
+        <div class="wf-modal-head">서비스 보관</div>
+        <div class="wf-modal-body">
+          <div>
+            <p class="wf-section-title">대상</p>
+            <dl class="wf-kv">
+              <dt>서비스</dt><dd>주문 · 연결 4개</dd>
+            </dl>
+          </div>
+          <div>
+            <p class="wf-section-title">영향</p>
+            <ul>
+              <li>하위 연결 4개의 중앙 새 수신을 막습니다.</li>
+              <li>과거 로그는 보관 기간(6개월)까지 검색됩니다.</li>
+              <li>남은 대기 로그는 지우지 않습니다. 서버에서 읽기를 멈추는 일은 서버 운영자가 따로 합니다.</li>
+            </ul>
+          </div>
+          <table class="wf-table">
+            <thead><tr><th>하위 연결</th><th>서버</th><th>남은 대기</th></tr></thead>
+            <tbody>
+              <tr><td>journald</td><td>app-02</td><td>40MB <span class="wf-muted">마지막 보고 기준 09:31:07</span></td></tr>
+              <tr><td class="wf-mono">/var/app/order/app.log</td><td>app-02</td><td>1.2MB</td></tr>
+              <tr><td class="wf-mono">/var/app/order/batch/app.log</td><td><span class="wf-muted">미입력</span></td><td>0.1MB</td></tr>
+              <tr><td class="wf-mono">/var/app/order/app-*.log</td><td>app-01</td><td><span class="wf-badge wf-badge--unknown">미확인</span></td></tr>
+            </tbody>
+          </table>
+          <div>
+            <p class="wf-section-title">이 서비스를 쓰는 저장 검색과 알림 규칙</p>
+            <ul>
+              <li>저장 검색 2개: 주문 오류, 주문·결제 연동 오류</li>
+              <li>알림 규칙 1개: 주문 오류 알림</li>
+              <li>지우지 않습니다. 저장 검색은 실행 전에 보관된 대상을 참조한다고 알립니다.</li>
+            </ul>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">비밀번호 다시 입력</span>
+            <span class="wf-input is-focus">••••••••••••••••</span>
+          </div>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">서비스 보관</span></div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>서비스 보관은 CM-07을 거치고 하위 연결의 수신 차단, 남은 대기, 이 서비스를 쓰는 저장 검색과 알림 규칙을 먼저 보여 준다(5절 UI-10, CM-07 상태 7의 보관 행). 창 마크업은 CM-07 상태 1을 따랐다.</li>
+    <li>보관은 운영자가 명시적으로 고르는 상태다. 로그가 없거나 오래 조용하다는 이유로 자동 보관하지 않는다(<span class="wf-ref">Q07-07</span>).</li>
+    <li>남은 대기는 마지막 보고 기준을 붙이고 모르면 <span class="wf-term">미확인</span>으로 쓴다. 대기 0이나 삭제 완료를 짐작해 쓰지 않는다(CM-05 상태 2).</li>
+    <li>저장 검색과 알림 규칙은 로그 보관·만료로 지우지 않는다(운영 명세 6절). 보관된 대상을 참조하는 저장 검색은 실행 전에 경고한다(5절 UI-05). 이름은 합성 예시다.</li>
+    <li><span class="wf-review">WQ-53 설계로 넘김:</span> 보관할 때 남은 대기를 중앙으로 보낼지 보류할지 문서에 없다. Q05·Q07·Q10 기획안 3절은 <span class="wf-ref">Q05-02</span>와 맞추도록 남겼다. <strong>기본안:</strong> 기존 합의 적용: 정상 중지(Q05-02)처럼 바로 막고 대기는 에이전트에 보존한다. 재활성 뒤 새 키로 이어 보낸다(Q10-11). 보관 전 영향 확인에 남은 대기를 보인다(그림대로).</li>
+    <li>보관된 연결은 알림 규칙의 대상에서 빠진다. 대상이 모두 보관돼 0개가 되면 규칙에 대상 없음 경고를 보이고 건수 0으로 평가한다(<span class="wf-ref">TD-18</span> <span class="wf-ref">F-18</span>, Q12 기획안). 대상 없음 경고를 어디에 그릴지는 UI-08의 검토 항목이다.</li>
+    <li>감사 기록 장애 중에는 보관을 적용 전에 보류한다. 긴급 차단 예외(키 폐기·전체 세션 종료)에 들지 않는다(<span class="wf-ref">Q10-14</span>, CM-07 상태 5·6).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s8">
+  <h2 class="wf-state-title">상태 8. 서비스 보관 뒤 진행 단계</h2>
+  <div class="wf-frame">
+    <span class="wf-frame-label">서비스 주문을 보관한 직후</span>
+    <ol class="wf-steps">
+      <li class="wf-step is-done"><span class="wf-step-name">요청 접수</span><span class="wf-step-state">완료 10:20:03</span></li>
+      <li class="wf-step is-done"><span class="wf-step-name">중앙 확정</span><span class="wf-step-state">완료 10:20:04 · 하위 연결 4개 새 수신 차단</span></li>
+      <li class="wf-step is-current is-waiting"><span class="wf-step-name">에이전트 관측</span><span class="wf-step-state">연결 4개 중 1개 관측</span></li>
+    </ol>
+    <table class="wf-table" style="margin-top: 12px">
+      <thead><tr><th>하위 연결</th><th>서버</th><th>에이전트 관측</th><th>남은 대기</th></tr></thead>
+      <tbody>
+        <tr><td>journald</td><td>app-02</td><td><span class="wf-badge wf-badge--unknown">미확인</span> 마지막 보고 09:31:07</td><td>40MB <span class="wf-muted">마지막 보고 기준 09:31:07</span></td></tr>
+        <tr><td class="wf-mono">/var/app/order/app.log</td><td>app-02</td><td>대기 · 에이전트가 다음에 보고하면 확인</td><td>1.2MB <span class="wf-muted">마지막 보고 기준 10:13:20</span></td></tr>
+        <tr><td class="wf-mono">/var/app/order/batch/app.log</td><td><span class="wf-muted">미입력</span></td><td>관측 10:20:31</td><td>0.1MB <span class="wf-muted">10:20:31 보고</span></td></tr>
+        <tr><td class="wf-mono">/var/app/order/app-*.log</td><td>app-01</td><td><span class="wf-badge wf-badge--unknown">미확인</span> 보고를 받은 적 없음</td><td><span class="wf-badge wf-badge--unknown">미확인</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="wf-notes">
+    <li>보관은 에이전트에 닿는 작업이라 <span class="wf-term">요청 접수</span>, <span class="wf-term">중앙 확정</span>, <span class="wf-term">에이전트 관측</span>을 나눠 보여 준다(4절 CM-07, CM-07 상태 4).</li>
+    <li>중앙 확정은 새 수신 차단이 확정됐다는 뜻이다. 중앙 확정만으로 서버의 읽기가 멈췄다고 표시하지 않는다(<span class="wf-ref">Q10-11</span>, <span class="wf-ref">Q07-07</span>).</li>
+    <li>서비스에는 연결이 여럿이라 에이전트 관측을 연결마다 나눠 보여 준다(와이어프레임 표기). 관측할 수 없는 연결은 <span class="wf-term">미확인</span>과 마지막 보고를 그대로 쓴다.</li>
+    <li>보관을 마친 서비스는 사용 중 보기에서 빠지고 보관됨 보기(상태 9)에 보인다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s9">
+  <h2 class="wf-state-title">상태 9. 보관된 서비스와 연결 보기</h2>
+  <div class="wf-frame">
+    <span class="wf-frame-label">목록 위 전환에서 보관됨을 고른 모습</span>
+    <div class="wf-row" style="margin-bottom: 16px">
+      <span class="wf-seg"><span>사용 중</span><span class="is-on">보관됨</span></span>
+      <span class="wf-select">상태 필터: 전체</span>
+    </div>
+    <div class="wf-stack">
+      <div class="wf-frame">
+        <div class="wf-row" style="margin-bottom: 10px">
+          <span class="wf-section-title" style="margin-bottom: 0">배송</span>
+          <span class="wf-badge">보관</span>
+          <span class="wf-muted">보관 2026-10-30 18:00:00 · 연결 1</span>
+          <span class="wf-btn wf-btn--small wf-end">서비스 재활성</span>
+        </div>
+        <table class="wf-table">
+          <thead><tr><th>수집 대상</th><th>서버 표시명</th><th>환경</th><th>관리 상태</th><th>관측 상태</th><th>마지막 보고</th><th>대기량</th><th>상세</th></tr></thead>
+          <tbody>
+            <tr><td><span class="wf-muted">파일</span> <span class="wf-mono">/var/app/delivery/app.log</span></td><td>app-01</td><td>운영</td><td><span class="wf-badge">보관</span></td><td><span class="wf-badge">중단/보관</span></td><td>2026-10-30 18:00:00</td><td><span class="wf-badge wf-badge--unknown">미확인</span></td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="wf-frame">
+        <div class="wf-row" style="margin-bottom: 10px">
+          <span class="wf-section-title" style="margin-bottom: 0">결제</span>
+          <span class="wf-muted">사용 중인 서비스 · 보관된 연결 1</span>
+        </div>
+        <table class="wf-table">
+          <thead><tr><th>수집 대상</th><th>서버 표시명</th><th>환경</th><th>관리 상태</th><th>관측 상태</th><th>마지막 보고</th><th>대기량</th><th>상세</th></tr></thead>
+          <tbody>
+            <tr><td><span class="wf-muted">파일</span> <span class="wf-mono">/var/app/payment/app.log</span></td><td>app-02</td><td>운영</td><td><span class="wf-badge">보관</span></td><td><span class="wf-badge">중단/보관</span></td><td>2026-10-28 09:00:00</td><td><span class="wf-badge wf-badge--unknown">미확인</span></td><td><a href="UI-12-connection-detail.html">열기</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>보관된 서비스와 연결은 보관됨 전환으로 따로 골라 본다(5절 UI-10). 사용 중 보기에는 보이지 않는다(와이어프레임 표기).</li>
+    <li>사용 중인 서비스 안에서 연결 하나만 보관한 경우도 이 보기에 서비스 이름과 함께 보인다. 보관된 서비스는 <span class="wf-term">서비스 재활성</span>(상태 10)을, 보관된 연결은 UI-12의 <span class="wf-term">재활성</span>을 쓴다.</li>
+    <li>보관된 연결의 과거 로그는 보관 기간(6개월)까지 검색되고 검색 조건의 값 목록에 <span class="wf-term">보관됨</span>으로 남는다(<span class="wf-ref">Q07-07</span>, <span class="wf-ref">SD-12</span>, CM-03).</li>
+    <li>보관 뒤 남은 대기와 서버 상태는 짐작해 쓰지 않고 <span class="wf-term">미확인</span>으로 쓴다(CM-05 상태 2).</li>
+    <li><span class="wf-review">WQ-54 설계로 넘김:</span> 보관된 서비스의 이름을 바꿀 수 있는지, 보관된 서비스에 새 연결을 등록할 수 있는지(UI-11 1단계에서 고를 수 있는지) 문서에 없다. 그림에는 보관된 서비스의 <span class="wf-term">이름 변경</span>을 두지 않았다. <strong>기본안:</strong> 둘 다 막는다. 쓰려면 먼저 재활성한다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s10">
+  <h2 class="wf-state-title">상태 10. 서비스 재활성 확인</h2>
+  <div class="wf-screen">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="서비스 재활성 확인">
+        <div class="wf-modal-head">서비스 재활성</div>
+        <div class="wf-modal-body">
+          <div>
+            <p class="wf-section-title">대상</p>
+            <dl class="wf-kv">
+              <dt>서비스</dt><dd>배송 · 연결 1개</dd>
+              <dt>보관</dt><dd>2026-10-30 18:00:00 (UTC+09:00)</dd>
+            </dl>
+          </div>
+          <div>
+            <p class="wf-section-title">영향</p>
+            <ul>
+              <li>하위 연결은 같은 등록으로 돌아갑니다.</li>
+              <li>옛 키는 살아나지 않습니다.</li>
+              <li>이어 읽을 근거가 없으면 <span class="wf-term">설정/복구 확인 필요</span>로 읽기를 보류합니다.</li>
+            </ul>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">비밀번호 다시 입력</span>
+            <span class="wf-input is-focus">••••••••••••••••</span>
+          </div>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">서비스 재활성</span></div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>재활성은 CM-07을 거치고 같은 등록으로 돌아가며 옛 키는 살아나지 않는다(CM-07 상태 7의 재활성 행). 원래 서버·입력과 지금 유효한 자격·설정·위치를 확인한 뒤 진행하고, 복구 근거가 없으면 <span class="wf-ref">Q06</span>의 보류를 따른다(<span class="wf-ref">Q07-07</span>).</li>
+    <li>CM-07 상태 7은 재활성에 진행 단계를 두지 않아 진행 단계를 그리지 않았다.</li>
+    <li><span class="wf-review">WQ-55 설계로 넘김:</span> 서비스를 재활성하면 하위 연결이 모두 함께 재활성되는지, 서비스 보관 전에 따로 보관했던 연결은 어떻게 되는지 문서에 없다. <strong>기본안:</strong> 기존 합의 적용: 서비스 보관 때 함께 멈춘 연결만 되살리고 그 전에 따로 보관한 연결은 그대로 둔다. 키는 연결마다 새로 받는다(Q07-07).</li>
+    <li><span class="wf-review">WQ-56 설계로 넘김:</span> 옛 키가 살아나지 않으므로 수집을 다시 하려면 유효한 키가 필요하다. 재활성 직후 새 키를 한 번 보여 주는지, UI-12의 키 교체로 따로 받는지, 재활성 직후 관리 상태 이름이 무엇인지 문서에 없다. <strong>기본안:</strong> 관리 상태는 <span class="wf-term">등록·연결 대기</span>이고 유효 키가 없으므로 UI-12에서 <span class="wf-term">키 발급</span>으로 새 키를 받는다(WQ-66).</li>
+    <li>감사 기록 장애 중에는 재활성도 적용 전에 보류한다(<span class="wf-ref">Q10-14</span>, CM-07 상태 5).</li>
+  </ul>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CM-02 시간 범위 선택</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>CM-02 시간 범위 선택</h1>
+  <p>로그 탐색(UI-02)과 저장 검색(UI-05)에서 쓰는 시간 범위 선택이다. 시간 기준(발생 시각·수신 시각)과 범위(상대·고정)를 고르고, 실행할 때 절대 범위로 바꿔 <span class="wf-term">적용 범위</span>와 시간대를 표시한다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q08-04</span> <span class="wf-ref">SD-06</span> <span class="wf-ref">SD-07</span> <span class="wf-ref">SD-08</span> <span class="wf-ref">Q11</span> · 기준: 화면 흐름 명세 4절, 조사 명세 3절</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">닫힌 상태</a></li>
+      <li><a href="#s2">펼침: 상대 범위</a></li>
+      <li><a href="#s3">펼침: 고정 범위</a></li>
+      <li><a href="#s4">실행 뒤 적용 범위 표시</a></li>
+      <li><a href="#s5">수신 시각 기준</a></li>
+      <li><a href="#s6">알림 조사 모드로 열림</a></li>
+      <li><a href="#s7">입력 오류</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 닫힌 상태</h2>
+  <div class="wf-frame wf-w-md">
+    <span class="wf-frame-label">검색 조건 줄 왼쪽</span>
+    <div class="wf-row">
+      <span class="wf-select">발생 시각 · 최근 <span class="wf-n">N</span></span>
+      <span class="wf-muted">UTC+09:00</span>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>시간 기준의 기본은 발생 시각이다(<span class="wf-ref">Q08-04</span>).</li>
+    <li>검색 화면을 열 때의 기본 범위는 <span class="wf-term">최근 N</span>이며 화면 설계에서 정한다(7절).</li>
+    <li>표시 시간대는 배포 설정 하나이고 항상 함께 보인다. 사람마다 다르게 고르지 않는다(<span class="wf-ref">SD-07</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 펼침: 상대 범위</h2>
+  <div class="wf-frame wf-w-md">
+    <div class="wf-row"><span class="wf-select is-focus">발생 시각 · 최근 <span class="wf-n">N</span></span><span class="wf-muted">UTC+09:00</span></div>
+    <div class="wf-popover wf-stack" style="margin-top: 8px; width: 520px">
+      <div class="wf-field">
+        <span class="wf-label">시간 기준</span>
+        <div class="wf-seg"><span class="is-on">발생 시각(기본)</span><span>수신 시각</span></div>
+        <span class="wf-help">발생 시각은 로그에 찍힌 시각입니다. 수신 시각은 중앙이 처음 유효하게 받은 시각으로, 늦게 도착한 로그를 찾을 때 씁니다.</span>
+      </div>
+      <div class="wf-tabs"><span class="is-on">상대 범위</span><span>고정 범위</span></div>
+      <div class="wf-row">
+        <span>최근</span>
+        <span class="wf-input wf-input--short"><span class="wf-n">N</span></span>
+        <span class="wf-select" style="min-width: 96px">분</span>
+        <span class="wf-help">단위: 분 · 시간 · 일</span>
+      </div>
+      <span class="wf-help">실행할 때 서버 시각으로 절대 범위를 정합니다. 그 뒤에는 범위가 움직이지 않습니다.</span>
+      <div class="wf-row wf-end"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">적용</span></div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>상대 범위는 실행할 때 서버 시각으로 절대 범위를 정한다(<span class="wf-ref">SD-06</span>).</li>
+    <li>빠른 선택 버튼과 그 값은 정하지 않았다. 설정값에 예시 숫자를 넣지 않는다(7절).</li>
+    <li>저장 검색은 상대 범위와 고정 범위를 모두 저장할 수 있다(<span class="wf-ref">Q11</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 펼침: 고정 범위</h2>
+  <div class="wf-frame wf-w-md">
+    <div class="wf-row"><span class="wf-select is-focus">발생 시각 · 고정 범위</span><span class="wf-muted">UTC+09:00</span></div>
+    <div class="wf-popover wf-stack" style="margin-top: 8px; width: 600px">
+      <div class="wf-field">
+        <span class="wf-label">시간 기준</span>
+        <div class="wf-seg"><span class="is-on">발생 시각(기본)</span><span>수신 시각</span></div>
+      </div>
+      <div class="wf-tabs"><span>상대 범위</span><span class="is-on">고정 범위</span></div>
+      <div class="wf-row">
+        <div class="wf-field"><span class="wf-label">시작(포함)</span><span class="wf-input">2026-11-05 09:00:00</span></div>
+        <span style="padding-top: 20px">~</span>
+        <div class="wf-field"><span class="wf-label">끝(제외)</span><span class="wf-input">2026-11-05 10:00:00</span></div>
+        <span class="wf-muted" style="padding-top: 20px">UTC+09:00</span>
+      </div>
+      <span class="wf-help">시작 시각은 포함하고 끝 시각은 포함하지 않습니다.</span>
+      <div class="wf-row wf-end"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">적용</span></div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>범위는 시작 포함·끝 제외다(<span class="wf-ref">SD-06</span>). 입력과 표시는 배포 설정의 표시 시간대를 쓴다(<span class="wf-ref">SD-07</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 실행 뒤 적용 범위 표시</h2>
+  <div class="wf-frame wf-w-lg">
+    <div class="wf-row"><span class="wf-select">발생 시각 · 최근 <span class="wf-n">N</span></span><span class="wf-muted">UTC+09:00</span></div>
+    <p class="wf-small" style="margin-top: 8px"><strong>적용 범위</strong> 2026-11-05 09:15:03 ~ 2026-11-05 10:15:03 (UTC+09:00) · 시작 포함·끝 제외 · 발생 시각 기준 · <span class="wf-term">최근 N</span>을 10:15:03에 고정</p>
+  </div>
+  <ul class="wf-notes">
+    <li>적용 범위는 결과 상태 표시(CM-04)에도 같은 값으로 보인다.</li>
+    <li><span class="wf-term">더 보기</span>나 정렬 변경으로 범위가 움직이지 않는다(조사 명세 3절). 실행 뒤 들어온 로그는 다시 실행해야 보인다(<span class="wf-ref">SD-28</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 수신 시각 기준</h2>
+  <div class="wf-frame wf-w-lg">
+    <div class="wf-row"><span class="wf-select">수신 시각 · 최근 <span class="wf-n">N</span></span><span class="wf-muted">UTC+09:00</span></div>
+    <p class="wf-small" style="margin-top: 8px"><strong>적용 범위</strong> 2026-11-05 09:15:03 ~ 2026-11-05 10:15:03 (UTC+09:00) · 시작 포함·끝 제외 · <strong>수신 시각 기준</strong></p>
+    <p class="wf-help" style="margin-top: 4px">목록·발생량·분포·더 보기가 모두 수신 시각을 기준으로 합니다.</p>
+  </div>
+  <ul class="wf-notes">
+    <li>수신 시각으로 고르면 목록·발생량·분포·페이지가 모두 같은 축을 쓴다(<span class="wf-ref">SD-08</span>).</li>
+    <li>저장 검색에는 시간 기준도 함께 저장한다(<span class="wf-ref">Q08-04</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 알림 조사 모드로 열림</h2>
+  <div class="wf-frame wf-w-lg">
+    <div class="wf-row">
+      <span class="wf-badge wf-badge--strong">알림 조사</span>
+      <span class="wf-select">수신 시각 · 고정 범위</span>
+      <span class="wf-muted">UTC+09:00</span>
+    </div>
+    <p class="wf-small" style="margin-top: 8px"><strong>적용 범위</strong> 2026-11-05 10:00:00 ~ 2026-11-05 10:05:00 (UTC+09:00) · 시작 포함·끝 제외 · 수신 시각 기준 · 알림이 평가한 구간</p>
+  </div>
+  <ul class="wf-notes">
+    <li>알림 링크로 열면 시간 기준은 수신 시각, 범위는 알림이 평가한 절대 구간으로 고정한다(UI-02, <span class="wf-ref">SD-08</span>).</li>
+    <li>범위나 조건을 고치면 알림 조사 모드를 벗어났다고 표시한다. 화면 전체와 규칙·사건 표시는 검색·조사 묶음(UI-02)에서 그린다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s7">
+  <h2 class="wf-state-title">상태 7. 입력 오류</h2>
+  <div class="wf-frame wf-w-md">
+    <div class="wf-popover wf-stack" style="width: 600px">
+      <div class="wf-tabs"><span>상대 범위</span><span class="is-on">고정 범위</span></div>
+      <div class="wf-row">
+        <div class="wf-field"><span class="wf-label">시작(포함)</span><span class="wf-input">2026-11-05 10:00:00</span></div>
+        <span style="padding-top: 20px">~</span>
+        <div class="wf-field"><span class="wf-label">끝(제외)</span><span class="wf-input is-error">2026-11-05 09:00:00</span></div>
+        <span class="wf-muted" style="padding-top: 20px">UTC+09:00</span>
+      </div>
+      <p class="wf-error">끝 시각은 시작 시각보다 뒤여야 합니다.</p>
+      <div class="wf-row wf-end"><span class="wf-btn">취소</span><span class="wf-btn is-disabled">적용(오류를 고쳐야 함)</span></div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>오류가 난 칸과 고칠 이유를 함께 보여 준다(조사 명세 3절).</li>
+  </ul>
+</section>
+
+</body>
+</html>

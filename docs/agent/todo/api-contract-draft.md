@@ -24,6 +24,7 @@
 - [검색·조사 상세](../../specs/investigation-workflows-v0.1.md) 9절
 - [Q12 기획안](../../planning/q12-plan-v0.1.md) 5절
 - [화면 흐름 명세](../../specs/screen-flows-v0.1.md)
+- [와이어프레임 검토 항목 정리표](../../planning/wireframe-review-items-v0.1.md). `설계로 넘김` 77건의 기본안을 화면·API 설계에서 확정한다
 
 ## 진행 기록
 

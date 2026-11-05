@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI-04 주변 로그</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>UI-04 주변 로그</h1>
+  <p>선택한 로그를 가운데 두고 같은 로그 흐름의 앞뒤 로그를 원본 순서로 본다. 같은 서비스·서버의 다른 파일 로그를 시간순으로 함께 보는 보기로 바꿀 수 있다. 이벤트 상세(UI-03)의 <span class="wf-term">주변 로그</span>로 연다.</p>
+  <p>상태 1만 화면 전체를 그렸다. 나머지 상태는 바뀌는 영역만 그렸다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q09-01</span> <span class="wf-ref">Q09-02</span> <span class="wf-ref">Q09-03</span> <span class="wf-ref">조사 명세 4절</span> · 기준: 화면 흐름 명세 5절 UI-04, 4절 CM-01·CM-06</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">기본: 같은 로그 흐름</a></li>
+      <li><a href="#s2">앞·뒤로 더 불러오기</a></li>
+      <li><a href="#s3">같은 서비스·서버 시간순</a></li>
+      <li><a href="#s4">파일 순서를 확인할 수 없어 회전 경계 너머를 이어 붙이지 않음</a></li>
+      <li><a href="#s5">수집하지 않은 구간·거부됨·보존 만료·수동 삭제·조회 한도·관측 불가</a></li>
+      <li><a href="#s6">범위 한도</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 기본: 같은 로그 흐름</h2>
+  <p class="wf-state-desc">UI-03 상태 1의 로그(<span class="wf-mono">10:14:50.123</span>, 결제 · app-01)에서 <span class="wf-term">주변 로그</span>를 누른 모습이다.</p>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item is-current" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body wf-stack">
+      <div class="wf-row"><a class="wf-btn wf-btn--small" href="UI-02-log-search.html">← 원래 검색으로 돌아가기</a></div>
+      <div class="wf-row">
+        <h3 class="wf-page-title" style="margin-bottom: 0">주변 로그</h3>
+        <div class="wf-seg"><span class="is-on">같은 로그 흐름(원본 순서)</span><span>같은 서비스·서버 시간순</span></div>
+      </div>
+      <div class="wf-frame">
+        <dl class="wf-kv">
+          <dt>선택한 로그</dt><dd><span class="wf-mono">2026-11-05 10:14:50.123</span> · 결제 · app-01 · ERROR</dd>
+          <dt>같은 흐름</dt><dd>결제 · app-01 · app.log · 원본 순서</dd>
+          <dt>풀어 준 조건</dt><dd><span class="wf-row"><span class="wf-chip">레벨 ERROR 또는 WARN</span><span class="wf-chip">본문에 "timeout" 포함</span><span class="wf-chip">http.status 500 이상</span><span class="wf-chip">시간 2026-11-05 09:15:03 ~ 10:15:03 (발생 시각)</span></span></dd>
+          <dt>유지되는 조건</dt><dd><span class="wf-row"><span class="wf-chip">원래 검색(돌아가면 그대로)</span><span class="wf-chip">선택한 로그</span><span class="wf-chip">같은 흐름</span></span></dd>
+          <dt>범위</dt><dd>선택한 로그 앞뒤 최대 <span class="wf-n">N</span>건 · 최대 시간 폭 <span class="wf-n">N</span></dd>
+        </dl>
+      </div>
+      <div class="wf-row"><span class="wf-btn wf-btn--small">↑ 앞쪽 더 불러오기</span></div>
+      <table class="wf-table">
+        <thead><tr><th style="width: 300px">기준 시각(UTC+09:00)</th><th style="width: 80px">레벨</th><th>본문 요약</th></tr></thead>
+        <tbody>
+          <tr><td class="wf-mono">2026-11-05 10:14:19.870</td><td>INFO</td><td class="wf-mono">{"msg":"charge started","level":30,"order":{"id":"ORD-1041"}…</td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:14:20.004</td><td>INFO</td><td class="wf-mono">{"msg":"charge completed","level":30,"order":{"id":"ORD-1041"}…</td></tr>
+          <tr><td colspan="3"><div class="wf-callout"><span class="wf-badge">정상 파일 회전 경계</span> 위는 회전되기 전 파일, 아래는 새 app.log입니다. 파일 순서를 확인해 이어 붙였습니다.</div></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:14:49.870</td><td>INFO</td><td class="wf-mono">{"msg":"charge started","level":30,"order":{"id":"ORD-1042"}…</td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:14:49.871</td><td>DEBUG</td><td class="wf-mono">{"msg":"calling gateway","level":20,"order":{"id":"ORD-1042"}…</td></tr>
+          <tr class="is-on"><td><span class="wf-mono">2026-11-05 10:14:50.123</span> <span class="wf-badge wf-badge--strong">선택한 로그</span></td><td>ERROR</td><td class="wf-mono">{"msg":"payment request timeout","level":50,"order":{"id":"ORD-1042"},"http":{"status":504}…</td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:14:50.119</td><td>WARN</td><td class="wf-mono">{"msg":"circuit half-open","level":40,"target":"gateway"…</td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:14:50.130</td><td>WARN</td><td class="wf-mono">{"msg":"retry scheduled","level":40,"order":{"id":"ORD-1042"}…</td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:14:50.402</td><td>INFO</td><td class="wf-mono">{"msg":"response sent","level":30,"http":{"status":504}…</td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:14:51.020</td><td>INFO</td><td class="wf-mono">{"msg":"charge started","level":30,"order":{"id":"ORD-1044"}…</td></tr>
+        </tbody>
+      </table>
+      <div class="wf-row"><span class="wf-btn wf-btn--small">↓ 뒤쪽 더 불러오기</span></div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>선택한 로그를 가운데 두고 같은 로그 흐름의 앞뒤를 원본 순서로 보여 준다(5절 UI-04, 조사 명세 4절). 원본 순서라 <span class="wf-mono">10:14:50.119</span>처럼 시각이 앞뒤로 엇갈릴 수 있다(<span class="wf-ref">SD-26</span>).</li>
+    <li>주변 조회에서만 레벨·본문·필드·시간 조건을 풀고 푼 조건을 위쪽에 표시한다. 원래 검색, 선택한 로그, 같은 흐름은 유지한다(<span class="wf-ref">Q09-01</span>). 연결·서비스·서버 경계와 현재 권한도 유지하며, 같은 흐름이 한 연결 안이라 출처 조건은 따로 적지 않았다(와이어프레임 표기).</li>
+    <li>정상 파일 회전 경계를 넘어 이어 보여 주고 경계를 표시한다. 파일 순서를 확인할 수 있을 때만 이어 붙인다(<span class="wf-ref">Q09-02</span>, 상태 4). 경로 이름만으로 회전 전후를 같은 흐름으로 단정하지 않는다(조사 명세 1절).</li>
+    <li>행을 누르면 이벤트 상세(<a href="UI-03-event-detail.html">UI-03</a>) 패널이 이 화면 위에 열린다. 행의 시각·품질 표시는 CM-06 상태 2와 같은 자리에 붙인다.</li>
+    <li><span class="wf-term">원래 검색으로 돌아가기</span>는 UI-02의 원래 조건·선택 행·스크롤로 돌아간다. 주변 조회를 닫고 돌아와도 원래 검색으로 이어간다(결정 기록 Q09). 알림 조사 모드에서 왔으면 그 모드로 돌아간다.</li>
+    <li>앞뒤 건수와 최대 시간 폭은 정하지 않았다(7절, D16). 주변 로그를 화면 전체로 열고 맨 위에 돌아가기를 둔 것, 두 보기를 전환 버튼으로 둔 것, 경계를 표 안의 한 줄로 그린 것은 와이어프레임 표기다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 앞·뒤로 더 불러오기</h2>
+  <div class="wf-frame wf-stack">
+    <span class="wf-frame-label">앞쪽으로 더 불러온 뒤의 목록 윗부분</span>
+    <div class="wf-row"><span class="wf-btn wf-btn--small">↑ 앞쪽 더 불러오기</span><span class="wf-help">앞쪽으로 더 불러왔습니다. 선택한 로그와 보던 위치는 그대로입니다.</span></div>
+    <table class="wf-table">
+      <thead><tr><th style="width: 300px">기준 시각(UTC+09:00)</th><th style="width: 80px">레벨</th><th>본문 요약</th></tr></thead>
+      <tbody>
+        <tr><td><span class="wf-mono">2026-11-05 10:13:52.310</span> <span class="wf-badge wf-badge--quiet">새로 불러옴</span></td><td>INFO</td><td class="wf-mono">{"msg":"charge started","level":30,"order":{"id":"ORD-1040"}…</td></tr>
+        <tr><td><span class="wf-mono">2026-11-05 10:13:52.640</span> <span class="wf-badge wf-badge--quiet">새로 불러옴</span></td><td>INFO</td><td class="wf-mono">{"msg":"charge completed","level":30,"order":{"id":"ORD-1040"}…</td></tr>
+        <tr><td class="wf-mono">2026-11-05 10:14:19.870</td><td>INFO</td><td class="wf-mono">{"msg":"charge started","level":30,"order":{"id":"ORD-1041"}…</td></tr>
+        <tr><td colspan="3" class="wf-muted">… 상태 1과 같은 행 …</td></tr>
+        <tr class="is-on"><td><span class="wf-mono">2026-11-05 10:14:50.123</span> <span class="wf-badge wf-badge--strong">선택한 로그</span></td><td>ERROR</td><td class="wf-mono">{"msg":"payment request timeout","level":50,"order":{"id":"ORD-1042"},"http":{"status":504}…</td></tr>
+        <tr><td colspan="3" class="wf-muted">… 뒤쪽 행 …</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="wf-notes">
+    <li>앞·뒤 방향으로 더 불러오며 선택 행을 유지한다(5절 UI-04). 방향마다 따로 경계를 이어 받고, 선택 행과 읽기 위치를 유지한다(조사 명세 4절).</li>
+    <li>위쪽에 행이 붙어도 보던 줄이 밀려나지 않게 한다. 새로 불러온 행 표시는 와이어프레임 표기다. 한 번에 불러오는 건수는 정하지 않았다(7절).</li>
+    <li>더 불러오기로 조건이나 순서가 바뀌면 그 사실을 알린다(제품 명세 F04 검증 기준 후보). 이 그림은 같은 흐름·같은 순서라 바뀐 것이 없다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 같은 서비스·서버 시간순</h2>
+  <div class="wf-frame wf-stack">
+    <span class="wf-frame-label">화면 본문(상단 메뉴와 돌아가기 줄은 상태 1과 같음)</span>
+    <div class="wf-row">
+      <h3 class="wf-page-title" style="margin-bottom: 0">주변 로그</h3>
+      <div class="wf-seg"><span>같은 로그 흐름(원본 순서)</span><span class="is-on">같은 서비스·서버 시간순</span></div>
+    </div>
+    <p class="wf-callout"><span class="wf-badge">시간상 근접 이벤트</span> 같은 서비스·서버의 여러 파일 로그를 기준 시각 순서로 섞어 보여 줍니다. 원본에서 바로 앞뒤에 있던 줄이라는 뜻이 아닙니다.</p>
+    <dl class="wf-kv">
+      <dt>선택한 로그</dt><dd><span class="wf-mono">2026-11-05 10:14:50.123</span> · 결제 · app-01 · ERROR</dd>
+      <dt>같은 서비스·서버</dt><dd>결제 · app-01 · 수집 대상 app.log, app-error.log</dd>
+      <dt>풀어 준 조건</dt><dd><span class="wf-row"><span class="wf-chip">레벨 ERROR 또는 WARN</span><span class="wf-chip">본문에 "timeout" 포함</span><span class="wf-chip">http.status 500 이상</span><span class="wf-chip">시간 2026-11-05 09:15:03 ~ 10:15:03 (발생 시각)</span><span class="wf-chip">같은 흐름 → 같은 서비스·서버</span></span></dd>
+      <dt>유지되는 조건</dt><dd><span class="wf-row"><span class="wf-chip">원래 검색(돌아가면 그대로)</span><span class="wf-chip">선택한 로그</span><span class="wf-chip">같은 서비스·서버</span></span></dd>
+      <dt>범위</dt><dd>선택한 로그 앞뒤 최대 <span class="wf-n">N</span>건 · 최대 시간 폭 <span class="wf-n">N</span></dd>
+    </dl>
+    <table class="wf-table">
+      <thead><tr><th style="width: 300px">기준 시각(UTC+09:00)</th><th style="width: 130px">수집 대상</th><th style="width: 80px">레벨</th><th>본문 요약</th></tr></thead>
+      <tbody>
+        <tr><td class="wf-mono">2026-11-05 10:14:49.870</td><td class="wf-mono">app.log</td><td>INFO</td><td class="wf-mono">{"msg":"charge started","level":30,"order":{"id":"ORD-1042"}…</td></tr>
+        <tr><td class="wf-mono">2026-11-05 10:14:49.871</td><td class="wf-mono">app.log</td><td>DEBUG</td><td class="wf-mono">{"msg":"calling gateway","level":20,"order":{"id":"ORD-1042"}…</td></tr>
+        <tr><td class="wf-mono">2026-11-05 10:14:50.120</td><td class="wf-mono">app-error.log</td><td>ERROR</td><td class="wf-mono">GatewayTimeoutError: upstream timed out after 30000ms (여러 줄)</td></tr>
+        <tr class="is-on"><td><span class="wf-mono">2026-11-05 10:14:50.123</span> <span class="wf-badge wf-badge--strong">선택한 로그</span></td><td class="wf-mono">app.log</td><td>ERROR</td><td class="wf-mono">{"msg":"payment request timeout","level":50,"order":{"id":"ORD-1042"},"http":{"status":504}…</td></tr>
+        <tr><td class="wf-mono">2026-11-05 10:14:50.130</td><td class="wf-mono">app.log</td><td>WARN</td><td class="wf-mono">{"msg":"retry scheduled","level":40,"order":{"id":"ORD-1042"}…</td></tr>
+        <tr><td class="wf-mono">2026-11-05 10:14:50.402</td><td class="wf-mono">app.log</td><td>INFO</td><td class="wf-mono">{"msg":"response sent","level":30,"http":{"status":504}…</td></tr>
+        <tr><td><span class="wf-mono">2026-11-05 10:14:50.950</span> <span class="wf-badge">시각 대체</span></td><td class="wf-mono">app-error.log</td><td>미확인</td><td class="wf-mono">unhandled rejection: socket hang up</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="wf-notes">
+    <li>같은 서비스·서버의 다른 파일 로그를 시간순으로 함께 보는 전환이다. 일반 출력과 오류 파일이 나뉜 경우와 파일 순서를 확인할 수 없는 경우에 쓴다. 원본의 인접 행 대신 <span class="wf-term">시간상 근접 이벤트</span>로 표시한다(5절 UI-04, <span class="wf-ref">Q09-03</span>, 조사 명세 4절).</li>
+    <li>다른 파일의 시각을 정렬했다고 원본에서 붙어 있던 줄이라고 주장하지 않는다(조사 명세 4절). <span class="wf-term">시각 대체</span> 로그는 기준 시각, 곧 관측 시각 자리에 놓인다(<span class="wf-ref">SD-02</span>).</li>
+    <li>행마다 어느 수집 대상에서 왔는지 알 수 있게 <span class="wf-term">수집 대상</span> 열을 더했다(와이어프레임 표기). UI-02 결과 목록의 고정 열과는 별개다. 다른 서버·다른 서비스의 로그는 넣지 않는다. 요청 ID로 여러 서비스를 묶어 보는 조회는 첫 출시 밖이다(3절).</li>
+    <li><span class="wf-review">WQ-24 문서로 정리:</span> 시간순 보기의 시각 축이 기준 시각인지, 원래 검색의 시간 기준(예: 알림 조사 모드의 수신 시각)인지 문서에 없다. 그림은 기준 시각으로 그렸다. <strong>정리:</strong> 그림이 맞다. 시간순 전환은 검색 기준 시각을 쓴다(Q08 기획안 7절 Q09 행).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 파일 순서를 확인할 수 없어 회전 경계 너머를 이어 붙이지 않음</h2>
+  <div class="wf-frame wf-stack">
+    <span class="wf-frame-label">목록 윗부분</span>
+    <div class="wf-row"><span class="wf-btn wf-btn--small is-disabled">↑ 앞쪽 더 불러오기(회전 경계에서 멈춤)</span></div>
+    <table class="wf-table">
+      <thead><tr><th style="width: 300px">기준 시각(UTC+09:00)</th><th style="width: 80px">레벨</th><th>본문 요약</th></tr></thead>
+      <tbody>
+        <tr><td colspan="3"><div class="wf-callout wf-callout--strong"><span class="wf-badge">회전 경계 · 이어 붙이지 않음</span> 파일 순서를 확인할 수 없어 회전되기 전 파일의 로그를 이어 붙이지 않았습니다. 시각이 가까운 로그는 같은 서비스·서버 시간순으로 볼 수 있습니다. <span class="wf-btn wf-btn--small">같은 서비스·서버 시간순으로 보기</span></div></td></tr>
+        <tr><td class="wf-mono">2026-11-05 10:14:21.118</td><td>INFO</td><td class="wf-mono">{"msg":"health ok","level":30…</td></tr>
+        <tr><td class="wf-mono">2026-11-05 10:14:49.870</td><td>INFO</td><td class="wf-mono">{"msg":"charge started","level":30,"order":{"id":"ORD-1042"}…</td></tr>
+        <tr class="is-on"><td><span class="wf-mono">2026-11-05 10:14:50.123</span> <span class="wf-badge wf-badge--strong">선택한 로그</span></td><td>ERROR</td><td class="wf-mono">{"msg":"payment request timeout","level":50,"order":{"id":"ORD-1042"},"http":{"status":504}…</td></tr>
+        <tr><td colspan="3" class="wf-muted">… 뒤쪽 행 …</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="wf-notes">
+    <li>파일 순서를 확인할 수 있을 때만 회전 경계를 넘어 이어 붙인다. 확인할 수 없으면 경계에서 멈추고 이어 붙이지 않았다고 글자로 표시한다(5절 UI-04, <span class="wf-ref">Q09-02</span>).</li>
+    <li>순서를 확인할 수 없는 경우에는 같은 서비스·서버 시간순 보기(상태 3)를 쓴다(<span class="wf-ref">Q09-03</span>). 이 경계 안내 안에 전환 버튼을 둔 것은 와이어프레임 표기다.</li>
+    <li>로그 흐름은 파일 identity·stream 같은 수집기 정보로 구분하고 경로 이름만으로 연속성을 단정하지 않는다(조사 명세 1절).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 수집하지 않은 구간·거부됨·보존 만료·수동 삭제·조회 한도·관측 불가</h2>
+  <p class="wf-state-desc">목록 안에서 빈 자리나 끝을 알리는 줄의 여섯 가지다. 줄마다 따로 만든 예라 시각이 서로 이어지지 않는다.</p>
+  <div class="wf-stack">
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">수집하지 않은 구간(흐름의 맨 앞)</span>
+      <table class="wf-table">
+        <tbody>
+          <tr><td colspan="3"><div class="wf-callout"><span class="wf-badge">수집하지 않은 구간</span> 이 연결은 2026-11-03 14:02:11 (UTC+09:00)부터 새 로그를 읽었습니다. 그 앞의 로그는 수집하지 않았습니다.</div></td></tr>
+          <tr><td class="wf-mono" style="width: 300px">2026-11-03 14:02:11.540</td><td style="width: 80px">INFO</td><td class="wf-mono">{"msg":"server listening","level":30,"port":8080…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">거부됨(흐름의 중간)</span>
+      <table class="wf-table">
+        <tbody>
+          <tr><td class="wf-mono" style="width: 300px">2026-11-05 10:14:49.102</td><td style="width: 80px">INFO</td><td class="wf-mono">{"msg":"settlement batch started","level":30…</td></tr>
+          <tr><td colspan="3"><div class="wf-callout"><span class="wf-badge">거부됨</span> 이 자리에서 이벤트 2건이 크기 상한(<span class="wf-n">N</span>)을 넘어 거부됐습니다. 본문은 중앙에 없습니다. 관측 시각 2026-11-05 10:14:49.320 (UTC+09:00) · <a href="UI-12-connection-detail.html">수집 연결 보기</a></div></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:14:49.870</td><td>INFO</td><td class="wf-mono">{"msg":"charge started","level":30,"order":{"id":"ORD-1042"}…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">보존 만료(오래된 로그를 골랐을 때 앞쪽 끝)</span>
+      <table class="wf-table">
+        <tbody>
+          <tr><td colspan="3"><div class="wf-callout"><span class="wf-badge">보존 만료</span> 이 앞의 로그는 보관 기간(6개월)이 지나 삭제됐습니다. 조회 가능 시작일 2026-05-05 (수신 시각 기준)</div></td></tr>
+          <tr><td class="wf-mono" style="width: 300px">2026-05-05 10:04:02.118</td><td style="width: 80px">INFO</td><td class="wf-mono">{"msg":"charge started","level":30,"order":{"id":"ORD-0311"}…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">수동 삭제(흐름의 중간)</span>
+      <table class="wf-table">
+        <tbody>
+          <tr><td class="wf-mono" style="width: 300px">2026-11-05 10:00:58.410</td><td style="width: 80px">INFO</td><td class="wf-mono">{"msg":"charge started","level":30,"order":{"id":"ORD-1019"}…</td></tr>
+          <tr><td colspan="3"><div class="wf-callout"><span class="wf-badge">수동 삭제</span> 2026-11-05 10:01:00 ~ 10:03:00 (UTC+09:00) 구간의 로그는 구간 로그 삭제로 지웠습니다. · <a href="UI-15-audit-log.html">감사 이력 보기</a></div></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:03:00.122</td><td>INFO</td><td class="wf-mono">{"msg":"charge completed","level":30,"order":{"id":"ORD-1021"}…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">조회 한도(뒤쪽 끝)</span>
+      <table class="wf-table">
+        <tbody>
+          <tr><td class="wf-mono" style="width: 300px">2026-11-05 10:14:51.020</td><td style="width: 80px">INFO</td><td class="wf-mono">{"msg":"charge started","level":30,"order":{"id":"ORD-1044"}…</td></tr>
+          <tr><td colspan="3"><div class="wf-callout"><span class="wf-badge">조회 한도</span> 실행 예산을 넘어 이 방향을 끝까지 불러오지 못했습니다. 이어서 불러올 수 있습니다. <span class="wf-btn wf-btn--small">이어서 불러오기</span></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">관측 불가(뒤쪽 끝)</span>
+      <table class="wf-table">
+        <tbody>
+          <tr><td class="wf-mono" style="width: 300px">2026-11-05 10:20:12.884</td><td style="width: 80px">INFO</td><td class="wf-mono">{"msg":"charge completed","level":30,"order":{"id":"ORD-1106"}…</td></tr>
+          <tr><td colspan="3"><div class="wf-callout"><span class="wf-badge wf-badge--unknown">관측 불가</span> 이 뒤의 로그는 지금 관측할 수 없습니다. 이 연결은 <span class="wf-badge wf-badge--unknown">관측 오래됨/미확인</span>이고 마지막 보고는 2026-11-05 10:20:13 (UTC+09:00)입니다. 에이전트에 아직 보내지 않은 로그가 남아 있을 수 있습니다. · <a href="UI-12-connection-detail.html">수집 연결 보기</a></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>원본을 수집하지 않음·거부됨·보존 만료·조회 한도·현재 관측 불가를 관측할 수 있는 범위 안에서 구분하고, 종류를 색이 아니라 글자로 적는다(5절 UI-04, 조사 명세 4절, 1절).</li>
+    <li><span class="wf-term">수집하지 않은 구간</span>: 최초 연결은 새 로그부터 읽고 파일별 시작 경계를 남긴다(D02, UI-11 7단계). 복구 근거가 없어 읽지 않고 넘어간 구간도 같은 이름으로 표시한다(D02, Q06, 와이어프레임 표기).</li>
+    <li><span class="wf-term">거부됨</span>: 크기 상한을 넘은 이벤트는 본문 전체를 거부하고 본문 없는 진단만 남긴다(D03). 크기 상한은 정하지 않았다.</li>
+    <li><span class="wf-term">보존 만료</span>: 만료·삭제 구간은 주변 조회에서 빠지고 조회 가능 시작일을 보인다(운영 명세 6절, <span class="wf-ref">SD-33</span>).</li>
+    <li><span class="wf-term">수동 삭제</span>: 연결과 시간 구간을 지정해 지운 구간은 주변 조회에서 빠지고 빈 자리를 따로 표시한다(<span class="wf-ref">Q13-03</span>, 운영 명세 6절, IT-25). 삭제 구간의 시간 기준은 설계에서 정한다.</li>
+    <li><span class="wf-term">조회 한도</span>는 실행 예산을 넘은 경우로, 정한 범위 끝에 닿은 <span class="wf-term">범위 한도</span>(상태 6)와 다르다. 실행 예산은 측정 뒤 정한다(7절).</li>
+    <li><span class="wf-term">관측 불가</span>: 관측 상태 이름은 CM-05를 따른다. 관측 오래됨 판정 기준은 정하지 않았다(7절). 수집 연결 보기는 UI-12로 간다.</li>
+    <li><span class="wf-review">WQ-25 설계로 넘김:</span> 거부된 이벤트의 자리를 흐름 안에서 정확히 짚을 수 있는지 문서에 없다. D03 진단은 관측 시각과 건수만 남기므로 그림은 관측 시각 기준으로 끼워 넣었다. <strong>기본안:</strong> 관측 시각 기준으로 끼워 넣고(그림대로) 자리가 정확하지 않을 수 있다고 표시한다.</li>
+    <li><span class="wf-review">WQ-26 문서로 정리:</span> 구간 삭제(<span class="wf-ref">Q13-03</span>)로 빈 자리를 주변 로그에서 따로 표시할지 UI-04 그릴 상태에 없다. 운영 명세 6절은 삭제 구간을 주변 조회에서 뺀다고만 적었다. <strong>정리:</strong> 따로 표시한다(Q13-03, 운영 명세 6절, IT-25). 명세 UI-04 그릴 상태와 위 그림에 더했다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 범위 한도</h2>
+  <div class="wf-grid-2">
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">앞쪽 건수 한도에 닿음</span>
+      <div class="wf-row"><span class="wf-btn wf-btn--small is-disabled">↑ 앞쪽 더 불러오기(범위 한도)</span></div>
+      <table class="wf-table">
+        <tbody>
+          <tr><td colspan="3"><div class="wf-callout"><span class="wf-badge">범위 한도</span> 선택한 로그 앞으로 최대 <span class="wf-n">N</span>건까지 보여 줍니다. 더 불러오지 않습니다.</div></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:11:03.402</td><td>INFO</td><td class="wf-mono">{"msg":"charge started"…</td></tr>
+          <tr><td colspan="3" class="wf-muted">… 선택한 로그까지 …</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">뒤쪽 최대 시간 폭에 닿음</span>
+      <table class="wf-table">
+        <tbody>
+          <tr><td colspan="3" class="wf-muted">… 선택한 로그부터 …</td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:16:58.770</td><td>INFO</td><td class="wf-mono">{"msg":"charge completed"…</td></tr>
+          <tr><td colspan="3"><div class="wf-callout"><span class="wf-badge">범위 한도</span> 선택한 로그에서 최대 시간 폭(<span class="wf-n">N</span>)을 넘는 로그는 불러오지 않습니다.</div></td></tr>
+        </tbody>
+      </table>
+      <div class="wf-row"><span class="wf-btn wf-btn--small is-disabled">↓ 뒤쪽 더 불러오기(범위 한도)</span></div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>주변 범위는 앞뒤 건수와 최대 시간 폭을 함께 제한한다. 값은 D16과 측정에서 정한다(5절 UI-04, 조사 명세 4절, 7절). 한도는 위쪽 <span class="wf-term">범위</span> 줄에도 늘 보인다(상태 1).</li>
+    <li>한도에 닿은 방향은 더 불러오기를 쓸 수 없게 두고 이유를 글자로 쓴다(와이어프레임 표기). 실행 예산에 걸린 <span class="wf-term">조회 한도</span>(상태 5)와 구분한다.</li>
+    <li><span class="wf-review">WQ-27 설계로 넘김:</span> <span class="wf-term">앞뒤 N건</span>이 처음 보여 주는 건수인지, 더 불러오기를 합친 방향별 상한인지 문서에 없다. 그림은 방향별 상한으로 그렸다. 처음 보여 주는 건수와 한 번에 더 불러오는 건수도 정해야 한다. <strong>기본안:</strong> 방향별 상한이다(그림대로). 처음 보여 주는 건수와 한 번에 더 불러오는 건수는 D16·측정에서 정한다.</li>
+  </ul>
+</section>
+
+</body>
+</html>

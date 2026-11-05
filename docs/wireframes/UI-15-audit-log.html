@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI-15 감사 이력</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>UI-15 감사 이력</h1>
+  <p>공용 계정의 로그인·자격·키·설정 변경 기록을 보는 화면이다. 상단 메뉴 <span class="wf-term">시스템</span>과 전역 배너 <span class="wf-term">감사 기록 장애</span>·<span class="wf-term">감사 기록 공백</span>에서 연다. 기간과 동작 종류로 거르고, 기록을 볼 수 있는 범위(조회 가능 시작일, 조기 정리 구간, 기록 공백 구간)를 목록과 함께 보여 준다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q10-12</span> <span class="wf-ref">Q10-13</span> <span class="wf-ref">Q10-14</span> <span class="wf-ref">TD-17</span> <span class="wf-ref">Q13-03</span> <span class="wf-ref">운영 명세 5절</span> · 기준: 화면 흐름 명세 5절 UI-15, 4절 CM-01·CM-07, 7절</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">기본</a></li>
+      <li><a href="#s2">기간과 동작 종류로 거름</a></li>
+      <li><a href="#s3">감사 기록 장애 중</a></li>
+      <li><a href="#s4">복구 뒤 기록 공백</a></li>
+      <li><a href="#s5">거른 결과 없음(기록 공백 포함)</a></li>
+      <li><a href="#s6">목표 90일보다 일찍 정리됨</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 기본</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item is-current">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body">
+      <h3 class="wf-page-title">감사 이력</h3>
+      <div class="wf-grid-3">
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조회 가능 시작일</span>
+          <span class="wf-strong" style="font-size: 18px">2026-08-07</span>
+          <span class="wf-help">보관 목표는 90일입니다. 감사 기록 저장 한도가 우선해 더 일찍 정리될 수 있습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조기 정리 구간</span>
+          <span><span class="wf-badge">없음</span></span>
+          <span class="wf-help">목표 90일보다 일찍 정리한 기록이 없습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">기록 공백 구간</span>
+          <span><span class="wf-badge">없음</span></span>
+          <span class="wf-help">조회 가능 시작일부터 지금까지 감사 기록을 저장하지 못한 구간이 없습니다.</span>
+        </div>
+      </div>
+      <div class="wf-row" style="align-items: flex-end; margin-top: 16px">
+        <div class="wf-field">
+          <span class="wf-label">기간 (UTC+09:00)</span>
+          <span class="wf-row"><span class="wf-input">2026-08-07</span>~<span class="wf-input">2026-11-05</span></span>
+        </div>
+        <div class="wf-field">
+          <span class="wf-label">동작 종류</span>
+          <span class="wf-select" style="min-width: 280px">전체</span>
+        </div>
+        <span class="wf-btn wf-btn--primary">적용</span>
+      </div>
+      <p class="wf-help" style="margin: 12px 0 8px">계정은 여러 사람이 함께 쓰는 공용 계정입니다. 기록만으로는 실제로 누가 했는지 알 수 없습니다. 비밀번호·키 원문, 로그 본문, 검색어는 기록하지 않습니다.</p>
+      <table class="wf-table">
+        <thead><tr><th style="width: 170px">시각 (UTC+09:00)</th><th style="width: 90px">공용 계정</th><th style="width: 130px">동작</th><th>대상</th><th style="width: 110px">결과</th></tr></thead>
+        <tbody>
+          <tr><td class="wf-mono">2026-11-05 10:28:14</td><td>ops</td><td>키 교체</td><td>주문 · app-02 · app.log · 새 키 발급</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:20:03</td><td>ops</td><td>알림 규칙 변경</td><td>알림 규칙 ID 12 · 바뀐 항목: 조건, 수신 주소</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:05:41</td><td>ops</td><td>구간 로그 삭제</td><td>결제 · app-01 · app.log · 2026-11-04 13:00 ~ 14:00 (UTC+09:00)</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 09:58:10</td><td>ops</td><td>로그인</td><td>웹 세션</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 09:57:52</td><td>ops</td><td>로그인</td><td>웹 세션</td><td><span class="wf-badge wf-badge--strong">실패</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 09:40:00</td><td>ops</td><td>키 폐기</td><td>결제 · app-02 · journald · 2026-09-14 발급 키</td><td><span class="wf-badge">중앙 확정</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 09:12:33</td><td>ops</td><td>설정 변경</td><td>주문 · app-01 · app.log</td><td><span class="wf-badge wf-badge--strong">실패</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 09:05:20</td><td>ops</td><td>로그인</td><td>웹 세션</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-04 18:02:11</td><td>ops</td><td>로그아웃</td><td>현재 세션</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-04 16:10:05</td><td>ops</td><td>키 교체</td><td>결제 · app-02 · journald · 새 키 발급</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-04 09:00:47</td><td>ops</td><td>비밀번호 변경</td><td>공용 계정 비밀번호</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-10-30 17:59:40</td><td>ops</td><td>보관</td><td>서비스 배송</td><td><span class="wf-badge">중앙 확정</span></td></tr>
+        </tbody>
+      </table>
+      <div class="wf-row" style="justify-content: center; margin-top: 12px"><span class="wf-btn">더 보기</span></div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>목록은 시각·공용 계정·동작·대상·결과다(<span class="wf-ref">Q10-12</span>). 시각은 배포 설정의 표시 시간대로 쓰고 시간대를 함께 적는다(1절, <span class="wf-ref">SD-07</span>).</li>
+    <li>기록하는 동작은 로그인 성공·실패, 로그아웃, 비밀번호 변경·복구, 세션 종료와 연결·키·보관·주요 설정 변경의 시도와 결과다(<span class="wf-ref">Q10-12</span>). 알림 규칙·수신자 변경도 기록하며 규칙 ID와 바뀐 항목 종류만 남기고 검색어·필드 값·수신 주소 원문은 뺀다(<span class="wf-ref">TD-17</span>). 연결과 시간 구간을 지정한 로그 삭제도 기록한다(<span class="wf-ref">Q13-03</span>). 삭제 구간의 시간 기준은 설계에서 정한다(운영 명세 6절).</li>
+    <li>비밀번호·키 원문, 로그 본문, 검색어, 세션 쿠키·토큰 같은 비밀 값은 남기지 않는다. 모든 검색·본문 조회의 상세 추적과 IP·기기 정보 장기 보관도 첫 출시에서 하지 않는다(<span class="wf-ref">Q10-12</span>). 그래서 검색 실행 기록이나 IP·기기 칸이 없다.</li>
+    <li>계정 칸은 공용 계정 <span class="wf-mono">ops</span> 하나다. 함께 쓰는 사람 중 누가 했는지 추정하는 표시(사람 이름, IP, 기기)를 두지 않고, 기록만으로 실제 사람을 알 수 없다고 화면에서 알린다(<span class="wf-ref">Q10-12</span>, 운영 명세 5절).</li>
+    <li>조회 가능 시작일, 조기 정리 구간, 기록 공백 구간을 목록 위에 둔다(5절 UI-15). 감사 이력 목표는 90일이고 저장 한도가 우선해 더 일찍 정리될 수 있다(<span class="wf-ref">Q10-13</span>, 7절). <span class="wf-mono">2026-08-07</span>은 <span class="wf-mono">2026-11-05</span>의 90일 전이다.</li>
+    <li>대상 칸은 로그인·로그아웃·세션 종료는 세션으로, 키는 원문 대신 발급일로(UI-12 키 메타데이터), 알림 규칙은 ID로 가리킨다. 대상을 가리키는 실제 형식은 T06 설계에서 정한다(와이어프레임 표기).</li>
+    <li>목록은 최신순이고 다음 기록은 <span class="wf-term">더 보기</span>로 불러온다. 한 번에 불러오는 행 수는 정하지 않았다(와이어프레임 표기).</li>
+    <li><span class="wf-review">WQ-84 설계로 넘김:</span> 감사 이력을 열 때의 기본 기간이 문서에 없다. 그림은 조회 가능 시작일부터 오늘까지로 그렸다. <strong>기본안:</strong> 조회 가능 시작일부터 지금까지 최신순(그림대로).</li>
+    <li><span class="wf-review">WQ-85 설계로 넘김:</span> 에이전트에 닿는 작업(키 폐기, 보관·재활성)의 결과를 어느 단계로 남길지 문서에 없다. CM-07은 <span class="wf-term">요청 접수</span>·<span class="wf-term">중앙 확정</span>·<span class="wf-term">에이전트 관측</span>을 나누고, Q05·Q07·Q10 기획안 4절은 폐기 요청·중앙 차단 확정·감사 저장·에이전트 관측을 별개 사실로 두어 한 단계의 실패를 숨긴 채 전체 성공으로 쓰지 않게 한다. 그림은 <span class="wf-term">중앙 확정</span>으로 적었다. <strong>기본안:</strong> 단계마다 따로 기록하고(요청 접수·중앙 확정·에이전트 관측) 목록에는 마지막으로 확인된 단계를 보인다.</li>
+    <li><span class="wf-review">WQ-86 설계로 넘김:</span> 없는 계정 이름으로 로그인에 실패했을 때 계정 칸에 입력한 이름을 남길지 문서에 없다. 계정 이름 칸에 비밀번호를 잘못 넣은 경우 원문이 남을 수 있다(<span class="wf-ref">Q10-12</span>의 비밀 값 제외). <strong>기본안:</strong> 입력한 이름을 남기지 않고 <span class="wf-term">없는 계정</span>으로 쓴다. 비밀번호를 잘못 넣은 경우를 막는다(Q10-12).</li>
+    <li><span class="wf-review">WQ-87 설계로 넘김:</span> Q05·Q07·Q10 기획안 5절은 감사 화면에 권한 축소 결과·부분 실패·시각 신뢰도 표시하자고 하지만 화면 흐름 명세 UI-15 요소에는 없다. 시각 신뢰 표시는 그리지 않았다. <strong>기본안:</strong> 결과 칸에 단계와 <span class="wf-term">부분 실패</span>를 쓰고 시각을 확인할 수 없으면 표시한다(Q05·Q07·Q10 기획안 5절). 화면 설계 때 그린다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 기간과 동작 종류로 거름</h2>
+  <p class="wf-state-desc">동작 종류 목록을 펼쳐 키 동작만 고른 예다. 바뀌는 거르기 영역과 목록만 그렸다. 상단 메뉴와 요약 칸은 상태 1과 같다.</p>
+  <div class="wf-frame">
+    <span class="wf-frame-label">거르기와 목록</span>
+    <div class="wf-row wf-row--top">
+      <div class="wf-field">
+        <span class="wf-label">기간 (UTC+09:00)</span>
+        <span class="wf-row"><span class="wf-input">2026-10-01</span>~<span class="wf-input">2026-11-05</span></span>
+      </div>
+      <div class="wf-field">
+        <span class="wf-label">동작 종류</span>
+        <span class="wf-select is-focus" style="min-width: 280px">키 발급 외 2개</span>
+        <ul class="wf-listbox" style="width: 280px">
+          <li class="wf-option-group">로그인과 세션</li>
+          <li class="wf-option">☐ 로그인</li>
+          <li class="wf-option">☐ 로그아웃</li>
+          <li class="wf-option">☐ 전체 세션 종료</li>
+          <li class="wf-option-group">자격</li>
+          <li class="wf-option">☐ 비밀번호 변경</li>
+          <li class="wf-option">☐ 비밀번호 재설정(서버 운영자 로컬)</li>
+          <li class="wf-option-group">수집 키</li>
+          <li class="wf-option is-on">☑ 키 발급</li>
+          <li class="wf-option is-on">☑ 키 교체</li>
+          <li class="wf-option is-on">☑ 키 폐기</li>
+          <li class="wf-option-group">수집 연결</li>
+          <li class="wf-option">☐ 연결 등록</li>
+          <li class="wf-option">☐ 설정 변경</li>
+          <li class="wf-option">☐ 보관</li>
+          <li class="wf-option">☐ 재활성</li>
+          <li class="wf-option">☐ 구간 로그 삭제</li>
+          <li class="wf-option-group">알림</li>
+          <li class="wf-option">☐ 알림 규칙 변경</li>
+        </ul>
+      </div>
+      <span class="wf-btn wf-btn--primary" style="margin-top: 24px">적용</span>
+    </div>
+    <div class="wf-row" style="margin: 16px 0 8px">
+      <span class="wf-chip">기간 2026-10-01 ~ 2026-11-05</span>
+      <span class="wf-chip">동작 종류: 키 발급 · 키 교체 · 키 폐기</span>
+      <span class="wf-help">5건</span>
+    </div>
+    <table class="wf-table">
+      <thead><tr><th style="width: 170px">시각 (UTC+09:00)</th><th style="width: 90px">공용 계정</th><th style="width: 130px">동작</th><th>대상</th><th style="width: 110px">결과</th></tr></thead>
+      <tbody>
+        <tr><td class="wf-mono">2026-11-05 10:28:14</td><td>ops</td><td>키 교체</td><td>주문 · app-02 · app.log · 새 키 발급</td><td><span class="wf-badge">성공</span></td></tr>
+        <tr><td class="wf-mono">2026-11-05 09:40:00</td><td>ops</td><td>키 폐기</td><td>결제 · app-02 · journald · 2026-09-14 발급 키</td><td><span class="wf-badge">중앙 확정</span></td></tr>
+        <tr><td class="wf-mono">2026-11-04 16:10:05</td><td>ops</td><td>키 교체</td><td>결제 · app-02 · journald · 새 키 발급</td><td><span class="wf-badge">성공</span></td></tr>
+        <tr><td class="wf-mono">2026-10-30 11:20:09</td><td>ops</td><td>키 폐기</td><td>주문 · app-01 · app.log · 2026-08-20 발급 키</td><td><span class="wf-badge wf-badge--strong">실패</span></td></tr>
+        <tr><td class="wf-mono">2026-10-21 15:02:47</td><td>ops</td><td>키 발급</td><td>주문 · app-01 · journald · 연결 등록</td><td><span class="wf-badge">성공</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="wf-notes">
+    <li>기간과 동작 종류로 거른다(5절 UI-15). 동작 종류는 묶음으로 보여 주고 여러 개를 고를 수 있으며, <span class="wf-term">적용</span>을 눌러 거른다(와이어프레임 표기).</li>
+    <li>동작 종류는 <span class="wf-ref">Q10-12</span>, <span class="wf-ref">TD-17</span>, <span class="wf-ref">Q13-03</span>의 기록 대상에서 가져왔다. 로그인 성공과 실패는 한 동작으로 두고 결과 칸으로 나눈다. <span class="wf-ref">Q10-12</span>의 <span class="wf-term">세션 종료</span>는 UI-16의 전체 세션 종료로 적었다. 실제 이름과 나누는 단위는 T06 설계에서 정한다(와이어프레임 표기).</li>
+    <li>결과로 거르기와 대상 검색은 명세에 없어 두지 않았다. 파일 내보내기는 첫 출시 밖이다(3절).</li>
+    <li><span class="wf-review">WQ-88 설계로 넘김:</span> 서비스 이름 변경(UI-10)과 운영 수신 주소 변경(UI-14)이 <span class="wf-ref">Q10-12</span>의 주요 설정 변경에 드는지 문서에 없다. 동작 종류에 넣지 않았다. <strong>기본안:</strong> 기존 합의 적용: 감사 대상이므로 동작 종류에 넣는다(WQ-52, WQ-81).</li>
+    <li><span class="wf-review">WQ-89 설계로 넘김:</span> 서버 운영자의 로컬 재설정은 웹 로그인 없이 서버에서 한 일이다(<span class="wf-ref">Q10-03</span>). 이 기록의 계정 칸에 무엇을 쓸지 문서에 없다. <strong>기본안:</strong> <span class="wf-term">서버 운영자(로컬)</span>로 쓴다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 감사 기록 장애 중</h2>
+  <p class="wf-state-desc">감사 기록을 저장하지 못하는 동안 전역 배너 <span class="wf-term">감사 기록 장애</span>를 눌러 들어온 예다. 장애가 시작된 뒤로는 기록이 없어 공백으로 표시한다.</p>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item is-current">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-banners" role="region" aria-label="전역 배너">
+      <p class="wf-banner"><strong class="wf-banner-kind">감사 기록 장애</strong><span class="wf-banner-text">2026-11-05 10:31:00 (UTC+09:00)부터 감사 기록을 저장하지 못하고 있습니다. 로그인·검색·수집은 계속됩니다. 키 발급, 등록·설정 변경, 비밀번호 변경, 알림 규칙 변경 등은 보류되니 복구된 뒤 다시 실행하세요.</span><a class="wf-banner-link" href="UI-15-audit-log.html">감사 이력 보기</a></p>
+    </div>
+    <div class="wf-screen-body">
+      <h3 class="wf-page-title">감사 이력</h3>
+      <div class="wf-grid-3">
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조회 가능 시작일</span>
+          <span class="wf-strong" style="font-size: 18px">2026-08-07</span>
+          <span class="wf-help">보관 목표는 90일입니다. 감사 기록 저장 한도가 우선해 더 일찍 정리될 수 있습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조기 정리 구간</span>
+          <span><span class="wf-badge">없음</span></span>
+          <span class="wf-help">목표 90일보다 일찍 정리한 기록이 없습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">기록 공백 구간</span>
+          <span><span class="wf-badge wf-badge--strong">감사 기록 장애 중</span></span>
+          <span class="wf-strong">2026-11-05 10:31:00 ~ 지금 (UTC+09:00)</span>
+          <span class="wf-help">감사 기록을 저장하지 못하고 있습니다. 이 동안의 로그인과 작업은 목록에 남지 않습니다.</span>
+        </div>
+      </div>
+      <div class="wf-row" style="align-items: flex-end; margin-top: 16px">
+        <div class="wf-field">
+          <span class="wf-label">기간 (UTC+09:00)</span>
+          <span class="wf-row"><span class="wf-input">2026-08-07</span>~<span class="wf-input">2026-11-05</span></span>
+        </div>
+        <div class="wf-field">
+          <span class="wf-label">동작 종류</span>
+          <span class="wf-select" style="min-width: 280px">전체</span>
+        </div>
+        <span class="wf-btn wf-btn--primary">적용</span>
+      </div>
+      <p class="wf-help" style="margin: 12px 0 8px">계정은 여러 사람이 함께 쓰는 공용 계정입니다. 기록만으로는 실제로 누가 했는지 알 수 없습니다. 비밀번호·키 원문, 로그 본문, 검색어는 기록하지 않습니다.</p>
+      <table class="wf-table">
+        <thead><tr><th style="width: 170px">시각 (UTC+09:00)</th><th style="width: 90px">공용 계정</th><th style="width: 130px">동작</th><th>대상</th><th style="width: 110px">결과</th></tr></thead>
+        <tbody>
+          <tr><td colspan="5" style="padding: 0"><div class="wf-placeholder" style="min-height: 0; padding: 8px 10px; justify-content: flex-start; text-align: left; gap: 12px"><span class="wf-badge wf-badge--strong">기록 공백</span><span><span class="wf-mono">2026-11-05 10:31:00 ~ 지금</span> 감사 기록 장애 중입니다. 이 구간의 로그인과, 장애 중에도 허용되는 긴급 키 폐기·전체 세션 종료·서버 운영자의 로컬 재설정은 기록이 남지 않습니다.</span></div></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:28:14</td><td>ops</td><td>키 교체</td><td>주문 · app-02 · app.log · 새 키 발급</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:20:03</td><td>ops</td><td>알림 규칙 변경</td><td>알림 규칙 ID 12 · 바뀐 항목: 조건, 수신 주소</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:05:41</td><td>ops</td><td>구간 로그 삭제</td><td>결제 · app-01 · app.log · 2026-11-04 13:00 ~ 14:00 (UTC+09:00)</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 09:58:10</td><td>ops</td><td>로그인</td><td>웹 세션</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 09:57:52</td><td>ops</td><td>로그인</td><td>웹 세션</td><td><span class="wf-badge wf-badge--strong">실패</span></td></tr>
+        </tbody>
+      </table>
+      <div class="wf-row" style="justify-content: center; margin-top: 12px"><span class="wf-btn">더 보기</span></div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>감사 저장만 실패하고 인증·세션·로그 저장이 정상이면 로그인·검색·로그 수신은 계속하고 감사 장애와 공백을 표시한다(<span class="wf-ref">Q10-14</span>). 배너는 CM-01 상태 3의 <span class="wf-term">감사 기록 장애</span>와 같은 문구·시각이다.</li>
+    <li>장애가 시작된 시각부터 지금까지를 기록 공백 구간으로 요약 칸과 목록 맨 위에 함께 보여 준다(와이어프레임 표기).</li>
+    <li>이 동안 일반 민감 변경(새 키 발급, 등록·설정 변경, 웹 비밀번호 변경)과 알림 규칙 변경은 적용 전에 보류된다(<span class="wf-ref">Q10-14</span>, <span class="wf-ref">TD-17</span>, CM-07 상태 5). 긴급 키 폐기와 전체 세션 종료는 차단 상태를 확정할 수 있으면 진행되고, 서버 운영자의 로컬 재설정도 안전하게 확정할 수 있으면 허용되며, 셋 다 이 목록에는 공백으로 남는다(<span class="wf-ref">Q10-14</span>, CM-07 상태 6, UI-16 상태 7).</li>
+    <li><span class="wf-review">WQ-90 설계로 넘김:</span> 감사 기록 장애 중에 이미 남은 기록을 읽을 수 있는지(쓰기만 실패하는지)는 저장 설계에 달렸다. 그림은 읽을 수 있는 경우다. 읽기도 안 되면 목록 자리에 무엇을 보일지 문서에 없다. <strong>기본안:</strong> 읽기도 안 되면 목록 자리에 <span class="wf-term">감사 이력을 읽을 수 없음</span>과 마지막 성공 시각을 보인다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 복구 뒤 기록 공백</h2>
+  <p class="wf-state-desc">감사 기록이 복구된 뒤 전역 배너 <span class="wf-term">감사 기록 공백</span>을 눌러 들어온 예다.</p>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item is-current">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-banners" role="region" aria-label="전역 배너">
+      <p class="wf-banner"><strong class="wf-banner-kind">감사 기록 공백</strong><span class="wf-banner-text">감사 기록이 복구됐습니다. 2026-11-05 10:31:00 ~ 10:52:00 (UTC+09:00) 구간은 기록이 비어 있습니다.</span><a class="wf-banner-link" href="UI-15-audit-log.html">감사 이력 보기</a></p>
+    </div>
+    <div class="wf-screen-body">
+      <h3 class="wf-page-title">감사 이력</h3>
+      <div class="wf-grid-3">
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조회 가능 시작일</span>
+          <span class="wf-strong" style="font-size: 18px">2026-08-07</span>
+          <span class="wf-help">보관 목표는 90일입니다. 감사 기록 저장 한도가 우선해 더 일찍 정리될 수 있습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조기 정리 구간</span>
+          <span><span class="wf-badge">없음</span></span>
+          <span class="wf-help">목표 90일보다 일찍 정리한 기록이 없습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">기록 공백 구간</span>
+          <span><span class="wf-badge wf-badge--strong">기록 공백</span></span>
+          <span class="wf-strong">2026-11-05 10:31:00 ~ 10:52:00 (UTC+09:00)</span>
+          <span class="wf-help">감사 기록을 저장하지 못한 구간입니다. 이 구간의 로그인과 작업은 기록이 없습니다.</span>
+        </div>
+      </div>
+      <div class="wf-row" style="align-items: flex-end; margin-top: 16px">
+        <div class="wf-field">
+          <span class="wf-label">기간 (UTC+09:00)</span>
+          <span class="wf-row"><span class="wf-input">2026-08-07</span>~<span class="wf-input">2026-11-05</span></span>
+        </div>
+        <div class="wf-field">
+          <span class="wf-label">동작 종류</span>
+          <span class="wf-select" style="min-width: 280px">전체</span>
+        </div>
+        <span class="wf-btn wf-btn--primary">적용</span>
+      </div>
+      <p class="wf-help" style="margin: 12px 0 8px">계정은 여러 사람이 함께 쓰는 공용 계정입니다. 기록만으로는 실제로 누가 했는지 알 수 없습니다. 비밀번호·키 원문, 로그 본문, 검색어는 기록하지 않습니다.</p>
+      <table class="wf-table">
+        <thead><tr><th style="width: 170px">시각 (UTC+09:00)</th><th style="width: 90px">공용 계정</th><th style="width: 130px">동작</th><th>대상</th><th style="width: 110px">결과</th></tr></thead>
+        <tbody>
+          <tr><td class="wf-mono">2026-11-05 10:58:40</td><td>ops</td><td>설정 변경</td><td>결제 · app-01 · app.log</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:53:10</td><td>ops</td><td>로그인</td><td>웹 세션</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td colspan="5" style="padding: 0"><div class="wf-placeholder" style="min-height: 0; padding: 8px 10px; justify-content: flex-start; text-align: left; gap: 12px"><span class="wf-badge wf-badge--strong">기록 공백</span><span><span class="wf-mono">2026-11-05 10:31:00 ~ 10:52:00</span> 감사 기록을 저장하지 못한 구간입니다. 이 구간의 로그인과, 장애 중에도 허용된 긴급 키 폐기·전체 세션 종료·서버 운영자의 로컬 재설정은 기록이 없습니다.</span></div></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:28:14</td><td>ops</td><td>키 교체</td><td>주문 · app-02 · app.log · 새 키 발급</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:20:03</td><td>ops</td><td>알림 규칙 변경</td><td>알림 규칙 ID 12 · 바뀐 항목: 조건, 수신 주소</td><td><span class="wf-badge">성공</span></td></tr>
+          <tr><td class="wf-mono">2026-11-05 10:05:41</td><td>ops</td><td>구간 로그 삭제</td><td>결제 · app-01 · app.log · 2026-11-04 13:00 ~ 14:00 (UTC+09:00)</td><td><span class="wf-badge">성공</span></td></tr>
+        </tbody>
+      </table>
+      <div class="wf-row" style="justify-content: center; margin-top: 12px"><span class="wf-btn">더 보기</span></div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>복구되면 CM-01 상태 3의 <span class="wf-term">감사 기록 공백</span> 배너가 이 화면으로 데려온다. 공백 구간은 요약 칸과 목록의 해당 시각 자리에 함께 보인다(와이어프레임 표기).</li>
+    <li>공백 구간이 여럿이면 요약 칸에 모두 적는다(와이어프레임 표기).</li>
+    <li><span class="wf-mono">10:58:40</span>의 설정 변경은 장애 중 보류됐던 작업을 복구 뒤 다시 실행한 예다. 보류한 작업은 복구돼도 자동으로 적용하지 않는다(2026-11-05 <span class="wf-ref">Q10-14</span> 후속 합의).</li>
+    <li><span class="wf-review">WQ-91 설계로 넘김:</span> 공백 구간 안에서 진행된 긴급 키 폐기·전체 세션 종료·서버 운영자의 로컬 재설정을 복구 뒤 이 목록에 따로 보일지 문서에 없다(<span class="wf-ref">Q10-14</span>의 감사 공백과 실제 결과 구분). 그림은 공백 구간만 표시했다. 실제 결과는 각 화면(예: UI-12의 키 상태)에서 본다. <strong>기본안:</strong> 공백 구간만 표시하고(그림대로) 실제 결과는 각 화면에서 본다.</li>
+    <li><span class="wf-term">감사 기록 공백</span> 배너를 언제 내릴지는 CM-01 상태 3의 검토 항목이다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 거른 결과 없음(기록 공백 포함)</h2>
+  <p class="wf-state-desc">복구 뒤(상태 4)에 공백 구간이 든 기간을 거른 예다. 바뀌는 거르기 영역과 목록만 그렸다.</p>
+  <div class="wf-frame">
+    <span class="wf-frame-label">거르기와 목록</span>
+    <div class="wf-row" style="align-items: flex-end">
+      <div class="wf-field">
+        <span class="wf-label">기간 (UTC+09:00)</span>
+        <span class="wf-row"><span class="wf-input">2026-11-05</span>~<span class="wf-input">2026-11-05</span></span>
+      </div>
+      <div class="wf-field">
+        <span class="wf-label">동작 종류</span>
+        <span class="wf-select" style="min-width: 280px">전체 세션 종료</span>
+      </div>
+      <span class="wf-btn wf-btn--primary">적용</span>
+    </div>
+    <table class="wf-table" style="margin-top: 16px">
+      <thead><tr><th style="width: 170px">시각 (UTC+09:00)</th><th style="width: 90px">공용 계정</th><th style="width: 130px">동작</th><th>대상</th><th style="width: 110px">결과</th></tr></thead>
+      <tbody>
+        <tr><td colspan="5">
+          <div class="wf-stack wf-stack--tight" style="padding: 16px 0; align-items: center; text-align: center">
+            <p class="wf-strong">고른 기간과 동작 종류에 맞는 기록이 없습니다.</p>
+            <p>이 기간에는 기록 공백 구간 2026-11-05 10:31:00 ~ 10:52:00 (UTC+09:00)이 있습니다. 그 사이의 작업은 기록이 없으므로, 기록이 없다고 작업이 없었다는 뜻은 아닙니다.</p>
+          </div>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="wf-notes">
+    <li>고른 기간에 기록 공백 구간이나 조기 정리 구간이 겹치면 결과가 없어도 그 구간을 함께 알린다. 기록이 없는 것을 작업이 없었던 것으로 읽지 않게 하려는 표시다(<span class="wf-ref">Q10-13</span>, <span class="wf-ref">Q10-14</span>)(와이어프레임 표기).</li>
+    <li>예를 들어 UI-16 상태 7처럼 감사 기록 장애 중에 전체 세션 종료를 했다면, 그 작업은 공백 구간 안이라 여기 나오지 않는다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 목표 90일보다 일찍 정리됨</h2>
+  <p class="wf-state-desc">감사 기록 저장 한도에 닿아 90일이 되기 전 기록부터 정리된 상태다. 요약 칸과, <span class="wf-term">더 보기</span>로 가장 오래된 기록까지 불러온 목록 끝만 그렸다. 상단 메뉴는 상태 1과 같다.</p>
+  <div class="wf-frame">
+    <span class="wf-frame-label">요약 칸과 목록 끝</span>
+    <div class="wf-grid-3">
+      <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+        <span class="wf-label">조회 가능 시작일</span>
+        <span class="wf-strong" style="font-size: 18px">2026-09-21</span>
+        <span class="wf-help">보관 목표 90일대로면 2026-08-07부터입니다.</span>
+      </div>
+      <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+        <span class="wf-label">조기 정리 구간</span>
+        <span><span class="wf-badge wf-badge--strong">목표 90일보다 일찍 정리됨</span></span>
+        <span class="wf-strong">2026-08-07 ~ 2026-09-21</span>
+        <span class="wf-help">감사 기록 저장 한도에 닿아 가장 오래된 기록부터 정리했습니다. 이 구간의 기록은 볼 수 없습니다.</span>
+      </div>
+      <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+        <span class="wf-label">기록 공백 구간</span>
+        <span><span class="wf-badge">없음</span></span>
+        <span class="wf-help">조회 가능 시작일부터 지금까지 감사 기록을 저장하지 못한 구간이 없습니다.</span>
+      </div>
+    </div>
+    <table class="wf-table" style="margin-top: 16px">
+      <thead><tr><th style="width: 170px">시각 (UTC+09:00)</th><th style="width: 90px">공용 계정</th><th style="width: 130px">동작</th><th>대상</th><th style="width: 110px">결과</th></tr></thead>
+      <tbody>
+        <tr><td class="wf-mono">2026-09-22 10:14:03</td><td>ops</td><td>로그인</td><td>웹 세션</td><td><span class="wf-badge">성공</span></td></tr>
+        <tr><td class="wf-mono">2026-09-21 18:40:51</td><td>ops</td><td>설정 변경</td><td>결제 · app-01 · app.log</td><td><span class="wf-badge">성공</span></td></tr>
+        <tr><td class="wf-mono">2026-09-21 09:02:16</td><td>ops</td><td>로그인</td><td>웹 세션</td><td><span class="wf-badge">성공</span></td></tr>
+        <tr><td colspan="5" style="padding: 0"><div class="wf-placeholder" style="min-height: 0; padding: 8px 10px; justify-content: flex-start; text-align: left; gap: 12px"><span class="wf-badge wf-badge--strong">조기 정리</span><span><span class="wf-mono">2026-08-07 ~ 2026-09-21</span> 감사 기록 저장 한도에 닿아 목표 90일보다 일찍 정리한 구간입니다. 이 구간의 기록은 볼 수 없습니다.</span></div></td></tr>
+      </tbody>
+    </table>
+    <p class="wf-help" style="margin-top: 8px; text-align: center">목록 끝</p>
+  </div>
+  <ul class="wf-notes">
+    <li>감사 저장 한도가 우선해 목표 90일 전에도 가장 오래된 기록부터 정리한다. 실제 조회 가능 시작일과 조기 정리 구간을 보여 준다(<span class="wf-ref">Q10-13</span>).</li>
+    <li>90일은 목표이며 최소 보장이 아니다(<span class="wf-ref">Q10-13</span>). 화면 문구에도 보장이라고 쓰지 않는다.</li>
+    <li>가장 오래된 기록부터 정리하므로 조기 정리 구간은 목록 끝에 붙은 한 구간이다. 목록을 끝까지 불러오면 그 자리에 구간을 표시한다(와이어프레임 표기).</li>
+    <li>감사 저장 한도 값은 정하지 않았다(운영 명세 5절, T06·Q15). 화면에 값을 쓰지 않았다.</li>
+    <li>CM-01 배너 종류에 감사 이력 조기 정리가 없어 배너를 그리지 않았다(4절 CM-01).</li>
+  </ul>
+</section>
+
+</body>
+</html>

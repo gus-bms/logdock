@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CM-07 민감 작업 확인</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>CM-07 민감 작업 확인</h1>
+  <p>키·등록·보관·로그 삭제·비밀번호처럼 영향이 큰 작업 전에 대상과 영향을 보여 주고 비밀번호를 다시 받는 확인 창이다. 에이전트에 닿는 작업은 실행 뒤 <span class="wf-term">요청 접수</span>, <span class="wf-term">중앙 확정</span>, <span class="wf-term">에이전트 관측</span>을 나눠 보여 준다. 알림 규칙 변경에는 쓰지 않는다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q10-05</span> <span class="wf-ref">Q10-11</span> <span class="wf-ref">Q10-14</span> <span class="wf-ref">Q13-03</span> <span class="wf-ref">TD-17</span> · 기준: 화면 흐름 명세 4·5절</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">확인 창: 비밀번호 입력</a></li>
+      <li><a href="#s2">확인 창: 최근 재인증이 유효함</a></li>
+      <li><a href="#s3">비밀번호 오류</a></li>
+      <li><a href="#s4">실행 뒤 진행 단계</a></li>
+      <li><a href="#s5">감사 기록 장애로 보류</a></li>
+      <li><a href="#s6">감사 기록 장애 중 긴급 키 폐기</a></li>
+      <li><a href="#s7">쓰는 작업과 보여 줄 영향</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 확인 창: 비밀번호 입력</h2>
+  <p class="wf-state-desc">수집 연결 상세(UI-12)에서 키 폐기를 누른 예다.</p>
+  <div class="wf-screen">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="키 폐기 확인">
+        <div class="wf-modal-head">키 폐기</div>
+        <div class="wf-modal-body">
+          <div>
+            <p class="wf-section-title">대상</p>
+            <dl class="wf-kv">
+              <dt>연결</dt><dd>결제 · app-01 · app.log</dd>
+              <dt>키</dt><dd>2026-10-02 발급 · 유효(원문은 보여 주지 않음)</dd>
+            </dl>
+          </div>
+          <div>
+            <p class="wf-section-title">영향</p>
+            <ul>
+              <li>중앙이 이 키로 들어오는 새 전송을 받지 않습니다.</li>
+              <li>이미 저장한 로그는 그대로 검색됩니다.</li>
+              <li>에이전트의 대기 로그는 지우지 않습니다. 유효한 키를 적용하면 같은 로그를 다시 보냅니다.</li>
+              <li>서버에서 읽기를 멈추는 일은 서버 운영자가 직접 합니다.</li>
+            </ul>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">비밀번호 다시 입력</span>
+            <span class="wf-input is-focus">••••••••••••••••</span>
+          </div>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">키 폐기</span></div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>대상과 영향을 보여 주고 비밀번호를 다시 받은 뒤 실행한다(<span class="wf-ref">Q10-05</span>). 영향 문구는 작업마다 다르며 상태 7의 표를 따른다.</li>
+    <li>키 폐기 뒤에도 이미 저장한 로그는 검색되고 대기 로그는 보존한다(<span class="wf-ref">SD-12</span>, <span class="wf-ref">Q10-11</span>). 사고 대응은 중앙 폐기를 먼저 하고 로컬 중지는 운영자가 한다(6절).</li>
+    <li>창이 열리면 초점은 비밀번호 칸에 두고, 닫으면 창을 연 버튼으로 돌아간다(조사 명세 8절의 초점 복귀 원칙).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 확인 창: 최근 재인증이 유효함</h2>
+  <div class="wf-screen">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="키 폐기 확인">
+        <div class="wf-modal-head">키 폐기</div>
+        <div class="wf-modal-body">
+          <dl class="wf-kv">
+            <dt>연결</dt><dd>결제 · app-01 · app.log</dd>
+            <dt>키</dt><dd>2026-10-02 발급 · 유효</dd>
+          </dl>
+          <p class="wf-muted">… 영향(상태 1과 같음) …</p>
+          <p class="wf-callout">최근에 비밀번호를 확인해서 다시 묻지 않습니다. 재인증 유효 시간 <span class="wf-n">N</span></p>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">키 폐기</span></div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>최근 재인증이 유효하면 비밀번호를 다시 묻지 않는다. 대상과 영향 확인은 그대로 거친다. 유효 시간은 설계에서 정한다(4절 CM-07).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 비밀번호 오류</h2>
+  <div class="wf-frame wf-w-md">
+    <div class="wf-field">
+      <span class="wf-label">비밀번호 다시 입력</span>
+      <span class="wf-input is-error">••••••••</span>
+      <p class="wf-error">비밀번호가 맞지 않습니다.</p>
+    </div>
+    <div class="wf-row" style="justify-content: flex-end; margin-top: 12px"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">키 폐기</span></div>
+  </div>
+  <ul class="wf-notes">
+    <li>틀리면 작업을 실행하지 않고 창을 유지한다. 계정이나 자격의 세부를 드러내지 않는다(UI-01 로그인 실패와 같은 원칙).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 실행 뒤 진행 단계</h2>
+  <p class="wf-state-desc">에이전트에 닿는 작업(키 폐기, 보관)은 단계를 나눠 보여 준다.</p>
+  <div class="wf-frame">
+    <span class="wf-frame-label">에이전트가 보고하고 있을 때</span>
+    <ol class="wf-steps">
+      <li class="wf-step is-done"><span class="wf-step-name">요청 접수</span><span class="wf-step-state">완료 10:15:03</span></li>
+      <li class="wf-step is-done"><span class="wf-step-name">중앙 확정</span><span class="wf-step-state">완료 10:15:04 · 이 키의 새 전송 차단</span></li>
+      <li class="wf-step is-current is-waiting"><span class="wf-step-name">에이전트 관측</span><span class="wf-step-state">대기 · 에이전트가 다음에 보고하면 확인</span></li>
+    </ol>
+  </div>
+  <div class="wf-frame">
+    <span class="wf-frame-label">에이전트를 관측할 수 없을 때</span>
+    <ol class="wf-steps">
+      <li class="wf-step is-done"><span class="wf-step-name">요청 접수</span><span class="wf-step-state">완료 10:15:03</span></li>
+      <li class="wf-step is-done"><span class="wf-step-name">중앙 확정</span><span class="wf-step-state">완료 10:15:04 · 이 키의 새 전송 차단</span></li>
+      <li class="wf-step is-waiting"><span class="wf-step-name">에이전트 관측</span><span class="wf-step-state">미확인 · 마지막 보고 09:31:07</span></li>
+    </ol>
+  </div>
+  <ul class="wf-notes">
+    <li>중앙 폐기 요청·확정과 오프라인 에이전트의 읽기·관측은 별개다. 중앙 확정만으로 서버의 읽기가 멈췄다고 표시하지 않는다(<span class="wf-ref">Q10-11</span>, 4절 CM-07).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 감사 기록 장애로 보류</h2>
+  <p class="wf-state-desc">수집 연결 상세(UI-12)에서 설정을 고친 예다.</p>
+  <div class="wf-toast-area"><div class="wf-toast wf-toast--hold"><span class="wf-toast-kind">보류</span><span class="wf-toast-text">감사 기록을 저장할 수 없어 설정 변경을 적용하지 않았습니다. 기존 설정이 그대로 쓰입니다. 이 요청은 저장하지 않으니 감사 기록이 복구된 뒤 다시 실행하세요. <a href="UI-15-audit-log.html">감사 이력 보기</a></span><span class="wf-toast-close">닫기 ×</span></div></div>
+  <div class="wf-frame">
+    <ol class="wf-steps">
+      <li class="wf-step is-done"><span class="wf-step-name">요청 접수</span><span class="wf-step-state">완료 10:40:12</span></li>
+      <li class="wf-step is-current"><span class="wf-step-name">보류</span><span class="wf-step-state">감사 기록 장애로 적용하지 않음</span></li>
+    </ol>
+  </div>
+  <ul class="wf-notes">
+    <li>감사 기록 장애 중에는 새 키 발급, 일반 등록·설정 변경, 웹 비밀번호 변경 같은 일반 민감 변경을 적용 전에 보류한다(<span class="wf-ref">Q10-14</span>). 알림 규칙 변경도 보류하지만 재인증은 요구하지 않으므로 이 창을 쓰지 않는다(<span class="wf-ref">TD-17</span>).</li>
+    <li>감사 기록이 복구돼도 보류한 작업을 자동으로 적용하지 않고 요청도 남기지 않는다. 사용자가 복구 뒤 다시 실행한다(2026-11-05 <span class="wf-ref">Q10-14</span> 후속 합의).</li>
+    <li>보류 결과는 CM-08 토스트로 알리고, 진행 단계는 화면에 남긴다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 감사 기록 장애 중 긴급 키 폐기</h2>
+  <div class="wf-frame">
+    <p class="wf-callout">감사 기록 장애 중입니다. 키 폐기는 차단 상태를 확정할 수 있으면 진행하고, 이 작업은 감사 이력에 공백으로 남습니다.</p>
+    <ol class="wf-steps" style="margin-top: 12px">
+      <li class="wf-step is-done"><span class="wf-step-name">요청 접수</span><span class="wf-step-state">완료 10:41:30</span></li>
+      <li class="wf-step is-done"><span class="wf-step-name">중앙 확정</span><span class="wf-step-state">완료 10:41:31 · 감사 기록 공백</span></li>
+      <li class="wf-step is-current is-waiting"><span class="wf-step-name">에이전트 관측</span><span class="wf-step-state">대기</span></li>
+    </ol>
+  </div>
+  <ul class="wf-notes">
+    <li>키 폐기와 전체 세션 종료는 실제 차단 상태를 확정 저장할 수 있을 때 허용하고, 감사 공백과 실제 결과를 나눠 보여 준다. 차단 상태를 확정하지 못하면 완료로 표시하지 않는다(<span class="wf-ref">Q10-14</span>, 운영 명세 5절).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s7">
+  <h2 class="wf-state-title">상태 7. 쓰는 작업과 보여 줄 영향</h2>
+  <table class="wf-table">
+    <thead><tr><th style="width: 140px">작업</th><th style="width: 120px">화면</th><th>확인 창에 보여 줄 영향</th><th style="width: 150px">진행 단계</th></tr></thead>
+    <tbody>
+      <tr><td>등록 확정과 키 발급</td><td>UI-11 5단계</td><td>서비스·대상·형식 요약. 키 원문은 다음 단계에서 한 번만 보여 준다.</td><td>UI-11 7단계 증거 표시</td></tr>
+      <tr><td>키 교체</td><td>UI-12</td><td>새 키를 한 번만 보여 준다. 적용하고 정상 수신을 확인한 뒤 기존 키를 직접 폐기한다. 교체 중 키는 2개이고 자동 종료 기한은 없다.</td><td>—</td></tr>
+      <tr><td>키 폐기</td><td>UI-12</td><td>중앙 폐기를 먼저 하고 로컬 읽기 중지는 서버 운영자가 한다. 대기 로그는 보존된다.</td><td>요청 접수 · 중앙 확정 · 에이전트 관측</td></tr>
+      <tr><td>설정 변경</td><td>UI-12</td><td>새 설정을 다시 복사해 에이전트에 적용해야 하고 적용 중 수집이 잠시 멈춘다. 다른 서버나 다른 로그는 새 연결로 등록한다.</td><td>—</td></tr>
+      <tr><td>보관</td><td>UI-10(서비스), UI-12(연결)</td><td>중앙 새 수신을 막고 과거 로그는 보관 기간까지 검색된다. 서비스는 하위 연결의 수신 차단, 남은 대기, 이 서비스를 쓰는 저장 검색과 알림 규칙을 보여 준다.</td><td>요청 접수 · 중앙 확정 · 에이전트 관측</td></tr>
+      <tr><td>재활성</td><td>UI-10(서비스), UI-12(연결)</td><td>같은 등록으로 돌아가고 옛 키는 살아나지 않는다.</td><td>—</td></tr>
+      <tr><td>구간 로그 삭제</td><td>UI-12</td><td>되돌릴 수 없다. 에이전트 대기와 원본 파일은 지우지 않는다. 실제 공간 회수까지 시간이 걸린다. 같은 구간이 다시 전송돼도 저장하지 않는다.</td><td>—</td></tr>
+      <tr><td>비밀번호 변경</td><td>UI-16</td><td>바꾸면 현재 세션을 포함한 모든 세션이 끝나고 다시 로그인한다.</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <ul class="wf-notes">
+    <li>쓰는 작업은 키 발급·교체·폐기, 등록·설정 변경, 보관·재활성, 구간 로그 삭제, 비밀번호 변경이다. 알림 규칙 변경에는 쓰지 않는다(4절 CM-07, <span class="wf-ref">TD-17</span>).</li>
+    <li>영향 문구의 출처는 UI-10·UI-11·UI-12·UI-16 절이다. 진행 단계 <span class="wf-mono">—</span>는 문서가 단계 표시를 요구하지 않은 작업이다.</li>
+    <li>모든 작업은 감사 대상이다(<span class="wf-ref">Q10-12</span>). 구간 로그 삭제는 <span class="wf-ref">Q13-03</span>을 따른다.</li>
+  </ul>
+</section>
+
+</body>
+</html>

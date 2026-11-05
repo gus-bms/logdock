@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI-13 저장 공간과 보존</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>UI-13 저장 공간과 보존</h1>
+  <p>중앙 로그의 보관 기간, 저장량과 남은 공간, 조회 가능 시작일, 조기 삭제 발생을 보는 화면이다. 상단 메뉴 <span class="wf-term">시스템</span>과 전역 배너 <span class="wf-term">디스크 경고</span>·<span class="wf-term">조기 삭제 발생</span>에서 연다. 로그가 안 보일 때 필요하면 여기서 보존과 조기 삭제를 확인한다(6절). 보기만 하는 화면이라 보관 기간을 바꾸거나 로그를 지우는 조작이 없다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q13</span> <span class="wf-ref">Q13-01</span> <span class="wf-ref">Q13-02</span> <span class="wf-ref">SD-33</span> <span class="wf-ref">운영 명세 6절</span> · 기준: 화면 흐름 명세 5절 UI-13, 4절 CM-01, 7절</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">정상</a></li>
+      <li><a href="#s2">디스크 경고</a></li>
+      <li><a href="#s3">조기 삭제 발생</a></li>
+      <li><a href="#s4">값 미확인</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 정상</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item is-current">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body">
+      <h3 class="wf-page-title">저장 공간과 보존</h3>
+      <div class="wf-grid-4" style="align-items: stretch">
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">로그 보관 기간</span>
+          <span class="wf-strong" style="font-size: 20px">6개월</span>
+          <span>모든 서비스 공통 <span class="wf-badge wf-badge--quiet">읽기 전용</span></span>
+          <span class="wf-help">서버 운영자가 서버 설정에서만 바꿀 수 있습니다. 줄이면 이미 저장된 로그에도 적용되고, 지운 로그는 되돌릴 수 없습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조회 가능 시작일</span>
+          <span class="wf-strong" style="font-size: 20px">2026-05-05</span>
+          <span>수신 시각 기준</span>
+          <span class="wf-help">보관 기간과 조기 삭제는 로그가 중앙에 처음 들어온 수신 시각으로 계산합니다. 검색 기본인 발생 시각으로 이 날짜 근처를 찾으면 일부 로그가 이미 지워졌을 수 있습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">디스크 경고 상태</span>
+          <span><span class="wf-badge">정상</span></span>
+          <span>경고 기준(<span class="wf-n">N</span>) 아래</span>
+          <span class="wf-help">공간이 경고 기준을 넘으면 전역 배너와 운영 메일로 알립니다. 공간이 부족해지면 보관 기간이 되기 전이라도 오래된 로그부터 삭제됩니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조기 삭제</span>
+          <span><span class="wf-badge">없음</span></span>
+          <span class="wf-help">공간이 부족해 보관 기간(6개월)이 되기 전에 지운 로그가 없습니다.</span>
+        </div>
+      </div>
+      <div class="wf-frame" style="margin-top: 16px">
+        <p class="wf-section-title">저장량</p>
+        <div class="wf-grid-2">
+          <dl class="wf-kv">
+            <dt>로그 저장량</dt><dd>120 GB</dd>
+            <dt>남은 공간</dt><dd>380 GB</dd>
+          </dl>
+          <dl class="wf-kv">
+            <dt>측정 시각</dt><dd>2026-11-05 10:40:00 (UTC+09:00)</dd>
+            <dt>집계 기간</dt><dd>수신 시각 2026-05-05 ~ 2026-11-05 10:40:00 (UTC+09:00) · 지금 보관 중인 로그 전체</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>로그 보관 기간은 모든 서비스 공통 6개월이다(<span class="wf-ref">Q13</span>, 7절). 서버 운영자가 서버 설정으로만 바꿀 수 있어 이 화면에서는 읽기만 한다. 보관 기간을 바꾸는 버튼과 로그를 지우는 버튼을 두지 않는다. 웹에서 보관 기간 변경과 한 건 삭제는 첫 출시 밖이고, 연결과 시간 구간을 지정한 로그 삭제는 UI-12에서 한다(<span class="wf-ref">Q13-02</span>, <span class="wf-ref">Q13-03</span>, 3절).</li>
+    <li>보관 기간을 줄이면 이미 저장된 로그에도 적용되고 지운 로그는 복구하지 않는다(<span class="wf-ref">Q13-02</span>, 운영 명세 6절 기간 단축). 서버 설정이 바뀌면 이 칸도 바뀐 값을 보여 준다.</li>
+    <li>조회 가능 시작일, 보관, 조기 삭제는 각 로그가 중앙에 처음 유효 수신된 시각 기준이다. 검색 기본인 발생 시각 범위만으로 만료를 단정하지 않는다(Q13 기준 시각 합의, <span class="wf-ref">SD-33</span>). 날짜 표기는 CM-04의 <span class="wf-term">2026-05-05 (수신 시각 기준)</span>과 맞췄다.</li>
+    <li>디스크 경고 기준은 정하지 않았다(7절, Q13 설계). 측정한 값이 기준 아래일 때만 <span class="wf-term">정상</span>으로 쓴다(1절). 경고는 CM-01 배너와 UI-14의 운영 수신 주소로 가는 메일로 알린다(4절 CM-01, 5절 UI-14, <span class="wf-ref">TD-21</span>).</li>
+    <li>저장량·남은 공간·조회 가능 시작일·조기 삭제 발생을 함께 보여 주고 측정 시각과 집계 기간을 붙인다(운영 명세 6절). 저장량과 남은 공간은 합성 표시 값이다.</li>
+    <li><span class="wf-review">WQ-71 설계로 넘김:</span> 저장량과 남은 공간의 기준이 문서에 없다. 운영 명세 6절은 논리 저장량과 물리 디스크처럼 기준이 다른 bytes를 같은 수치로 맞추지 말라고 하고, 조기 삭제는 전체 디스크가 아니라 로그 전용 저장 상한을 기준으로 한다(운영 명세 6절 Q13 설계 인계). 남은 공간을 전체 디스크로 세면 공간이 남아 보여도 조기 삭제가 일어날 수 있다. 그림은 두 값이 같은 기준이라고 가정했다. <strong>기본안:</strong> 조기 삭제 기준과 같은 <span class="wf-term">로그 전용 저장 상한</span>을 기준으로 저장량과 남은 양을 보이고 전체 디스크 여유는 참고로 따로 보인다.</li>
+    <li><span class="wf-review">WQ-72 설계로 넘김:</span> <span class="wf-term">집계 기간</span>이 무엇을 센 기간인지 문서에 없다. 그림은 저장량에 든 로그의 수신 구간(지금 보관 중인 로그 전체)으로 적었다. <span class="wf-term">조기 삭제</span>의 있음·없음을 어느 기간에서 판정할지도 함께 정해야 한다. <strong>기본안:</strong> 지금 보관 중인 로그 전체로 쓰고(그림대로) 조기 삭제 있음·없음은 최근 보관 기간(6개월) 안에서 판정한다.</li>
+    <li><span class="wf-review">WQ-73 설계로 넘김:</span> 운영 명세 6절은 사용량에 reset과 추정 여부도 표시하라고 하지만 화면 흐름 명세 UI-13 요소에는 없다. 그리지 않았다. <strong>기본안:</strong> 저장량은 측정 시점 값이라 초기화가 없다. 추정 값이면 숫자 옆에 <span class="wf-term">추정</span>을 붙인다(운영 명세 6절). 화면 설계 때 그린다.</li>
+    <li>위에 네 칸 요약(보관 기간, 조회 가능 시작일, 디스크 경고 상태, 조기 삭제)을 두고 그 아래에 저장량 영역을 둔다(와이어프레임 표기).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 디스크 경고</h2>
+  <p class="wf-state-desc">전역 배너 <span class="wf-term">디스크 경고</span>를 눌러 들어온 예다.</p>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item is-current">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-banners" role="region" aria-label="전역 배너">
+      <p class="wf-banner"><strong class="wf-banner-kind">디스크 경고</strong><span class="wf-banner-text">중앙 로그 저장 공간이 경고 기준(<span class="wf-n">N</span>)을 넘었습니다. 공간이 부족해지면 보관 기간(6개월)이 되기 전이라도 오래된 로그부터 삭제됩니다.</span><a class="wf-banner-link" href="UI-13-storage-retention.html">저장 공간 보기</a></p>
+    </div>
+    <div class="wf-screen-body">
+      <h3 class="wf-page-title">저장 공간과 보존</h3>
+      <div class="wf-grid-4" style="align-items: stretch">
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">로그 보관 기간</span>
+          <span class="wf-strong" style="font-size: 20px">6개월</span>
+          <span>모든 서비스 공통 <span class="wf-badge wf-badge--quiet">읽기 전용</span></span>
+          <span class="wf-help">서버 운영자가 서버 설정에서만 바꿀 수 있습니다. 줄이면 이미 저장된 로그에도 적용되고, 지운 로그는 되돌릴 수 없습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조회 가능 시작일</span>
+          <span class="wf-strong" style="font-size: 20px">2026-05-05</span>
+          <span>수신 시각 기준</span>
+          <span class="wf-help">보관 기간과 조기 삭제는 로그가 중앙에 처음 들어온 수신 시각으로 계산합니다. 검색 기본인 발생 시각으로 이 날짜 근처를 찾으면 일부 로그가 이미 지워졌을 수 있습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">디스크 경고 상태</span>
+          <span><span class="wf-badge wf-badge--strong">디스크 경고</span></span>
+          <span class="wf-strong">중앙 로그 저장 공간이 경고 기준(<span class="wf-n">N</span>)을 넘었습니다.</span>
+          <span class="wf-help">공간이 부족해지면 보관 기간(6개월)이 되기 전이라도 오래된 로그부터 삭제됩니다. 지운 로그는 되돌릴 수 없습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조기 삭제</span>
+          <span><span class="wf-badge">없음</span></span>
+          <span class="wf-help">공간이 부족해 보관 기간(6개월)이 되기 전에 지운 로그가 없습니다.</span>
+        </div>
+      </div>
+      <div class="wf-frame" style="margin-top: 16px">
+        <p class="wf-section-title">저장량</p>
+        <div class="wf-grid-2">
+          <dl class="wf-kv">
+            <dt>로그 저장량</dt><dd>445 GB</dd>
+            <dt>남은 공간</dt><dd>55 GB</dd>
+          </dl>
+          <dl class="wf-kv">
+            <dt>측정 시각</dt><dd>2026-11-05 10:40:00 (UTC+09:00)</dd>
+            <dt>집계 기간</dt><dd>수신 시각 2026-05-05 ~ 2026-11-05 10:40:00 (UTC+09:00) · 지금 보관 중인 로그 전체</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>디스크가 차기 전에 경고한다(<span class="wf-ref">Q13-01</span>). 화면의 경고 문구와 배너는 CM-01 상태 3의 <span class="wf-term">디스크 경고</span> 배너와 같고, 배너를 누르면 이 화면으로 온다. 경고 기준은 <span class="wf-n">N</span>이다(7절).</li>
+    <li>경고 메일은 UI-14의 운영 수신 주소로 간다(5절 UI-14, <span class="wf-ref">TD-21</span>). 이 화면에는 메일 발송 결과를 두지 않았다.</li>
+    <li><span class="wf-review">WQ-74 설계로 넘김:</span> 디스크 경고 때 할 일을 화면에서 안내할지 문서에 없다. 서버 설정으로 보관 기간을 줄이는 방법(<span class="wf-ref">Q13-02</span>)이나 서버 디스크를 늘리는 방법 같은 안내 문구를 그리지 않았다. <strong>기본안:</strong> 할 일 한 줄을 둔다: 서버 설정으로 보관 기간 줄이기(Q13-02) 또는 디스크 늘리기.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 조기 삭제 발생</h2>
+  <p class="wf-state-desc">공간이 부족해 6개월이 되기 전 로그를 지웠고, 실제 보관 범위가 6개월보다 짧아진 상태다. 전역 배너 <span class="wf-term">조기 삭제 발생</span>을 눌러 들어온 예다.</p>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item is-current">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-banners" role="region" aria-label="전역 배너">
+      <p class="wf-banner"><strong class="wf-banner-kind">디스크 경고</strong><span class="wf-banner-text">중앙 로그 저장 공간이 경고 기준(<span class="wf-n">N</span>)을 넘었습니다. 공간이 부족해지면 보관 기간(6개월)이 되기 전이라도 오래된 로그부터 삭제됩니다.</span><a class="wf-banner-link" href="UI-13-storage-retention.html">저장 공간 보기</a></p>
+      <p class="wf-banner"><strong class="wf-banner-kind">조기 삭제 발생</strong><span class="wf-banner-text">공간이 부족해 2026-11-05 03:00:12 (UTC+09:00)에 보관 기간(6개월)이 되기 전 로그를 삭제했습니다. 지금 조회 가능 시작일은 2026-07-21(수신 시각 기준)입니다.</span><a class="wf-banner-link" href="UI-13-storage-retention.html">저장 공간 보기</a></p>
+    </div>
+    <div class="wf-screen-body">
+      <h3 class="wf-page-title">저장 공간과 보존</h3>
+      <div class="wf-grid-4" style="align-items: stretch">
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">로그 보관 기간</span>
+          <span class="wf-strong" style="font-size: 20px">6개월</span>
+          <span>모든 서비스 공통 <span class="wf-badge wf-badge--quiet">읽기 전용</span></span>
+          <span class="wf-help">서버 운영자가 서버 설정에서만 바꿀 수 있습니다. 줄이면 이미 저장된 로그에도 적용되고, 지운 로그는 되돌릴 수 없습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조회 가능 시작일</span>
+          <span class="wf-strong" style="font-size: 20px">2026-07-21</span>
+          <span>수신 시각 기준</span>
+          <span class="wf-strong">보관 기간(6개월)보다 짧습니다.</span>
+          <span class="wf-help">조기 삭제가 없었다면 2026-05-05부터 조회할 수 있었습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">디스크 경고 상태</span>
+          <span><span class="wf-badge wf-badge--strong">디스크 경고</span></span>
+          <span class="wf-strong">중앙 로그 저장 공간이 경고 기준(<span class="wf-n">N</span>)을 넘었습니다.</span>
+          <span class="wf-help">공간이 부족해지면 보관 기간(6개월)이 되기 전이라도 오래된 로그부터 삭제됩니다. 지운 로그는 되돌릴 수 없습니다.</span>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+          <span class="wf-label">조기 삭제</span>
+          <span><span class="wf-badge wf-badge--strong">조기 삭제 발생</span></span>
+          <span>마지막 발생 2026-11-05 03:00:12 (UTC+09:00)</span>
+          <span class="wf-help">공간이 부족해 보관 기간(6개월)이 되기 전 로그를 가장 오래된 것부터 삭제했습니다. 되돌릴 수 없습니다.</span>
+        </div>
+      </div>
+      <div class="wf-frame" style="margin-top: 16px">
+        <p class="wf-section-title">실제 보관 범위</p>
+        <div class="wf-row wf-row--nowrap" style="gap: 0; align-items: stretch">
+          <div class="wf-placeholder" style="flex: 77; min-height: 64px"><span>2026-05-05 ~ 2026-07-21<br>조기 삭제됨 · 조회할 수 없음</span></div>
+          <div class="wf-callout wf-callout--strong" style="flex: 107; display: flex; align-items: center; justify-content: center; text-align: center"><span>2026-07-21 ~ 지금<br>조회 가능</span></div>
+        </div>
+        <div class="wf-row" style="justify-content: space-between; margin-top: 6px">
+          <span class="wf-small wf-muted">보관 기간(6개월)대로라면 2026-05-05부터</span>
+          <span class="wf-small wf-muted">지금 2026-11-05 10:40</span>
+        </div>
+        <p style="margin-top: 8px">실제 보관 범위가 보관 기간(6개월)보다 짧습니다. 지금은 2026-07-21부터 조회할 수 있습니다(수신 시각 기준).</p>
+      </div>
+      <div class="wf-frame" style="margin-top: 16px">
+        <p class="wf-section-title">저장량</p>
+        <div class="wf-grid-2">
+          <dl class="wf-kv">
+            <dt>로그 저장량</dt><dd>470 GB</dd>
+            <dt>남은 공간</dt><dd>30 GB</dd>
+          </dl>
+          <dl class="wf-kv">
+            <dt>측정 시각</dt><dd>2026-11-05 10:40:00 (UTC+09:00)</dd>
+            <dt>집계 기간</dt><dd>수신 시각 2026-07-21 ~ 2026-11-05 10:40:00 (UTC+09:00) · 지금 보관 중인 로그 전체</dd>
+          </dl>
+        </div>
+        <p class="wf-help" style="margin-top: 8px">조회에서 빠진 로그도 디스크에서 실제로 지워질 때까지 시간이 걸려 저장량이 바로 줄지 않을 수 있습니다.</p>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>만료 로그를 정리해도 공간이 부족하면 6개월 전이라도 가장 오래된 로그부터 지우고 새 로그는 계속 받는다. 지운 로그는 되돌릴 수 없어 실제 조회 가능 시작일과 조기 삭제 발생을 보여 준다(<span class="wf-ref">Q13-01</span>).</li>
+    <li>조기 삭제 시각 <span class="wf-mono">2026-11-05 03:00:12</span>와 조회 가능 시작일 <span class="wf-mono">2026-07-21</span>은 CM-01 상태 3의 <span class="wf-term">조기 삭제 발생</span> 배너와 같은 값이다. 조기 삭제는 공간이 경고 기준을 넘어 부족해졌을 때 일어나 디스크 경고와 함께 보일 수 있어 두 배너를 같이 그렸고, 순서는 CM-01 상태 4를 따른다(와이어프레임 표기).</li>
+    <li>6개월보다 짧아진 실제 보관 범위를 막대로 보여 준다. 빗금은 조기 삭제로 조회할 수 없게 된 범위, 굵은 칸은 지금 조회할 수 있는 범위다(와이어프레임 표기).</li>
+    <li>6개월 전 날짜 <span class="wf-mono">2026-05-05</span>는 CM-04와 같은 합성 값이다. 6개월을 달력으로 어떻게 셀지는 설계에서 정하고 고정 일수로 바꾸지 않는다(운영 명세 6절).</li>
+    <li>조회에서 빠진 로그가 디스크에서 실제로 사라질 때까지 시차가 있어 저장량이 바로 줄지 않을 수 있다(운영 명세 6절 만료, Q13 설계 인계).</li>
+    <li>조기 삭제는 중앙에 저장된 로그만 지운다. 에이전트 대기와 로그 서버의 원본 파일은 이 삭제와 별개다(운영 명세 6절).</li>
+    <li><span class="wf-review">WQ-75 설계로 넘김:</span> 조기 삭제가 여러 번 일어나면 마지막 시각만 보일지 발생 이력을 보일지 문서에 없다. 그림은 마지막 시각만 보였다. <strong>기본안:</strong> 마지막 시각과 횟수를 보이고 영향은 조회 가능 시작일로 보인다.</li>
+    <li><span class="wf-term">조기 삭제 발생</span> 배너를 언제 내릴지는 CM-01 상태 3의 검토 항목이다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 값 미확인</h2>
+  <p class="wf-state-desc">저장 공간을 측정하지 못한 상태다. 본문만 그렸다. 상단 메뉴는 상태 1과 같고, 이 상태에 해당하는 전역 배너는 없다.</p>
+  <div class="wf-frame">
+    <span class="wf-frame-label">저장 공간과 보존 본문</span>
+    <p class="wf-callout wf-callout--strong">저장 공간을 측정하지 못했습니다. 마지막 측정 성공은 2026-11-05 09:10:00 (UTC+09:00)입니다. 지금 값은 미확인입니다.</p>
+    <div class="wf-grid-4" style="margin-top: 16px; align-items: stretch">
+      <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+        <span class="wf-label">로그 보관 기간</span>
+        <span class="wf-strong" style="font-size: 20px">6개월</span>
+        <span>모든 서비스 공통 <span class="wf-badge wf-badge--quiet">읽기 전용</span></span>
+      </div>
+      <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+        <span class="wf-label">조회 가능 시작일</span>
+        <span><span class="wf-badge wf-badge--unknown">미확인</span></span>
+      </div>
+      <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+        <span class="wf-label">디스크 경고 상태</span>
+        <span><span class="wf-badge wf-badge--unknown">미확인</span></span>
+        <span class="wf-help">경고 기준(<span class="wf-n">N</span>)을 넘었는지 알 수 없습니다.</span>
+      </div>
+      <div class="wf-frame wf-stack wf-stack--tight" style="margin-top: 0">
+        <span class="wf-label">조기 삭제</span>
+        <span><span class="wf-badge wf-badge--unknown">미확인</span></span>
+      </div>
+    </div>
+    <div class="wf-frame" style="margin-top: 16px">
+      <p class="wf-section-title">저장량</p>
+      <div class="wf-grid-2">
+        <dl class="wf-kv">
+          <dt>로그 저장량</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span></dd>
+          <dt>남은 공간</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span></dd>
+        </dl>
+        <dl class="wf-kv">
+          <dt>측정 시각</dt><dd>마지막 성공 2026-11-05 09:10:00 (UTC+09:00) · 그 뒤 측정하지 못함</dd>
+          <dt>집계 기간</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span></dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>측정하지 못한 값은 0이나 <span class="wf-term">정상</span>으로 채우지 않고 <span class="wf-term">미확인</span>으로 쓴다(1절, 운영 명세 4절). 디스크 경고 상태도 정상으로 보이지 않는다.</li>
+    <li>측정 시각 자리에 마지막으로 측정에 성공한 시각을 보여 준다(와이어프레임 표기).</li>
+    <li>보관 기간은 측정 값이 아니라 서버 설정 값이라 그대로 보인다(와이어프레임 표기).</li>
+    <li>일부 값만 측정하지 못하면 그 값만 <span class="wf-term">미확인</span>으로 쓴다(와이어프레임 표기).</li>
+    <li><span class="wf-review">WQ-76 설계로 넘김:</span> 저장 공간을 측정하지 못하는 동안 전역 배너로 알릴지 문서에 없다. CM-01 배너 종류에 없어 그리지 않았다. 측정하지 못하면 디스크 경고도 낼 수 없어 조기 삭제가 예고 없이 일어날 수 있다. <strong>기본안:</strong> 측정 실패가 <span class="wf-term">N</span>분 이어지면 CM-01 배너에 <span class="wf-term">저장 공간 측정 불가</span>를 더한다. 측정하지 못하면 디스크 경고도 낼 수 없어서다. 명세 CM-01은 화면 설계 때 고친다.</li>
+  </ul>
+</section>
+
+</body>
+</html>

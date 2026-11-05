@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI-05 저장 검색</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>UI-05 저장 검색</h1>
+  <p>공용 계정의 저장 검색 목록 하나다. 같은 계정으로 로그인한 사람이 함께 보고, 저장한 조건을 실행(UI-02로 열기)·수정·삭제한다. 새 저장 검색은 로그 탐색(UI-02)의 <span class="wf-term">조건 저장</span>으로 추가한다. 상단 메뉴의 <span class="wf-term">저장 검색</span>에서 연다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q11-01</span> <span class="wf-ref">Q11-02</span> <span class="wf-ref">Q11-03</span> <span class="wf-ref">SD-30</span> <span class="wf-ref">조사 명세 6절</span> · 기준: 화면 흐름 명세 5절 UI-05, 4절 CM-02·CM-03</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">기본</a></li>
+      <li><a href="#s2">빈 목록</a></li>
+      <li><a href="#s3">보관된 연결을 참조하는 조건의 실행 전 경고</a></li>
+      <li><a href="#s4">이름·조건·시간 수정</a></li>
+      <li><a href="#s5">다른 사람이 먼저 고친 경우 덮어쓰기 전 경고</a></li>
+      <li><a href="#s6">삭제 확인</a></li>
+      <li><a href="#s7">개수 상한 도달</a></li>
+      <li><a href="#s8">상대 시간 조건 안내</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 기본</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item is-current" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body">
+      <div class="wf-row" style="margin-bottom: 12px">
+        <h3 class="wf-page-title" style="margin-bottom: 0">저장 검색</h3>
+        <span class="wf-muted">공용 목록 · 4개 저장 · 최대 <span class="wf-n">N</span>개</span>
+      </div>
+      <div class="wf-stack">
+        <p class="wf-callout">같은 계정으로 로그인한 모든 사람이 이 목록을 함께 보고 고칩니다. 저장 검색은 조건을 복사해 둔 것이라, 여기서 고쳐도 이 조건으로 만든 알림 규칙은 바뀌지 않고 알림 규칙을 고쳐도 저장 검색은 바뀌지 않습니다.</p>
+        <table class="wf-table">
+          <thead>
+            <tr><th style="width: 170px">이름</th><th>조건 요약</th><th style="width: 230px">시간 방식</th><th style="width: 150px">최근 수정 (UTC+09:00)</th><th style="width: 130px">실행 전 경고</th><th style="width: 170px">동작</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>주문 장애 시간대</td>
+              <td>(서비스 주문) 그리고 (레벨 ERROR 또는 FATAL)</td>
+              <td>고정 · 발생 시각<br><span class="wf-mono">2026-11-05 09:00:00 ~ 10:00:00</span></td>
+              <td class="wf-mono">2026-11-05 10:05:48</td>
+              <td class="wf-muted">없음</td>
+              <td><div class="wf-row wf-row--nowrap"><a class="wf-btn wf-btn--small wf-btn--primary" href="UI-02-log-search.html">실행</a><span class="wf-btn wf-btn--small">수정</span><span class="wf-btn wf-btn--small">삭제</span></div></td>
+            </tr>
+            <tr>
+              <td>주문·결제 timeout 조사</td>
+              <td>(서비스 주문 또는 결제) 그리고 (환경 운영) 그리고 (레벨 ERROR) 그리고 (본문에 "timeout" 포함) 그리고 (본문에 "health check" 제외) 그리고 (http.status 500 이상)</td>
+              <td>상대 · 발생 시각 · 최근 <span class="wf-n">N</span><br><span class="wf-help">열 때마다 다시 계산합니다</span></td>
+              <td class="wf-mono">2026-11-05 09:40:12</td>
+              <td class="wf-muted">없음</td>
+              <td><div class="wf-row wf-row--nowrap"><a class="wf-btn wf-btn--small wf-btn--primary" href="UI-02-log-search.html">실행</a><span class="wf-btn wf-btn--small">수정</span><span class="wf-btn wf-btn--small">삭제</span></div></td>
+            </tr>
+            <tr>
+              <td>결제 늦게 들어온 로그</td>
+              <td>(서비스 결제) 그리고 (서버 app-02)</td>
+              <td>상대 · 수신 시각 · 최근 <span class="wf-n">N</span><br><span class="wf-help">열 때마다 다시 계산합니다</span></td>
+              <td class="wf-mono">2026-11-04 17:22:03</td>
+              <td class="wf-muted">없음</td>
+              <td><div class="wf-row wf-row--nowrap"><a class="wf-btn wf-btn--small wf-btn--primary" href="UI-02-log-search.html">실행</a><span class="wf-btn wf-btn--small">수정</span><span class="wf-btn wf-btn--small">삭제</span></div></td>
+            </tr>
+            <tr>
+              <td>배송 지난 오류</td>
+              <td>(서비스 배송 <span class="wf-badge wf-badge--quiet">보관됨</span>) 그리고 (레벨 ERROR)</td>
+              <td>고정 · 발생 시각<br><span class="wf-mono">2026-10-28 00:00:00 ~ 2026-10-29 00:00:00</span></td>
+              <td class="wf-mono">2026-10-29 11:02:40</td>
+              <td><span class="wf-badge">보관된 연결 참조</span></td>
+              <td><div class="wf-row wf-row--nowrap"><span class="wf-btn wf-btn--small wf-btn--primary">실행</span><span class="wf-btn wf-btn--small">수정</span><span class="wf-btn wf-btn--small">삭제</span></div></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="wf-help">새 저장 검색은 <a href="UI-02-log-search.html">로그 탐색</a>에서 조건을 고른 뒤 <strong>조건 저장</strong>으로 추가합니다. 오래 쓰지 않은 저장 검색도 자동으로 지우지 않습니다. 고정 범위는 시작 포함·끝 제외입니다.</p>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>공용 계정의 목록 하나만 둔다. 개인·팀 목록 구분은 없고 같은 계정으로 로그인한 사람이 함께 쓴다(<span class="wf-ref">Q11</span>, 조사 명세 6절, 1절).</li>
+    <li>열은 5절 UI-05의 요소(이름, 조건 요약, 시간 방식, 최근 수정 시각, 실행 전 경고)다. 조건 요약은 CM-03 요약 문구 형식을 쓴다. 시간 방식에는 시간 기준(발생·수신)도 함께 보인다. 저장 검색에는 시간 기준도 저장한다(<span class="wf-ref">Q08-04</span>, CM-02 상태 5).</li>
+    <li>상대 범위의 길이는 CM-02 마크업을 그대로 써서 <span class="wf-n">N</span>으로 둔다. 고정 범위의 날짜·시각과 저장 개수 4개는 합성 예시다. 저장 개수 상한은 정하지 않았다(7절).</li>
+    <li><span class="wf-term">실행</span>은 UI-02를 열고 저장한 조건·시간 방식으로 바로 실행한다. 조건은 URL에 평문으로 넣지 않는다(1절, <span class="wf-ref">SD-35</span>). UI-02에서 조건을 고치는 것만으로 저장 검색이 바뀌지는 않는다(5절 UI-02 복사 관계). 고친 조건을 원래 저장 검색에 덮어 저장할 수 있는지는 UI-02 상태 12의 검토 항목이다.</li>
+    <li>수정은 상태 4, 삭제는 상태 6이다. 오래 쓰지 않아도 자동으로 지우지 않는다(<span class="wf-ref">Q11-03</span>).</li>
+    <li>이 화면에는 새로 만드는 버튼이 없다. 5절 UI-05 동작에 생성이 없고, 추가는 UI-02 <span class="wf-term">조건 저장</span>으로 한다(5절 UI-02). 같은 목록에서 이름은 겹칠 수 없다(<span class="wf-ref">Q11</span> 정리의 설계 기본값).</li>
+    <li>저장 검색과 알림 규칙은 조건을 복사하는 관계라 한쪽을 고쳐도 다른 쪽은 바뀌지 않는다. 이 안내를 목록 위에 둔다(<span class="wf-ref">SD-30</span>, <span class="wf-ref">TD-05</span>).</li>
+    <li>서비스 이름을 바꾸면 조건 요약에 현재 이름을 보여 주고 조건의 대상은 그대로다(5절 UI-10). 보관된 서비스는 CM-03 값 목록처럼 <span class="wf-term">보관됨</span>을 붙인다.</li>
+    <li>목록은 최근 수정순으로 그렸다(와이어프레임 표기).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 빈 목록</h2>
+  <div class="wf-frame wf-w-lg wf-stack">
+    <div class="wf-row">
+      <h3 class="wf-page-title" style="margin-bottom: 0">저장 검색</h3>
+      <span class="wf-muted">공용 목록 · 0개 저장 · 최대 <span class="wf-n">N</span>개</span>
+    </div>
+    <div class="wf-stack" style="align-items: center; padding: 32px 0; text-align: center">
+      <p class="wf-strong">저장한 검색이 없습니다.</p>
+      <p>로그 탐색에서 조건과 시간 범위를 고른 뒤 <strong>조건 저장</strong>을 누르면 이 목록에 추가됩니다.<br>같은 계정을 쓰는 사람 모두가 이 목록을 함께 씁니다.</p>
+      <a class="wf-btn wf-btn--primary" href="UI-02-log-search.html">로그 탐색 열기</a>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>저장 검색은 UI-02의 <span class="wf-term">조건 저장</span>으로만 추가하므로 빈 목록에서는 UI-02로 안내한다(5절 UI-02·UI-05).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 보관된 연결을 참조하는 조건의 실행 전 경고</h2>
+  <div class="wf-frame wf-w-lg">
+    <span class="wf-frame-label">목록의 행</span>
+    <table class="wf-table">
+      <thead><tr><th>이름</th><th>조건 요약</th><th>시간 방식</th><th>실행 전 경고</th><th>동작</th></tr></thead>
+      <tbody>
+        <tr class="is-on">
+          <td>배송 지난 오류</td>
+          <td>(서비스 배송 <span class="wf-badge wf-badge--quiet">보관됨</span>) 그리고 (레벨 ERROR)</td>
+          <td>고정 · 발생 시각<br><span class="wf-mono">2026-10-28 00:00:00 ~ 2026-10-29 00:00:00</span></td>
+          <td><span class="wf-badge">보관된 연결 참조</span></td>
+          <td><div class="wf-row wf-row--nowrap"><span class="wf-btn wf-btn--small wf-btn--primary">실행</span><span class="wf-btn wf-btn--small">수정</span><span class="wf-btn wf-btn--small">삭제</span></div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="wf-screen" style="margin-top: 16px">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="실행 전 확인">
+        <div class="wf-modal-head">실행 전 확인: 배송 지난 오류</div>
+        <div class="wf-modal-body">
+          <p>이 저장 검색의 조건은 보관된 서비스를 참조합니다.</p>
+          <dl class="wf-kv">
+            <dt>보관된 대상</dt><dd>서비스 배송 <span class="wf-badge wf-badge--quiet">보관됨</span> · 연결 1개</dd>
+          </dl>
+          <ul>
+            <li>보관된 연결은 새 로그를 받지 않습니다.</li>
+            <li>과거 로그는 보관 기간(6개월) 안에 남아 있는 것만 찾습니다.</li>
+          </ul>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">그대로 실행</span></div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>보관된 연결을 참조하는 조건은 실행 전에 경고한다(조사 명세 6절, <span class="wf-ref">Q11</span> 정리의 설계 기본값). 경고이지 차단이 아니어서 확인 뒤 실행할 수 있다.</li>
+    <li>보관하면 중앙 새 수신을 막고 과거 로그는 보관 기간까지 검색된다(5절 UI-12, <span class="wf-ref">SD-12</span>). 로그 보관 기간 6개월은 7절 값이다.</li>
+    <li>목록의 <span class="wf-term">실행 전 경고</span> 열에도 같은 사실을 미리 보여 준다(5절 UI-05 요소).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 이름·조건·시간 수정</h2>
+  <div class="wf-screen">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="저장 검색 수정" style="width: 1040px">
+        <div class="wf-modal-head">저장 검색 수정</div>
+        <div class="wf-modal-body">
+          <div class="wf-field">
+            <span class="wf-label">이름</span>
+            <span class="wf-input wf-input--wide">주문·결제 timeout 조사</span>
+            <span class="wf-help">같은 목록 안에서 겹치지 않는 이름이어야 합니다.</span>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">시간</span>
+            <div class="wf-row">
+              <span class="wf-select">발생 시각 · 최근 <span class="wf-n">N</span></span>
+              <span class="wf-muted">UTC+09:00</span>
+            </div>
+            <span class="wf-help">상대 범위와 고정 범위 중 고른 방식을 그대로 저장합니다.</span>
+          </div>
+          <div class="wf-field">
+            <span class="wf-label">조건</span>
+            <div class="wf-frame wf-w-lg">
+              <div class="wf-formrow">
+                <span class="wf-formrow-label">출처</span>
+                <div class="wf-stack wf-stack--tight">
+                  <div class="wf-row"><span class="wf-label">서비스</span><span class="wf-chip">주문 <span class="wf-chip-x">×</span></span><span class="wf-chip">결제 <span class="wf-chip-x">×</span></span><span class="wf-select is-empty" style="min-width: 100px">더하기</span></div>
+                  <div class="wf-row"><span class="wf-label">서버</span><span class="wf-select is-empty">모두</span><span class="wf-label">환경</span><span class="wf-chip">운영 <span class="wf-chip-x">×</span></span><span class="wf-select is-empty" style="min-width: 100px">더하기</span></div>
+                  <div class="wf-row"><span class="wf-label">수집 대상</span><span class="wf-select is-empty">모두</span></div>
+                </div>
+              </div>
+              <div class="wf-formrow">
+                <span class="wf-formrow-label">레벨</span>
+                <div class="wf-stack wf-stack--tight">
+                  <div class="wf-row"><span class="wf-chip">ERROR <span class="wf-chip-x">×</span></span><span class="wf-select is-empty" style="min-width: 100px">더하기</span></div>
+                  <span class="wf-help">ERROR는 레벨 <strong>미확인</strong> 로그를 포함하지 않습니다. 함께 보려면 미확인도 고르세요.</span>
+                </div>
+              </div>
+              <div class="wf-formrow">
+                <span class="wf-formrow-label">본문</span>
+                <div class="wf-stack wf-stack--tight">
+                  <div class="wf-row"><span class="wf-select" style="min-width: 88px">포함</span><span class="wf-input wf-input--wide">timeout</span><span class="wf-check">☐ 대소문자 구분</span><span class="wf-btn wf-btn--small">지우기</span></div>
+                  <div class="wf-row"><span class="wf-select" style="min-width: 88px">제외</span><span class="wf-input wf-input--wide">health check</span><span class="wf-check">☐ 대소문자 구분</span><span class="wf-btn wf-btn--small">지우기</span></div>
+                  <div class="wf-row"><span class="wf-btn wf-btn--small">+ 본문 조건</span></div>
+                  <span class="wf-help">입력한 글자를 공백까지 한 덩어리로, 글자 그대로 찾습니다. % _ * ? \ 따옴표도 글자로 찾습니다. 기본은 대소문자를 구분하지 않습니다.</span>
+                </div>
+              </div>
+              <div class="wf-formrow">
+                <span class="wf-formrow-label">필드</span>
+                <div class="wf-stack wf-stack--tight">
+                  <div class="wf-row"><span class="wf-input">http.status</span><span class="wf-select" style="min-width: 96px">이상</span><span class="wf-input" style="min-width: 120px">500</span><span class="wf-btn wf-btn--small">지우기</span></div>
+                  <div class="wf-row"><span class="wf-btn wf-btn--small">+ 필드 조건</span></div>
+                  <span class="wf-help">필드 조건은 정상 해석한 로그에만 적용합니다. 해석 실패 로그는 판정 불가로 빠지고 결과에 건수를 따로 보여 줍니다.</span>
+                </div>
+              </div>
+              <p class="wf-callout" style="margin-top: 8px">조건 요약: (서비스 주문 또는 결제) 그리고 (환경 운영) 그리고 (레벨 ERROR) 그리고 (본문에 "timeout" 포함) 그리고 (본문에 "health check" 제외) 그리고 (http.status 500 이상)</p>
+            </div>
+          </div>
+          <p class="wf-callout">이 저장 검색을 고쳐도 이 조건으로 만든 알림 규칙은 바뀌지 않습니다. 알림 규칙을 고쳐도 저장 검색은 바뀌지 않습니다.</p>
+          <p class="wf-help">최근 수정 2026-11-05 09:40:12 (UTC+09:00)</p>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">저장</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="wf-grid-2" style="margin-top: 16px">
+    <div class="wf-frame wf-stack">
+      <span class="wf-frame-label">이름이 겹칠 때</span>
+      <div class="wf-field"><span class="wf-label">이름</span><span class="wf-input wf-input--wide is-error">주문 장애 시간대</span></div>
+      <p class="wf-error">같은 이름의 저장 검색이 이미 있습니다. 다른 이름을 쓰세요.</p>
+    </div>
+    <div class="wf-frame wf-stack">
+      <span class="wf-frame-label">이름을 비웠을 때</span>
+      <div class="wf-field"><span class="wf-label">이름</span><span class="wf-input wf-input--wide is-error is-empty">이름</span></div>
+      <p class="wf-error">이름을 넣으세요.</p>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>이름·조건·시간을 고칠 수 있다(<span class="wf-ref">Q11-01</span>). 조건은 CM-03, 시간은 CM-02를 그대로 쓴다(4절). 위 그림의 조건 편집기와 시간 선택은 CM-03 상태 2, CM-02 상태 1의 마크업이다.</li>
+    <li>이름이 겹치면 저장하지 않는다(<span class="wf-ref">Q11</span> 정리의 설계 기본값). 조건 칸의 오류는 CM-03 상태 5와 같다.</li>
+    <li>수정해도 복사해 간 알림 규칙은 바뀌지 않는다는 안내를 저장 버튼 가까이에 둔다(<span class="wf-ref">SD-30</span>, CM-03 상태 7).</li>
+    <li>저장 검색 수정은 CM-07 사용 목록에 없어 비밀번호를 다시 묻지 않는다(4절 CM-07).</li>
+    <li>수정은 목록 위에 넓은 창으로 연다(와이어프레임 표기). 저장할 때 다른 사람이 먼저 고쳤으면 상태 5로 간다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 다른 사람이 먼저 고친 경우 덮어쓰기 전 경고</h2>
+  <div class="wf-screen">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="덮어쓰기 전 경고">
+        <div class="wf-modal-head">다른 사람이 먼저 고쳤습니다</div>
+        <div class="wf-modal-body">
+          <p>수정 창을 연 뒤 이 저장 검색이 바뀌었습니다. 같은 계정을 쓰는 다른 사람이 고친 것일 수 있습니다.</p>
+          <dl class="wf-kv">
+            <dt>저장 검색</dt><dd>주문·결제 timeout 조사</dd>
+            <dt>수정 창을 열 때</dt><dd><span class="wf-mono">2026-11-05 09:40:12</span> 수정본</dd>
+            <dt>지금 저장된 것</dt><dd><span class="wf-mono">2026-11-05 10:02:31</span> 수정본 (UTC+09:00)</dd>
+          </dl>
+          <p class="wf-callout wf-callout--strong">지금 저장하면 10:02:31에 저장된 내용을 내 수정으로 덮어씁니다.</p>
+        </div>
+        <div class="wf-modal-foot">
+          <span class="wf-btn">계속 수정</span>
+          <span class="wf-btn">최신 내용 불러오기(내 수정 버림)</span>
+          <span class="wf-btn wf-btn--primary">덮어쓰고 저장</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>동시 수정은 덮어쓰기 전에 경고한다(조사 명세 6절, <span class="wf-ref">Q11</span> 정리의 설계 기본값). 경고 뒤 덮어쓸지, 최신 내용을 다시 불러올지 고른다.</li>
+    <li>공용 계정이라 누가 고쳤는지는 보여 줄 수 없고 수정 시각만 보여 준다(1절).</li>
+    <li><span class="wf-review">WQ-28 설계로 넘김:</span> 다른 사람이 바꾼 항목(이름·조건·시간)을 이 창에 보여 줄지 문서에 없다. <strong>기본안:</strong> 바뀐 항목 이름(이름·조건·시간)과 저장 시각을 보인다.</li>
+    <li><span class="wf-review">WQ-29 설계로 넘김:</span> 수정 중에 다른 사람이 같은 저장 검색을 지운 경우의 표시가 문서에 없다. <strong>기본안:</strong> 저장할 때 이미 지워졌다는 실패 토스트(CM-08)를 띄우고 고친 내용을 새 항목으로 저장할 수 있게 한다.</li>
+    <li>알림 규칙의 동시 편집은 뒤 저장을 거부하고 다시 불러오게 되어 있어(<span class="wf-ref">TD-06</span>, Q12 8절 F-16) 이 화면과 동작이 다르다. UI-07 상태 11 참고.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 삭제 확인</h2>
+  <div class="wf-screen">
+    <div class="wf-overlay">
+      <div class="wf-modal" role="dialog" aria-label="저장 검색 삭제 확인">
+        <div class="wf-modal-head">저장 검색 삭제</div>
+        <div class="wf-modal-body">
+          <dl class="wf-kv"><dt>대상</dt><dd>주문 장애 시간대</dd></dl>
+          <ul>
+            <li>삭제하면 바로 지워지고 되돌릴 수 없습니다.</li>
+            <li>같은 계정을 쓰는 모든 사람의 목록에서 사라집니다.</li>
+            <li>저장한 조건만 지웁니다. 로그는 지우지 않습니다.</li>
+            <li>이 조건을 복사해 만든 알림 규칙은 그대로 남습니다.</li>
+          </ul>
+        </div>
+        <div class="wf-modal-foot"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">삭제</span></div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>확인 뒤 즉시 삭제하고 복구는 두지 않는다(<span class="wf-ref">Q11-02</span>). 자동 삭제는 없다(<span class="wf-ref">Q11-03</span>).</li>
+    <li>조건을 저장한다고 로그 보존이 생기지 않으므로 삭제도 로그에 영향이 없다(조사 명세 6절).</li>
+    <li>CM-07 사용 목록에 없어 비밀번호를 다시 묻지 않는다(4절 CM-07). 알림 규칙은 복사 관계라 영향이 없다(<span class="wf-ref">SD-30</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s7">
+  <h2 class="wf-state-title">상태 7. 개수 상한 도달</h2>
+  <div class="wf-frame wf-stack">
+    <div class="wf-row">
+      <h3 class="wf-page-title" style="margin-bottom: 0">저장 검색</h3>
+      <span class="wf-badge">상한 도달</span>
+      <span class="wf-muted">공용 목록 · <span class="wf-n">N</span>개 저장 · 최대 <span class="wf-n">N</span>개</span>
+    </div>
+    <p class="wf-callout wf-callout--strong">저장 검색이 상한(<span class="wf-n">N</span>개)에 닿아 로그 탐색에서 새 조건을 저장할 수 없습니다. 쓰지 않는 저장 검색을 지우면 다시 저장할 수 있습니다. 오래 쓰지 않은 저장 검색도 자동으로 지우지 않습니다.</p>
+    <div class="wf-placeholder">저장 검색 목록(상태 1과 같음). 실행·수정·삭제는 그대로 쓸 수 있다.</div>
+  </div>
+  <ul class="wf-notes">
+    <li>자동 삭제 없이, 개수 상한에 닿으면 저장을 막고 안내한다(<span class="wf-ref">Q11-03</span>). 상한 값은 측정 뒤 정하므로 <span class="wf-n">N</span>으로 쓴다(7절). 상한에 닿았을 때는 현재 개수도 <span class="wf-n">N</span>이 되어 그렇게 쓴다.</li>
+    <li>상한은 저장 개수에 걸리므로 실행·수정·삭제는 막지 않는다.</li>
+    <li>실제로 저장을 막는 곳은 UI-02의 <span class="wf-term">조건 저장</span>이다(5절 UI-02). 그 창은 검색·조사 묶음이 UI-02 상태 14로 그렸고, 이 상태의 안내와 뜻이 같다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s8">
+  <h2 class="wf-state-title">상태 8. 상대 시간 조건 안내</h2>
+  <p class="wf-state-desc">상대 범위로 저장한 검색은 열 때마다 기준 시각이 바뀌어 결과가 달라질 수 있다. 목록, 수정 창, 실행 뒤 화면에서 이를 알린다.</p>
+  <div class="wf-frame wf-w-lg">
+    <span class="wf-frame-label">목록의 행</span>
+    <table class="wf-table">
+      <thead><tr><th>이름</th><th>시간 방식</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>주문·결제 timeout 조사</td>
+          <td>상대 · 발생 시각 · 최근 <span class="wf-n">N</span><br><span class="wf-help">열 때마다 다시 계산합니다</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="wf-frame wf-w-lg">
+    <span class="wf-frame-label">수정 창의 시간 선택(CM-02 상태 2를 펼친 모습)</span>
+    <div class="wf-row"><span class="wf-select is-focus">발생 시각 · 최근 <span class="wf-n">N</span></span><span class="wf-muted">UTC+09:00</span></div>
+    <div class="wf-popover wf-stack" style="margin-top: 8px; width: 520px">
+      <div class="wf-field">
+        <span class="wf-label">시간 기준</span>
+        <div class="wf-seg"><span class="is-on">발생 시각(기본)</span><span>수신 시각</span></div>
+        <span class="wf-help">발생 시각은 로그에 찍힌 시각입니다. 수신 시각은 중앙이 처음 유효하게 받은 시각으로, 늦게 도착한 로그를 찾을 때 씁니다.</span>
+      </div>
+      <div class="wf-tabs"><span class="is-on">상대 범위</span><span>고정 범위</span></div>
+      <div class="wf-row">
+        <span>최근</span>
+        <span class="wf-input wf-input--short"><span class="wf-n">N</span></span>
+        <span class="wf-select" style="min-width: 96px">분</span>
+        <span class="wf-help">단위: 분 · 시간 · 일</span>
+      </div>
+      <span class="wf-help">실행할 때 서버 시각으로 절대 범위를 정합니다. 그 뒤에는 범위가 움직이지 않습니다.</span>
+      <div class="wf-row wf-end"><span class="wf-btn">취소</span><span class="wf-btn wf-btn--primary">적용</span></div>
+    </div>
+    <div class="wf-callout wf-stack wf-stack--tight" style="margin-top: 12px">
+      <p><strong>상대 범위로 저장합니다.</strong> 이 저장 검색은 열 때마다 그때 시각을 기준으로 범위를 다시 계산합니다. 같은 저장 검색이라도 열 때마다 결과가 다를 수 있습니다.</p>
+      <p>조사한 구간을 그대로 다시 보려면 고정 범위로 저장하세요. 고정 범위는 저장한 날짜·시각 그대로 실행하지만, 보존 만료·삭제나 늦게 들어온 로그 때문에 결과는 달라질 수 있습니다.</p>
+    </div>
+  </div>
+  <div class="wf-frame wf-w-lg">
+    <span class="wf-frame-label">실행해 UI-02가 열린 뒤(CM-02 상태 4)</span>
+    <div class="wf-row"><span class="wf-select">발생 시각 · 최근 <span class="wf-n">N</span></span><span class="wf-muted">UTC+09:00</span></div>
+    <p class="wf-small" style="margin-top: 8px"><strong>적용 범위</strong> 2026-11-05 09:15:03 ~ 2026-11-05 10:15:03 (UTC+09:00) · 시작 포함·끝 제외 · 발생 시각 기준 · <span class="wf-term">최근 N</span>을 10:15:03에 고정</p>
+  </div>
+  <ul class="wf-notes">
+    <li>저장 검색은 상대·고정 시간을 모두 지원하고 저장할 때 고른 방식을 유지한다. 상대는 열 때 현재 기준으로 다시 계산하고, 고정은 저장한 날짜·시간 그대로 실행한다(<span class="wf-ref">Q11</span>, 조사 명세 6절).</li>
+    <li><span class="wf-term">같은 조건</span>과 <span class="wf-term">같은 결과</span>가 다르다는 점을 표시하고, 조사한 구간을 다시 볼 때는 고정 범위를 권한다(조사 명세 6절).</li>
+    <li>상대 범위는 실행할 때 서버 시각으로 절대 범위를 정하고, UI-02는 <span class="wf-term">적용 범위</span>로 그 결과를 보여 준다(<span class="wf-ref">SD-06</span>, CM-02 상태 4).</li>
+    <li>상대 범위 안내 문단은 CM-02 팝오버 밖, 저장 검색 수정 창 안에 둔다(와이어프레임 표기). CM-02 마크업은 바꾸지 않았다.</li>
+  </ul>
+</section>
+
+</body>
+</html>

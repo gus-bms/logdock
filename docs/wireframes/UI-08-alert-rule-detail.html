@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI-08 알림 규칙 상세</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>UI-08 알림 규칙 상세</h1>
+  <p>규칙 하나의 현재 평가 상태와 감시 품질, 해소 대기 진행, 미평가 구간, 일부 미관측 대상, 사건 이력을 본다. 알림 규칙 목록(UI-06)에서 규칙을 눌러 연다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q12-05</span> <span class="wf-ref">Q12-14</span> <span class="wf-ref">Q12 5절</span> <span class="wf-ref">Q12 6절</span> · 기준: 화면 흐름 명세 5절 UI-08, 7절</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">기본(해소 대기)</a></li>
+      <li><a href="#s2">평가 상태별 상단 표시</a></li>
+      <li><a href="#s3">사건 없음</a></li>
+      <li><a href="#s4">대상 전부 관측 불가(감시 불가)</a></li>
+      <li><a href="#s5">일부만 관측 불가(일부 미관측)</a></li>
+      <li><a href="#s6">평가 실패 회차</a></li>
+      <li><a href="#s7">대상 없음</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 기본(해소 대기)</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item is-current" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body">
+      <p class="wf-small wf-muted"><a href="UI-06-alert-rules.html">알림 규칙</a> › 주문·결제 timeout</p>
+      <div class="wf-row" style="margin: 6px 0 4px">
+        <h3 class="wf-page-title" style="margin-bottom: 0">주문·결제 timeout</h3>
+        <span class="wf-seg"><span class="is-on">켬</span><span>끔</span></span>
+        <a class="wf-btn wf-end" href="UI-07-alert-rule-edit.html">수정</a>
+      </div>
+      <p class="wf-small wf-muted" style="margin-bottom: 14px">(서비스 주문 또는 결제) 그리고 (환경 운영) 그리고 (레벨 ERROR) 그리고 (본문에 "timeout" 포함) 그리고 (본문에 "health check" 제외) 그리고 (http.status 500 이상) · 15분 동안 20건 이상(중앙 수신 시각) · 해소 대기 15분(비워 둠) · 수신 주소 3곳</p>
+
+      <div class="wf-status">
+        <span class="wf-status-name">해소 대기</span>
+        <span class="wf-status-detail">
+          <span>건수가 임계 아래로 내려와 해소를 기다리는 중</span>
+          <span>감시 품질 <span class="wf-badge">완전</span></span>
+          <span>마지막 성공 평가 2026-11-05 10:15:00 (UTC+09:00)</span>
+        </span>
+      </div>
+
+      <div class="wf-grid-3" style="margin-top: 16px">
+        <div class="wf-frame wf-stack wf-stack--tight">
+          <p class="wf-section-title" style="margin-bottom: 0">해소 대기 진행</p>
+          <p><strong>9분 / 15분</strong> 임계(20건) 아래 유지</p>
+          <p class="wf-help">이대로 15분을 채우면 해소됩니다. 그사이 다시 20건 이상이 되면 지속으로 돌아가고 메일은 보내지 않습니다.</p>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight">
+          <p class="wf-section-title" style="margin-bottom: 0">미평가 구간</p>
+          <p class="wf-muted">최근 미평가 구간 없음</p>
+        </div>
+        <div class="wf-frame wf-stack wf-stack--tight">
+          <p class="wf-section-title" style="margin-bottom: 0">일부 미관측 대상</p>
+          <p class="wf-muted">없음 · 대상 연결 4개를 모두 관측함</p>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px">
+        <p class="wf-section-title">사건 이력</p>
+        <table class="wf-table">
+          <thead>
+            <tr><th>발화 시각</th><th>평가 구간(중앙 수신 시각)</th><th>건수 / 임계</th><th>판정 불가</th><th>감시 품질</th><th>해소 시각</th><th>전달 결과</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="wf-mono"><a href="UI-09-incident-detail.html">2026-11-05 09:41:00</a></td>
+              <td class="wf-mono">09:26:00 이상 ~ 09:41:00 미만</td>
+              <td>27건 / 20건 이상</td>
+              <td>3건</td>
+              <td><span class="wf-badge">완전</span></td>
+              <td class="wf-muted">아직 해소되지 않음</td>
+              <td><span class="wf-badge">메일 서버 수락</span> 3곳</td>
+            </tr>
+            <tr>
+              <td class="wf-mono"><a href="UI-09-incident-detail.html">2026-11-04 21:10:00</a></td>
+              <td class="wf-mono">20:55:00 이상 ~ 21:10:00 미만</td>
+              <td>22건 / 20건 이상</td>
+              <td>0건</td>
+              <td><span class="wf-badge">일부 미관측</span></td>
+              <td class="wf-mono">2026-11-04 21:58:00</td>
+              <td><span class="wf-badge">메일 서버 수락</span> 3곳</td>
+            </tr>
+            <tr>
+              <td class="wf-mono"><a href="UI-09-incident-detail.html">2026-11-03 14:02:00</a></td>
+              <td class="wf-mono">13:47:00 이상 ~ 14:02:00 미만</td>
+              <td>41건 / 20건 이상</td>
+              <td>1건</td>
+              <td><span class="wf-badge">완전</span></td>
+              <td class="wf-mono">2026-11-03 15:20:00</td>
+              <td><span class="wf-badge">메일 서버 수락</span> 3곳</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="wf-help" style="margin-top: 6px">시각은 UTC+09:00입니다. 사건 이력은 로그 보관 기간(6개월)과 같이 보관합니다. 공간 부족으로 로그가 일찍 지워져도 사건 이력은 남습니다. 사건을 누르면 당시 조건과 수신자별 전달 결과를 봅니다.</p>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>요소는 5절 UI-08을 따른다: 현재 평가 상태와 감시 품질, 해소 대기 진행, 미평가 구간, 일부 미관측 대상, 사건 이력. 동작은 사건을 눌러 UI-09, <span class="wf-term">수정</span>으로 UI-07, 켬/끔(UI-06 상태 6과 같은 확인)이다.</li>
+    <li>평가 상태 <span class="wf-term">해소 대기</span>에서는 임계 미만 연속 회차를 센다. 해소 대기 길이만큼 이어지면 정상으로 바뀌고 사건에 해소 시각을 남기며 메일은 없다. 그사이 충족하면 지속으로 돌아가고 메일은 없다(<span class="wf-ref">Q12 5절</span> 상태 표). 진행은 회차 대신 분으로 보인다(와이어프레임 표기). 평가 주기 숫자는 7절에 없어 쓰지 않는다.</li>
+    <li>사건 이력은 로그 보관 기간과 같이 보관하고(<span class="wf-ref">Q12-14</span>, 7절 6개월), 조기 삭제가 일어나도 메타데이터 공간에 남는다(<span class="wf-ref">Q12-14</span>).</li>
+    <li>사건 이력의 열은 사건 기록 항목(발화 시각, 평가 구간, 건수, 임계, 판정 불가 건수, 감시 품질, 해소 시각)과 수신자별 전달 결과의 요약이다(<span class="wf-ref">Q12 5절</span> 사건 기록). 열 구성은 와이어프레임 표기다.</li>
+    <li>제목 아래 규칙 요약 한 줄은 해소 대기 진행과 임계를 읽기 쉽게 두었다(와이어프레임 표기). 규칙의 숫자는 사용자가 넣은 값의 합성 예시다.</li>
+    <li><span class="wf-review">WQ-45 설계로 넘김:</span> 사람이 규칙을 끄거나 지워 닫힌 사건을 사건 이력에서 어떻게 보일지 문서에 없다. <span class="wf-ref">TD-07</span>은 지속 상황을 <span class="wf-term">규칙 꺼짐</span>으로 닫는다고만 적었다. <strong>기본안:</strong> 사건 이력의 해소 칸에 <span class="wf-term">규칙 꺼짐</span>·<span class="wf-term">규칙 삭제</span>와 닫힌 시각을 쓴다(TD-07).</li>
+    <li><span class="wf-review">WQ-46 문서로 정리:</span> 대상 연결이 모두 보관돼 대상이 0개가 되면 경고한다(<span class="wf-ref">TD-18</span>, Q12 8절 F-18). 이 경고를 UI-06·UI-08 중 어디에 어떻게 그릴지 화면 흐름 명세에 없다. <strong>정리:</strong> UI-08 상태 7과 UI-06 감시 품질의 <span class="wf-term">대상 없음</span>으로 보인다(TD-18, F-18). 명세 UI-06·UI-08에 더했다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 평가 상태별 상단 표시</h2>
+  <div class="wf-stack">
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">정상</span>
+      <div class="wf-status">
+        <span class="wf-status-name">정상</span>
+        <span class="wf-status-detail"><span>지금 건수가 임계 아래입니다. 임계를 넘으면 메일을 한 번 보냅니다.</span><span>감시 품질 <span class="wf-badge">완전</span></span><span>마지막 성공 평가 10:15:00</span></span>
+      </div>
+      <p class="wf-help">해소 대기 진행: 해소를 기다리는 중이 아님</p>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">지속</span>
+      <div class="wf-status">
+        <span class="wf-status-name">지속</span>
+        <span class="wf-status-detail"><span>조건을 넘는 오류가 계속되고 있습니다. 2026-11-05 09:41:00에 메일을 보냈고(<a href="UI-09-incident-detail.html">사건 보기</a>), 해소될 때까지 다시 보내지 않습니다.</span><span>감시 품질 <span class="wf-badge">완전</span></span><span>마지막 성공 평가 09:50:00</span></span>
+      </div>
+      <p class="wf-help">해소 대기 진행: 지금 구간 건수 31건 · 임계 20건 이상이라 해소 대기를 시작하지 않음</p>
+    </div>
+    <div class="wf-frame wf-stack wf-stack--tight">
+      <span class="wf-frame-label">해소 대기</span>
+      <div class="wf-status">
+        <span class="wf-status-name">해소 대기</span>
+        <span class="wf-status-detail"><span>건수가 임계 아래로 내려와 해소를 기다리는 중</span><span>감시 품질 <span class="wf-badge">완전</span></span><span>마지막 성공 평가 10:15:00</span></span>
+      </div>
+      <p class="wf-help">해소 대기 진행: 9분 / 15분 임계 아래 유지</p>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>평가 상태는 <span class="wf-term">정상</span>, <span class="wf-term">지속</span>, <span class="wf-term">해소 대기</span>다(<span class="wf-ref">Q12 5절</span>). <span class="wf-term">지속</span>은 오류가 계속된다는 뜻이라는 점을 상태 옆 문구에서 숨기지 않는다(<span class="wf-ref">Q12 6절</span>).</li>
+    <li>처음 충족하면 메일을 한 번 보내고 지속 중에는 반복하지 않으며, 해소 확인 뒤 재발하면 새 메일을 보낸다(<span class="wf-ref">Q12 1절</span>).</li>
+    <li>지속 칸의 <span class="wf-term">지금 구간 건수</span>는 마지막 성공 평가의 건수다. 이 줄은 해소 대기 진행 칸을 비워 두지 않으려고 둔 와이어프레임 표기다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 사건 없음</h2>
+  <div class="wf-frame wf-w-lg wf-stack">
+    <p class="wf-section-title" style="margin-bottom: 0">사건 이력</p>
+    <p class="wf-strong">사건이 없습니다.</p>
+    <p>이 규칙이 아직 조건을 넘은 적이 없거나, 지난 사건이 알림 이력 보관 기간(로그 보관 기간과 같은 6개월)을 지났습니다.</p>
+  </div>
+  <ul class="wf-notes">
+    <li>사건 이력은 로그 보관 기간과 같이 보관하므로, 오래된 사건은 기간이 지나면 목록에서 사라진다(<span class="wf-ref">Q12-14</span>, 7절).</li>
+    <li>사건이 없을 때도 위쪽의 평가 상태·감시 품질·해소 대기 진행·미평가 구간·일부 미관측 대상은 그대로 보인다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 대상 전부 관측 불가(감시 불가)</h2>
+  <div class="wf-frame wf-stack">
+    <div class="wf-status">
+      <span class="wf-status-name">해소 대기</span>
+      <span class="wf-status-detail">
+        <span>감시 품질 <span class="wf-badge wf-badge--strong">감시 불가</span></span>
+        <span>대상 연결 4개를 모두 관측하지 못함</span>
+        <span>마지막 성공 평가 2026-11-05 10:15:00 (UTC+09:00)</span>
+      </span>
+    </div>
+    <p class="wf-callout wf-callout--strong">대상 연결을 모두 관측하지 못해 해소 계산을 멈췄습니다. 지금 건수가 임계 아래로 보여도 오류가 없다는 뜻이 아닙니다. 관측이 돌아오면 멈춘 곳부터 이어서 셉니다.</p>
+    <div class="wf-grid-2">
+      <div class="wf-frame wf-stack wf-stack--tight">
+        <p class="wf-section-title" style="margin-bottom: 0">해소 대기 진행</p>
+        <p><strong>멈춤</strong> · 9분 / 15분에서 멈춤</p>
+        <p class="wf-help">관측하지 못하는 동안의 평가는 해소 계산에 넣지 않고, 이미 쌓은 시간도 지우지 않습니다.</p>
+      </div>
+      <div class="wf-frame wf-stack wf-stack--tight">
+        <p class="wf-section-title" style="margin-bottom: 0">미관측 대상(전부)</p>
+        <table class="wf-table">
+          <thead><tr><th>연결</th><th>관측 상태</th><th>마지막 보고</th></tr></thead>
+          <tbody>
+            <tr><td><a href="UI-12-connection-detail.html">주문 · app-01 · app.log</a></td><td><span class="wf-badge wf-badge--unknown">관측 오래됨/미확인</span></td><td class="wf-mono">09:58:12</td></tr>
+            <tr><td><a href="UI-12-connection-detail.html">주문 · app-02 · app.log</a></td><td><span class="wf-badge wf-badge--unknown">관측 오래됨/미확인</span></td><td class="wf-mono">09:58:40</td></tr>
+            <tr><td><a href="UI-12-connection-detail.html">결제 · app-01 · app.log</a></td><td><span class="wf-badge">전송 오류/보류</span></td><td class="wf-mono">10:01:03</td></tr>
+            <tr><td><a href="UI-12-connection-detail.html">결제 · app-02 · app-*.log</a></td><td><span class="wf-badge">읽기 일시정지</span></td><td class="wf-mono">10:00:47</td></tr>
+          </tbody>
+        </table>
+        <p class="wf-help">수집 끊김이 10분 지속되면 운영 수신 주소로 운영 메일 1통을 보냅니다.</p>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>규칙 대상 연결이 <strong>전부</strong> 끊겼을 때만 해소 계산을 멈추고 <span class="wf-term">감시 불가</span>를 표시한다(<span class="wf-ref">Q12-05</span>, Q12 8절 F-04).</li>
+    <li>해소 대기 중 감시 불가인 회차는 해소 대기를 유지하고 연속 회차를 지우지 않는다. 지속 중이면 지속을 유지한다(<span class="wf-ref">Q12 5절</span> 상태 표).</li>
+    <li>관측 불가로 보는 상태는 관측 오래됨/미확인, 전송 오류/보류, 읽기 일시정지, 디스크 사용 불가, 설정/복구 확인 필요다. 연결 대기와 보관은 대상 판단에서 빼고, 관측됨·무로그와 복구 중은 관측 가능으로 본다(<span class="wf-ref">Q12 5절</span>). 상태 이름은 CM-05와 같다.</li>
+    <li>연결을 누르면 수집 연결 상세(UI-12)로 간다(와이어프레임 표기). 수집 끊김이 10분 지속되면 운영 메일 1통을 보낸다(<span class="wf-ref">Q12-06</span>, 7절).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 일부만 관측 불가(일부 미관측)</h2>
+  <div class="wf-frame wf-stack">
+    <div class="wf-status">
+      <span class="wf-status-name">해소 대기</span>
+      <span class="wf-status-detail">
+        <span>감시 품질 <span class="wf-badge">일부 미관측</span></span>
+        <span>대상 연결 4개 중 1개를 관측하지 못함</span>
+        <span>마지막 성공 평가 2026-11-05 10:15:00 (UTC+09:00)</span>
+      </span>
+    </div>
+    <p class="wf-callout">해소 계산은 계속합니다. 관측하지 못하는 연결의 오류는 건수에서 빠질 수 있어, 그 연결에 오류가 있어도 해소될 수 있습니다.</p>
+    <div class="wf-grid-2">
+      <div class="wf-frame wf-stack wf-stack--tight">
+        <p class="wf-section-title" style="margin-bottom: 0">해소 대기 진행</p>
+        <p><strong>9분 / 15분</strong> 임계(20건) 아래 유지 · 계속 셈</p>
+      </div>
+      <div class="wf-frame wf-stack wf-stack--tight">
+        <p class="wf-section-title" style="margin-bottom: 0">일부 미관측 대상</p>
+        <table class="wf-table">
+          <thead><tr><th>연결</th><th>관측 상태</th><th>마지막 보고</th></tr></thead>
+          <tbody>
+            <tr><td><a href="UI-12-connection-detail.html">주문 · app-02 · app.log</a></td><td><span class="wf-badge wf-badge--unknown">관측 오래됨/미확인</span></td><td class="wf-mono">09:31:07</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>대상 일부만 끊기면 해소 계산을 이어가고 <span class="wf-term">일부 미관측</span>을 표시한다(<span class="wf-ref">Q12-05</span>, Q12 8절 F-05). 끊긴 서버의 오류가 빠진 채 해소될 수 있다는 감수할 영향을 문구에 적는다(<span class="wf-ref">Q12-05</span>).</li>
+    <li>사건 기록에도 발화 당시의 감시 품질이 남는다(<span class="wf-ref">Q12 5절</span> 사건 기록, 상태 1의 사건 이력 열).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 평가 실패 회차</h2>
+  <div class="wf-frame wf-stack">
+    <div class="wf-status">
+      <span class="wf-status-name">해소 대기</span>
+      <span class="wf-status-detail">
+        <span>감시 품질 <span class="wf-badge">완전</span></span>
+        <span>최근 평가 실패 · 마지막 성공 평가 2026-11-05 10:11:00 (UTC+09:00)</span>
+      </span>
+    </div>
+    <div class="wf-grid-2">
+      <div class="wf-frame wf-stack wf-stack--tight">
+        <p class="wf-section-title" style="margin-bottom: 0">미평가 구간</p>
+        <table class="wf-table">
+          <thead><tr><th>구간 (UTC+09:00)</th><th>회차</th><th>사유</th></tr></thead>
+          <tbody>
+            <tr><td class="wf-mono">10:12:00 ~ 10:15:00</td><td>3회</td><td>평가 시간 초과</td></tr>
+            <tr><td class="wf-mono">09:52:00</td><td>1회</td><td>회차 건너뜀(앞 회차가 늦게 끝남)</td></tr>
+            <tr><td class="wf-mono">09:30:00 ~ 09:31:00</td><td>2회</td><td>평가 쿼리 실패</td></tr>
+          </tbody>
+        </table>
+        <p class="wf-help">평가하지 못한 회차는 상태를 바꾸지 않고 해소 계산에도 넣지 않습니다. 놓친 회차는 나중에 다시 평가하지 않습니다. 평가 실패가 10분 지속되면 운영 수신 주소로 운영 메일 1통을 보냅니다.</p>
+      </div>
+      <div class="wf-frame wf-stack wf-stack--tight">
+        <p class="wf-section-title" style="margin-bottom: 0">해소 대기 진행</p>
+        <p><strong>9분 / 15분</strong> 임계(20건) 아래 유지</p>
+        <p class="wf-help">평가하지 못한 회차는 세지 않고, 이미 쌓은 시간은 지우지 않습니다.</p>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>평가 쿼리 실패·시간 초과는 <span class="wf-term">평가 불가</span>로 처리하고 상태를 유지한다. 평가 자체가 실패한 회차는 해소 계산에 넣지 않는다(<span class="wf-ref">Q12-05</span>, Q12 8절 F-06, <span class="wf-ref">Q12 5절</span> 상태 표).</li>
+    <li>회차가 주기 안에 안 끝나면 다음 회차를 건너뛰고 기록한다. 재시작 뒤 놓친 회차를 다시 평가하지 않고, 미평가 구간을 이력에 표시한다(<span class="wf-ref">TD-12</span>).</li>
+    <li>쿼리가 일부만 끝나도 그 건수가 임계 이상이면 충족으로 판정하고, 임계 미만의 부분 결과는 평가 불가로 남긴다(<span class="wf-ref">TD-13</span>).</li>
+    <li>평가 실패가 10분 지속되면 묶어서 운영 메일 1통을 보낸다(<span class="wf-ref">Q12-06</span>, 7절). 전체 평가가 멈추면 CM-01 <span class="wf-term">알림 평가 중단</span> 배너가 뜬다(UI-06 상태 3).</li>
+    <li>사유 이름(평가 시간 초과, 회차 건너뜀, 평가 쿼리 실패)은 Q12 8절 F-06·F-07의 설명을 옮긴 것이다. 사유 코드는 API 설계에서 정한다(9절).</li>
+    <li><span class="wf-review">WQ-47 문서로 정리:</span> 미평가 구간을 얼마 동안 보여 줄지 문서에 없다. 사건 이력처럼 로그 보관 기간과 같은지 정해야 한다. <strong>정리:</strong> 알림 이력과 같이 로그 보관 기간 동안 보관한다(Q12 합의의 알림 이력 보관).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s7">
+  <h2 class="wf-state-title">상태 7. 대상 없음</h2>
+  <div class="wf-frame wf-stack">
+    <div class="wf-status">
+      <span class="wf-status-name">정상</span>
+      <span class="wf-status-detail">
+        <span>감시 품질 <span class="wf-badge wf-badge--strong">대상 없음</span></span>
+        <span>마지막 성공 평가 2026-11-05 10:40:00 (UTC+09:00)</span>
+      </span>
+    </div>
+    <p class="wf-callout wf-callout--strong">이 규칙이 셀 연결이 없습니다. 대상 연결이 모두 보관돼 건수를 0으로 평가하고 있어 오류가 나도 알림이 오지 않습니다. 조건을 고치거나 연결을 재활성하세요. <a href="UI-07-alert-rule-edit.html">규칙 수정</a> · <a href="UI-10-connections.html">수집 연결 보기</a></p>
+  </div>
+  <ul class="wf-notes">
+    <li>보관된 연결은 규칙 대상에서 빠지고, 대상이 0개가 되면 경고하며 건수 0으로 평가한다(<span class="wf-ref">TD-18</span>, Q12 8절 F-18). 수집 대상 조건(<span class="wf-ref">Q08-09</span>)으로 보관된 연결만 고른 규칙도 같다.</li>
+    <li>UI-06의 감시 품질 칸에도 <span class="wf-term">대상 없음</span>을 보인다. 대상이 다시 생길 때까지 이어지는 상태라 토스트가 아니라 화면에 둔다(CM-08 상태 6).</li>
+  </ul>
+</section>
+
+</body>
+</html>

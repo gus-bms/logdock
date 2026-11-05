@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CM-06 시각·품질 표시</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>CM-06 시각·품질 표시</h1>
+  <p>결과 행과 이벤트 상세에 붙이는 시각·품질 표시다. <span class="wf-term">시각 대체</span>, <span class="wf-term">시각 의심</span>, <span class="wf-term">시간대 추정</span>, <span class="wf-term">해석 실패</span>, <span class="wf-term">필드 일부 생략</span>을 색이 아니라 글자로 표시한다. 상세에는 발생·관측·수신 시각과 시각 출처를 함께 보여 준다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">SD-01</span> <span class="wf-ref">SD-02</span> <span class="wf-ref">SD-24</span> <span class="wf-ref">SD-34</span> <span class="wf-ref">Q08-05</span> <span class="wf-ref">Q08-06</span> · 기준: 화면 흐름 명세 4절</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">표시 종류</a></li>
+      <li><a href="#s2">결과 행에서의 표시</a></li>
+      <li><a href="#s3">상세: 시각을 정상으로 읽음</a></li>
+      <li><a href="#s4">상세: 시각 대체</a></li>
+      <li><a href="#s5">상세: 시각 의심</a></li>
+      <li><a href="#s6">상세: 시간대 추정</a></li>
+      <li><a href="#s7">상세: 해석 실패와 필드 일부 생략</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 표시 종류</h2>
+  <table class="wf-table">
+    <thead><tr><th style="width: 160px">표시</th><th>붙는 경우</th><th>검색에 주는 영향</th><th>근거</th></tr></thead>
+    <tbody>
+      <tr><td><span class="wf-badge">시각 대체</span></td><td>로그의 발생 시각이 없거나 읽지 못했다. 발생 시각은 <span class="wf-term">미확인</span>으로 둔다.</td><td>검색 기준 시각만 입력 외피 시각이나 관측 시각으로 대신한다.</td><td><span class="wf-ref">SD-01</span> <span class="wf-ref">SD-02</span></td></tr>
+      <tr><td><span class="wf-badge">시각 의심</span></td><td>발생 시각이 관측 시각보다 허용 오차(<span class="wf-n">N</span>) 이상 미래다.</td><td>원본 시각은 보존하고 검색·정렬은 관측 시각으로 한다.</td><td><span class="wf-ref">Q08-05</span></td></tr>
+      <tr><td><span class="wf-badge">시간대 추정</span></td><td>시각에 시간대 표기가 없고 연결에 로그 시간대도 넣지 않아 에이전트 서버 시간대로 읽었다.</td><td>앱이 다른 시간대로 찍으면 시각이 어긋날 수 있다.</td><td><span class="wf-ref">Q08-06</span></td></tr>
+      <tr><td><span class="wf-badge">해석 실패</span></td><td>등록한 형식(JSON 등)으로 읽지 못했다.</td><td>본문은 그대로 찾는다. 필드 조건은 판정 불가로 빠지고, 레벨을 읽지 못했으면 레벨 조건도 판정 불가다.</td><td><span class="wf-ref">SD-22</span> <span class="wf-ref">SD-34</span></td></tr>
+      <tr><td><span class="wf-badge">필드 일부 생략</span></td><td>필드 수·깊이·값 길이 상한(<span class="wf-n">N</span>)을 넘었다.</td><td>넘은 부분만 필드에서 빼고 본문은 그대로 찾는다.</td><td><span class="wf-ref">SD-24</span></td></tr>
+    </tbody>
+  </table>
+  <ul class="wf-notes">
+    <li>어떤 표시가 붙어도 로그를 버리지 않는다(<span class="wf-ref">Q08-05</span>, <span class="wf-ref">SD-24</span>). 과거로 찍힌 시각은 늦게 읽은 정상 로그와 구분할 수 없어 보정하지 않는다(<span class="wf-ref">Q08-05</span>).</li>
+    <li>미래 시각 허용 오차와 필드 상한은 정하지 않았다(7절).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 결과 행에서의 표시</h2>
+  <div class="wf-frame">
+    <table class="wf-table">
+      <thead><tr><th style="width: 260px">기준 시각(UTC+09:00)</th><th>서비스</th><th>서버</th><th>레벨</th><th>본문 요약</th></tr></thead>
+      <tbody>
+        <tr><td class="wf-mono">2026-11-05 10:14:50.123</td><td>결제</td><td>app-01</td><td>ERROR</td><td class="wf-mono">payment request timeout order=ORD-1042</td></tr>
+        <tr><td><span class="wf-mono">2026-11-05 10:14:48.002</span> <span class="wf-badge">시각 대체</span></td><td>결제</td><td>app-01</td><td>미확인</td><td class="wf-mono">retrying upstream call (attempt 2)</td></tr>
+        <tr><td><span class="wf-mono">2026-11-05 10:14:47.410</span> <span class="wf-badge">시각 의심</span></td><td>주문</td><td>app-02</td><td>WARN</td><td class="wf-mono">cart sync delayed</td></tr>
+        <tr><td><span class="wf-mono">2026-11-05 10:14:45.000</span> <span class="wf-badge">시간대 추정</span></td><td>주문</td><td>app-01</td><td>INFO</td><td class="wf-mono">order created id=ORD-1041</td></tr>
+        <tr><td class="wf-mono">2026-11-05 10:14:44.870</td><td>결제</td><td>app-02</td><td>미확인</td><td><span class="wf-badge">해석 실패</span> <span class="wf-mono">{"level":"error","msg":"card decl</span></td></tr>
+        <tr><td class="wf-mono">2026-11-05 10:14:43.315</td><td>주문</td><td>app-02</td><td>INFO</td><td><span class="wf-badge">필드 일부 생략</span> <span class="wf-mono">bulk export finished rows=20000</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="wf-notes">
+    <li>결과 행은 기준 시각·서비스·서버·레벨·본문 요약 열로 고정하고, 표시는 해당 칸 옆에 글자로 붙인다(<span class="wf-ref">SD-34</span>). 필드 열 추가는 첫 출시 밖이다(3절).</li>
+    <li>시각 관련 표시는 기준 시각 옆에, 해석 관련 표시는 본문 요약 앞에 붙인다(와이어프레임 표기).</li>
+    <li>본문은 글자로만 그린다(<span class="wf-ref">SD-36</span>). 그림의 본문은 합성 예시다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 상세: 시각을 정상으로 읽음</h2>
+  <div class="wf-frame wf-w-md">
+    <span class="wf-frame-label">이벤트 상세(UI-03)의 시각 영역</span>
+    <dl class="wf-kv">
+      <dt>기준 시각</dt><dd><span class="wf-mono">2026-11-05 10:14:50.123</span> · 시각 출처: 본문 시각</dd>
+      <dt>발생 시각</dt><dd class="wf-mono">2026-11-05 10:14:50.123 (UTC+09:00)</dd>
+      <dt>관측 시각</dt><dd class="wf-mono">2026-11-05 10:14:50.410 (UTC+09:00)</dd>
+      <dt>수신 시각</dt><dd class="wf-mono">2026-11-05 10:14:51.002 (UTC+09:00)</dd>
+    </dl>
+  </div>
+  <ul class="wf-notes">
+    <li>발생 시각은 로그에 찍힌 시각, 관측 시각은 에이전트가 읽은 시각, 수신 시각은 중앙이 처음 유효하게 받은 시각이다. 기준 시각은 검색·정렬·발생량의 축이다(<span class="wf-ref">SD-01</span>).</li>
+    <li>기준 시각은 본문 시각, 입력 외피 시각, 관측 시각 순서로 정하고 어느 것을 썼는지 <span class="wf-term">시각 출처</span>로 보여 준다(<span class="wf-ref">SD-02</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 상세: 시각 대체</h2>
+  <div class="wf-frame wf-w-md">
+    <div class="wf-row" style="margin-bottom: 10px"><span class="wf-badge">시각 대체</span><span class="wf-help">로그에서 발생 시각을 읽지 못해 관측 시각으로 검색합니다.</span></div>
+    <dl class="wf-kv">
+      <dt>기준 시각</dt><dd><span class="wf-mono">2026-11-05 10:14:48.002</span> · 시각 출처: 관측 시각</dd>
+      <dt>발생 시각</dt><dd><span class="wf-badge wf-badge--unknown">미확인</span></dd>
+      <dt>관측 시각</dt><dd class="wf-mono">2026-11-05 10:14:48.002 (UTC+09:00)</dd>
+      <dt>수신 시각</dt><dd class="wf-mono">2026-11-05 10:14:49.150 (UTC+09:00)</dd>
+    </dl>
+  </div>
+  <ul class="wf-notes">
+    <li>발생 시각을 관측 시각으로 바꿔 쓰지 않고 <span class="wf-term">미확인</span>으로 둔다. 검색 기준 시각만 대신한다(조사 명세 1절, <span class="wf-ref">SD-01</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 상세: 시각 의심</h2>
+  <div class="wf-frame wf-w-md">
+    <div class="wf-row" style="margin-bottom: 10px"><span class="wf-badge">시각 의심</span><span class="wf-help">로그 시각이 읽은 시각보다 미래라 관측 시각으로 검색합니다.</span></div>
+    <dl class="wf-kv">
+      <dt>기준 시각</dt><dd><span class="wf-mono">2026-11-05 10:14:47.410</span> · 시각 출처: 관측 시각</dd>
+      <dt>발생 시각(원본)</dt><dd class="wf-mono">2026-11-05 19:14:47.000 (UTC+09:00)</dd>
+      <dt>관측 시각</dt><dd class="wf-mono">2026-11-05 10:14:47.410 (UTC+09:00)</dd>
+      <dt>수신 시각</dt><dd class="wf-mono">2026-11-05 10:14:48.020 (UTC+09:00)</dd>
+    </dl>
+  </div>
+  <ul class="wf-notes">
+    <li>원본 시각을 보존해 상세에 함께 보여 주고, 검색과 정렬은 관측 시각으로 한다(<span class="wf-ref">Q08-05</span>).</li>
+    <li>서버 시계 자체가 틀린 경우는 관측 시각도 틀리므로 수집 상태의 <span class="wf-term">시각 확인 필요</span>로 따로 알린다(CM-05, <span class="wf-ref">SD-05</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 상세: 시간대 추정</h2>
+  <div class="wf-frame wf-w-md">
+    <div class="wf-row" style="margin-bottom: 10px"><span class="wf-badge">시간대 추정</span><span class="wf-help">로그 시각에 시간대가 없어 에이전트 서버 시간대로 읽었습니다.</span></div>
+    <dl class="wf-kv">
+      <dt>기준 시각</dt><dd><span class="wf-mono">2026-11-05 10:14:45.000</span> · 시각 출처: 본문 시각</dd>
+      <dt>발생 시각</dt><dd><span class="wf-mono">2026-11-05 10:14:45.000 (UTC+09:00)</span> · 원문 <span class="wf-mono">2026-11-05 10:14:45</span>을 서버 시간대로 해석</dd>
+      <dt>관측 시각</dt><dd class="wf-mono">2026-11-05 10:14:45.090 (UTC+09:00)</dd>
+      <dt>수신 시각</dt><dd class="wf-mono">2026-11-05 10:14:45.700 (UTC+09:00)</dd>
+    </dl>
+    <p class="wf-help" style="margin-top: 10px">시간대가 다르면 수집 연결 설정의 <strong>로그 시간대</strong>로 바로잡을 수 있습니다. 바꾼 뒤 받은 로그부터 적용됩니다.</p>
+  </div>
+  <ul class="wf-notes">
+    <li>연결의 <span class="wf-term">로그 시간대</span>는 선택 입력이고, 비우면 에이전트 서버 시간대로 읽어 <span class="wf-term">시간대 추정</span>을 표시한다(<span class="wf-ref">Q08-06</span>, UI-11 3단계).</li>
+    <li>기준 시각은 저장할 때 한 번 정하고 소급해 바꾸지 않는다(<span class="wf-ref">SD-02</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s7">
+  <h2 class="wf-state-title">상태 7. 상세: 해석 실패와 필드 일부 생략</h2>
+  <div class="wf-grid-2">
+    <div class="wf-frame">
+      <div class="wf-row" style="margin-bottom: 10px"><span class="wf-badge">해석 실패</span></div>
+      <p class="wf-section-title">필드</p>
+      <p class="wf-callout">JSON으로 읽지 못해 필드가 없습니다. 본문은 그대로 검색됩니다. 이 로그는 필드 조건에서 판정 불가로 빠지고, 레벨도 읽지 못해 레벨 조건에서도 판정 불가입니다.</p>
+      <p class="wf-section-title" style="margin-top: 12px">본문</p>
+      <p class="wf-mono" style="border: 1px solid var(--wf-line-2); padding: 8px">{"level":"error","msg":"card declined","order":"ORD-1</p>
+    </div>
+    <div class="wf-frame">
+      <div class="wf-row" style="margin-bottom: 10px"><span class="wf-badge">필드 일부 생략</span></div>
+      <p class="wf-section-title">필드</p>
+      <dl class="wf-kv">
+        <dt class="wf-mono">job.name</dt><dd class="wf-mono">bulk-export</dd>
+        <dt class="wf-mono">job.rows</dt><dd class="wf-mono">20000</dd>
+      </dl>
+      <p class="wf-callout" style="margin-top: 8px">상한(<span class="wf-n">N</span>)을 넘은 필드 일부를 필드에서 뺐습니다. 본문에는 그대로 있고 본문 검색으로 찾을 수 있습니다.</p>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>해석 실패 로그는 본문으로 찾을 수 있고, 필드 조건에서는 판정 불가로 결과에서 빠진다. 레벨 미확인 로그의 레벨 조건도 판정 불가다(<span class="wf-ref">SD-22</span>).</li>
+    <li>필드 상한을 넘으면 넘는 부분만 빼고 <span class="wf-term">필드 일부 생략</span>을 표시한다. 타입 충돌을 이유로 로그를 거부하거나 필드를 조용히 버리지 않는다(<span class="wf-ref">SD-24</span>).</li>
+  </ul>
+</section>
+
+</body>
+</html>

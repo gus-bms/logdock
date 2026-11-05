@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI-14 메일 상태</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>UI-14 메일 상태</h1>
+  <p>메일 서버 연결 상태와 마지막 성공 전송을 보고, 테스트 발송과 운영 수신 주소를 관리한다. 상단 메뉴 <span class="wf-term">시스템</span>과 전역 배너 <span class="wf-term">메일 연결 오류</span>에서 연다. 메일 서버 주소·계정·비밀번호는 서버 설정에서만 바꾸며 이 화면에 입력 칸이 없다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q12-06</span> <span class="wf-ref">Q12-08</span> <span class="wf-ref">Q12-12</span> <span class="wf-ref">Q12-15</span> <span class="wf-ref">TD-21</span> <span class="wf-ref">Q12 6절</span> · 기준: 화면 흐름 명세 5절 UI-14, 3절, 4절 CM-01, 7절</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">기본</a></li>
+      <li><a href="#s2">연결 오류(CM-01 배너와 함께)</a></li>
+      <li><a href="#s3">테스트 발송 성공</a></li>
+      <li><a href="#s4">테스트 발송 실패</a></li>
+      <li><a href="#s5">운영 수신 주소 없음</a></li>
+      <li><a href="#s6">운영 수신 주소 입력 오류</a></li>
+      <li><a href="#s7">메일 설정 없음</a></li>
+      <li><a href="#s8">평문 사내 릴레이 허용 경고</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 기본</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item is-current">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body">
+      <h3 class="wf-page-title">메일 상태</h3>
+      <div class="wf-grid-2">
+        <div class="wf-frame wf-stack">
+          <p class="wf-section-title" style="margin-bottom: 0">메일 서버 연결</p>
+          <dl class="wf-kv">
+            <dt>연결 상태</dt><dd><span class="wf-badge">연결됨</span></dd>
+            <dt>마지막 성공 전송</dt><dd>2026-11-05 10:12:40 (UTC+09:00)</dd>
+          </dl>
+          <p class="wf-help">메일 서버 주소·계정·비밀번호는 서버 설정에서만 바꿉니다. 바꾸려면 서버에 접속해 설정을 고치고 LogDock을 다시 시작해야 합니다. 이 화면은 비밀번호 같은 비밀 값을 보여 주지 않습니다.</p>
+          <hr class="wf-hr" style="margin: 0">
+          <p class="wf-section-title" style="margin-bottom: 0">테스트 발송</p>
+          <div class="wf-row"><span class="wf-input wf-input--wide is-empty">받을 주소</span><span class="wf-btn">테스트 발송</span></div>
+          <p class="wf-help">메일 서버로 테스트 메일 한 통을 보내 연결을 확인합니다.</p>
+        </div>
+        <div class="wf-frame wf-stack">
+          <p class="wf-section-title" style="margin-bottom: 0">운영 수신 주소</p>
+          <p class="wf-help">수집 끊김이나 알림 평가 실패가 10분 지속되면 묶어서 운영 메일 1통을 이 주소로 보냅니다. 같은 연결은 끊긴 동안 한 번만 알리고, 다시 이어져도 따로 메일을 보내지 않습니다. 디스크 경고 메일(기준 <span class="wf-n">N</span>)도 이 주소로 갑니다.</p>
+          <table class="wf-table">
+            <thead><tr><th>주소</th><th style="width: 110px">확인</th><th style="width: 170px"></th></tr></thead>
+            <tbody>
+              <tr><td class="wf-mono">ops@example.com</td><td><span class="wf-badge wf-badge--unknown">확인 안 됨</span></td><td><div class="wf-row wf-row--nowrap"><span class="wf-btn wf-btn--small">테스트 메일</span><span class="wf-btn wf-btn--small">지우기</span></div></td></tr>
+              <tr><td class="wf-mono">infra@example.com</td><td><span class="wf-badge wf-badge--unknown">확인 안 됨</span></td><td><div class="wf-row wf-row--nowrap"><span class="wf-btn wf-btn--small">테스트 메일</span><span class="wf-btn wf-btn--small">지우기</span></div></td></tr>
+            </tbody>
+          </table>
+          <div class="wf-row"><span class="wf-input wf-input--wide is-empty">주소 추가</span><span class="wf-btn wf-btn--small">추가</span><span class="wf-muted">2 / 최대 10개</span></div>
+          <p class="wf-help">최대 10개. 더 많으면 메일링 리스트 주소를 쓰세요. 저장할 때 형식만 검사하므로 받을 수 있는 주소인지는 테스트 메일로 확인하세요.</p>
+          <div><span class="wf-btn wf-btn--primary">저장</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>요소는 5절 UI-14를 따른다: 메일 서버 연결 상태, 마지막 성공 전송, 테스트 발송, 운영 수신 주소 목록(최대 10개, 형식 검사, <span class="wf-term">확인 안 됨</span> 표시, 테스트 메일).</li>
+    <li>메일 서버 주소·계정·발신 주소·비밀번호는 서버 운영자가 서버 설정에 넣고, 웹에서는 연결 상태 확인과 테스트 발송만 한다. 비밀번호를 바꾸려면 서버 접속과 재시작이 필요하다(<span class="wf-ref">Q12-08</span>, 3절). 비밀 값은 화면·로그·진단에 쓰지 않는다(<span class="wf-ref">TD-20</span>).</li>
+    <li>메일 서버와 계정은 이 설치의 서버 설정값이고 코어에 고정하지 않는다. 화면에 특정 메일 제공자 이름을 쓰지 않는다(<span class="wf-ref">Q12-15</span>, <span class="wf-ref">TD-08</span>).</li>
+    <li>운영 수신 주소는 웹에서 관리하고 <span class="wf-ref">Q12-12</span> 규칙(최대 10개, 형식 검사, <span class="wf-term">확인 안 됨</span>, 테스트 메일)을 따른다(<span class="wf-ref">TD-21</span>). 수집 끊김·알림 평가 실패가 10분 지속되면 묶어서 1통, 연결별로 지속 중 1회이고 회복 메일은 없다(<span class="wf-ref">Q12-06</span>, 7절). 디스크 경고 기준은 정하지 않았다(7절).</li>
+    <li>운영 수신 주소 변경은 CM-07 사용 목록에 없어 비밀번호를 다시 묻지 않는다(4절 CM-07).</li>
+    <li><span class="wf-review">WQ-77 설계로 넘김:</span> 메일 서버 연결 상태의 정상 이름이 문서에 없다(<span class="wf-term">연결 오류</span>만 있다). <span class="wf-term">연결됨</span>으로 그렸다. 연결 상태를 실제 발송 결과로 판정하는지 따로 확인하는지도 문서에 없어, 판정 근거가 없을 때 <span class="wf-term">미확인</span>을 쓸지(1절) 함께 정해야 한다. <strong>기본안:</strong> 마지막 발송 시도 결과로 <span class="wf-term">연결됨</span>·<span class="wf-term">연결 오류</span>를 쓰고 시도가 없으면 <span class="wf-term">미확인</span>이다.</li>
+    <li><span class="wf-review">WQ-78 설계로 넘김:</span> <span class="wf-term">테스트 발송</span>을 받을 주소를 직접 넣는지, 운영 수신 주소로 보내는지 문서에 없다. 받을 주소를 넣는 칸으로 그렸다. <strong>기본안:</strong> 주소를 직접 넣는다(그림대로). 운영 수신 주소 표에서는 행마다 보낸다.</li>
+    <li><span class="wf-review">WQ-79 설계로 넘김:</span> 메일 서버 주소나 발신 주소를 읽기 전용으로 보여 줄지 문서에 없다. 5절 요소에 없어 그리지 않았다. <strong>기본안:</strong> 비밀이 아닌 서버 주소·포트·발신 주소는 읽기 전용으로 보인다. 비밀번호는 보이지 않는다.</li>
+    <li><span class="wf-review">WQ-80 문서로 정리:</span> 평문 사내 릴레이를 서버 설정에서 허용하면 화면에 경고한다(<span class="wf-ref">TD-08</span>). 또 메일 설정이 없으면 규칙을 켤 수 없다(<span class="wf-ref">TD-08</span>). 두 표시가 화면 흐름 명세 UI-14에 없다. <strong>정리:</strong> 상태 7·8에 그렸고 명세 UI-14에 더했다(TD-08).</li>
+    <li><span class="wf-review">WQ-81 설계로 넘김:</span> 운영 수신 주소 변경이 감사 대상인지, 감사 기록 장애 중 보류되는지 문서에 없다. <strong>기본안:</strong> 기존 합의 적용: 알림 수신자 변경과 같다(TD-17). 감사 기록을 남기고 감사 장애 때 보류한다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 연결 오류(CM-01 배너와 함께)</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item is-current">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-banners" role="region" aria-label="전역 배너">
+      <p class="wf-banner"><strong class="wf-banner-kind">메일 연결 오류</strong><span class="wf-banner-text">메일 서버에 연결하지 못하고 있습니다. 알림 메일과 운영 메일이 늦어지거나 나가지 않을 수 있습니다. 마지막 성공 전송 2026-11-05 09:12:40 (UTC+09:00)</span><a class="wf-banner-link" href="UI-14-mail-status.html">메일 상태 보기</a></p>
+    </div>
+    <div class="wf-screen-body">
+      <h3 class="wf-page-title">메일 상태</h3>
+      <div class="wf-grid-2">
+        <div class="wf-frame wf-stack">
+          <p class="wf-section-title" style="margin-bottom: 0">메일 서버 연결</p>
+          <dl class="wf-kv">
+            <dt>연결 상태</dt><dd><span class="wf-badge wf-badge--strong">연결 오류</span></dd>
+            <dt>사유</dt><dd>인증 실패: 메일 서버가 계정 인증을 거부했습니다. 서버 설정의 계정과 비밀번호를 확인하세요.</dd>
+            <dt>마지막 성공 전송</dt><dd>2026-11-05 09:12:40 (UTC+09:00)</dd>
+          </dl>
+          <p class="wf-callout wf-callout--strong">보내지 못한 알림 메일과 운영 메일은 수신자마다 최대 12회, 총 4시간 안에서 계속 다시 보냅니다. 그 안에 서버 설정을 고치면 전달됩니다. 계정·비밀번호는 서버에 접속해 설정을 고치고 LogDock을 다시 시작해야 바뀝니다.</p>
+          <hr class="wf-hr" style="margin: 0">
+          <p class="wf-section-title" style="margin-bottom: 0">테스트 발송</p>
+          <div class="wf-row"><span class="wf-input wf-input--wide is-empty">받을 주소</span><span class="wf-btn">테스트 발송</span></div>
+          <p class="wf-help">서버 설정을 고친 뒤 테스트 메일로 연결을 확인하세요.</p>
+        </div>
+        <div class="wf-frame wf-stack">
+          <p class="wf-section-title" style="margin-bottom: 0">운영 수신 주소</p>
+          <div class="wf-placeholder" style="min-height: 120px">운영 수신 주소 목록(상태 1과 같음)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li><span class="wf-term">메일 연결 오류</span> 배너를 누르면 이 화면으로 온다(CM-01 상태 3). 배너 마크업은 CM-01 그대로이고 마지막 성공 전송 시각을 배너와 맞췄다.</li>
+    <li>인증·TLS·인증서 검증 실패와 발신자 거부는 설정 문제로 보고 재시도를 이어 가며 메일 연결 오류 배너를 띄운다. 상한 안에 고치면 전달된다(<span class="wf-ref">Q12 5절</span> 메일 작업 표, Q12 8절 F-10). 메일 서버 장애 때도 평가·사건은 계속되고 메일은 상한까지 재시도한다(Q12 8절 F-09).</li>
+    <li>운영 메일은 알림 메일과 같은 경로로 보낸다(<span class="wf-ref">TD-21</span>). 그래서 연결 오류 동안 운영 메일도 늦어질 수 있다.</li>
+    <li>사유는 문서의 전송 결과 분류(연결 실패·시간 초과, TLS·인증서 검증 실패, 인증 실패, 발신자 거부)를 글로 옮긴다. 사유 코드는 API 설계에서 정한다(9절). 사유 칸은 와이어프레임 표기다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 테스트 발송 성공</h2>
+  <div class="wf-grid-2">
+    <div class="wf-frame wf-stack">
+      <span class="wf-frame-label">테스트 발송</span>
+      <div class="wf-toast-area"><div class="wf-toast"><span class="wf-toast-kind">성공</span><span class="wf-toast-text">테스트 메일 결과: <span class="wf-badge">메일 서버 수락</span> 2026-11-05 10:20:31 (UTC+09:00). 메일 서버가 받았다는 뜻이며 도착을 확인한 것은 아닙니다. 받은편지함에서 확인하세요.</span><span class="wf-toast-close">닫기 ×</span></div></div>
+      <div class="wf-row"><span class="wf-input wf-input--wide">ops@example.com</span><span class="wf-btn">테스트 발송</span></div>
+    </div>
+    <div class="wf-frame wf-stack">
+      <span class="wf-frame-label">운영 수신 주소의 테스트 메일</span>
+      <table class="wf-table">
+        <thead><tr><th>주소</th><th>확인</th><th>테스트 메일 결과</th></tr></thead>
+        <tbody>
+          <tr><td class="wf-mono">ops@example.com</td><td><span class="wf-badge wf-badge--unknown">확인 안 됨</span></td><td><span class="wf-badge">메일 서버 수락</span> 10:21:02 · 도착은 받는 쪽에서 확인</td></tr>
+          <tr><td class="wf-mono">infra@example.com</td><td><span class="wf-badge wf-badge--unknown">확인 안 됨</span></td><td class="wf-muted">보내지 않음</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>성공은 메일 서버가 수락한 상태이며 화면 문구는 <span class="wf-term">메일 서버 수락</span>이다. 도착 확인이 아니라는 점을 숨기지 않는다(<span class="wf-ref">TD-10</span>, <span class="wf-ref">Q12 6절</span>).</li>
+    <li>형식 검사는 받을 수 있는 주소임을 보장하지 않으므로 테스트 메일로 사람이 확인한다(<span class="wf-ref">Q12-12</span>).</li>
+    <li><span class="wf-review">WQ-82 설계로 넘김:</span> 테스트 메일이 수락된 뒤에도 <span class="wf-term">확인 안 됨</span>을 그대로 두는지, 사람이 도착을 확인했다고 표시하는 방법이 있는지 문서에 없다(UI-07 상태 8과 같은 항목). 그림은 그대로 둔 모습이다. <strong>기본안:</strong> WQ-42와 같다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 테스트 발송 실패</h2>
+  <div class="wf-grid-2">
+    <div class="wf-frame wf-stack">
+      <span class="wf-frame-label">테스트 발송</span>
+      <div class="wf-toast-area"><div class="wf-toast wf-toast--fail"><span class="wf-toast-kind">실패</span><span class="wf-toast-text">테스트 메일을 보내지 못했습니다. 사유: 메일 서버 연결 시간 초과. 메일 서버 연결 상태와 서버 설정을 확인하세요.</span><span class="wf-toast-close">닫기 ×</span></div></div>
+      <div class="wf-row"><span class="wf-input wf-input--wide">ops@example.com</span><span class="wf-btn">테스트 발송</span></div>
+    </div>
+    <div class="wf-frame wf-stack">
+      <span class="wf-frame-label">운영 수신 주소의 테스트 메일</span>
+      <table class="wf-table">
+        <thead><tr><th>주소</th><th>확인</th><th>테스트 메일 결과</th></tr></thead>
+        <tbody>
+          <tr><td class="wf-mono">ops@example.com</td><td><span class="wf-badge wf-badge--unknown">확인 안 됨</span></td><td><span class="wf-badge">메일 서버 수락</span> 10:21:02</td></tr>
+          <tr><td class="wf-mono">infra@example.com</td><td><span class="wf-badge wf-badge--unknown">확인 안 됨</span></td><td>보내지 못함 · 수신자 거부: 메일 서버가 이 주소를 받지 않았습니다. 주소에 오타가 없는지 확인하세요.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>실패하면 사유를 글자로 보인다. 연결 문제(시간 초과·인증 실패)와 주소 문제(수신자 거부)를 나눠 쓴다(<span class="wf-ref">Q12 5절</span> 메일 작업 표의 분류).</li>
+    <li>테스트 메일을 재시도하는지는 문서에 없어 결과만 보인다. 알림 메일의 재시도(최대 12회, 총 4시간)와 섞어 쓰지 않는다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 운영 수신 주소 없음</h2>
+  <div class="wf-frame wf-w-md wf-stack">
+    <p class="wf-section-title" style="margin-bottom: 0">운영 수신 주소</p>
+    <p class="wf-callout wf-callout--strong">운영 수신 주소가 없습니다. 수집 끊김·알림 평가 실패·디스크 경고 메일을 받을 곳이 없어 이 메일들은 아무에게도 가지 않습니다. 주소를 하나 이상 넣으세요.</p>
+    <div class="wf-row"><span class="wf-input wf-input--wide is-empty">주소 추가</span><span class="wf-btn wf-btn--small">추가</span><span class="wf-muted">0 / 최대 10개</span></div>
+    <p class="wf-help">최대 10개. 저장할 때 형식만 검사하므로 받을 수 있는 주소인지는 테스트 메일로 확인하세요.</p>
+    <div><span class="wf-btn wf-btn--primary">저장</span></div>
+  </div>
+  <ul class="wf-notes">
+    <li>운영 수신 주소는 수집 끊김·알림 평가 실패 메일과 디스크 경고 메일을 받는다(5절 UI-14, <span class="wf-ref">Q12-06</span>, <span class="wf-ref">TD-21</span>). 주소가 없으면 이 메일들이 갈 곳이 없다는 사실을 숨기지 않는다.</li>
+    <li><span class="wf-review">WQ-83 설계로 넘김:</span> 운영 수신 주소가 없을 때 전역 배너(CM-01)로도 알릴지 문서에 없다. 지금 CM-01 배너 종류에는 없다. <strong>기본안:</strong> CM-01 배너로도 알린다. 운영 메일이 아무에게도 가지 않는 설치 전체 문제라서다. 명세 CM-01은 화면 설계 때 고친다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 운영 수신 주소 입력 오류</h2>
+  <div class="wf-grid-2">
+    <div class="wf-frame wf-stack">
+      <div class="wf-field"><span class="wf-label">운영 수신 주소</span><div class="wf-row"><span class="wf-input wf-input--wide is-error">infra@</span><span class="wf-btn wf-btn--small">추가</span></div></div>
+      <p class="wf-error">메일 주소 형식이 아닙니다.</p>
+    </div>
+    <div class="wf-frame wf-stack">
+      <div class="wf-field"><span class="wf-label">운영 수신 주소</span><div class="wf-row"><span class="wf-input wf-input--wide is-error">team-11@example.com</span><span class="wf-btn wf-btn--small is-disabled">추가(최대 10개)</span><span class="wf-muted">10 / 최대 10개</span></div></div>
+      <p class="wf-error">운영 수신 주소는 최대 10개입니다. 더 많으면 메일링 리스트 주소를 쓰세요.</p>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>운영 수신 주소도 최대 10개, 저장할 때 형식 검사다(<span class="wf-ref">Q12-12</span>, <span class="wf-ref">TD-21</span>, 7절). 같은 주소는 정규화한 뒤 하나로 합친다(Q12 12절).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s7">
+  <h2 class="wf-state-title">상태 7. 메일 설정 없음</h2>
+  <div class="wf-frame wf-w-md wf-stack">
+    <p class="wf-section-title" style="margin-bottom: 0">메일 서버</p>
+    <dl class="wf-kv">
+      <dt>연결 상태</dt><dd><span class="wf-badge wf-badge--strong">메일 설정 없음</span></dd>
+    </dl>
+    <p class="wf-callout wf-callout--strong">메일 서버 설정이 없어 알림 메일과 운영 메일을 보낼 수 없습니다. 알림 규칙은 저장할 수 있지만 켤 수 없습니다. 메일 서버는 서버 운영자가 서버 설정에서 넣습니다.</p>
+    <div class="wf-row"><span class="wf-btn is-disabled">테스트 발송(메일 설정 없음)</span></div>
+  </div>
+  <ul class="wf-notes">
+    <li>메일 설정이 없으면 규칙은 저장되지만 켤 수 없다(<span class="wf-ref">TD-08</span>, UI-06 상태 8). 메일 서버 설정은 서버 설정에서만 바꾼다(<span class="wf-ref">Q12-08</span>, 5절 UI-14).</li>
+    <li>설정이 생길 때까지 이어지는 상태라 토스트가 아니라 화면에 둔다(CM-08 상태 6).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s8">
+  <h2 class="wf-state-title">상태 8. 평문 사내 릴레이 허용 경고</h2>
+  <div class="wf-frame wf-w-md wf-stack">
+    <p class="wf-section-title" style="margin-bottom: 0">메일 서버</p>
+    <dl class="wf-kv">
+      <dt>연결 상태</dt><dd><span class="wf-badge">연결됨</span></dd>
+      <dt>전송 보안</dt><dd><span class="wf-badge wf-badge--strong">암호화 없음</span></dd>
+    </dl>
+    <p class="wf-callout wf-callout--strong">서버 설정이 암호화하지 않은 사내 메일 릴레이를 허용하고 있습니다. 알림 메일의 규칙 이름·건수·조사 링크가 암호화되지 않은 채 전달됩니다.</p>
+  </div>
+  <ul class="wf-notes">
+    <li>메일은 TLS가 기본이고 인증서도 검증한다. 평문 사내 릴레이는 서버 설정에서 명시적으로 허용했을 때만 쓰고 화면에 경고한다(<span class="wf-ref">TD-08</span>).</li>
+    <li>설정이 바뀔 때까지 이어지는 상태라 토스트가 아니라 화면에 둔다(CM-08 상태 6).</li>
+  </ul>
+</section>
+
+</body>
+</html>

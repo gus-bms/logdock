@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CM-01 상단 메뉴와 전역 배너</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>CM-01 상단 메뉴와 전역 배너</h1>
+  <p>모든 화면 맨 위에 두는 메뉴와 전역 배너다. 다른 화면 파일은 상태 1의 상단 메뉴 마크업을 그대로 가져다 쓰고, 현재 화면의 메뉴에 <span class="wf-mono">is-current</span>를 붙인다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q12 6절</span> <span class="wf-ref">Q10-14</span> <span class="wf-ref">Q13-01</span> <span class="wf-ref">운영 명세 4절</span> · 기준: 화면 흐름 명세 1·2·4절</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">기본(배너 없음)</a></li>
+      <li><a href="#s2">시스템 메뉴 펼침</a></li>
+      <li><a href="#s3">전역 배너 종류</a></li>
+      <li><a href="#s4">배너 여러 개</a></li>
+      <li><a href="#s5">조치 필요 수를 알 수 없음</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 기본(배너 없음)</h2>
+  <p class="wf-state-desc">로그 탐색 화면에 있을 때의 예다.</p>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item is-current" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body">
+      <div class="wf-placeholder">화면 본문(각 화면 파일에서 그린다)</div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>메뉴는 2절 순서를 따른다: 로그 탐색(UI-02), 저장 검색(UI-05), 알림(UI-06), 수집 연결(UI-10), 시스템(UI-13~UI-15), 계정(UI-16).</li>
+    <li>현재 화면은 굵은 글자와 밑줄로 표시한다. 색으로만 구분하지 않는다(1절).</li>
+    <li><span class="wf-term">수집 연결</span> 옆에 조치가 필요한 연결 수를 표시하고, 누르면 UI-10으로 간다(4절 CM-01). 조치가 필요한 연결이 없으면 숫자를 표시하지 않는다(와이어프레임 표기).</li>
+    <li><span class="wf-review">WQ-01 설계로 넘김:</span> 어떤 관리·관측 상태를 <span class="wf-term">조치 필요</span>로 셀지 문서에 없다. 수집 연결 묶음(UI-10의 <span class="wf-term">조치가 필요한 연결</span> 상태)과 같은 기준을 써야 한다. <strong>기본안:</strong> UI-10 상태 4의 후보 표에 있는 상태를 센다. 얼마나 이어지면 셀지는 관측 오래됨 기준(D16)과 함께 정한다. CM-01 메뉴 수와 UI-10이 같은 계산을 쓴다.</li>
+    <li>로그아웃과 비밀번호 변경은 <span class="wf-term">계정</span>(UI-16)에서 한다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 시스템 메뉴 펼침</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li>
+          <span class="wf-menu-item is-open">시스템 ▾</span>
+          <ul class="wf-dropdown">
+            <li><a href="UI-13-storage-retention.html">저장 공간과 보존</a></li>
+            <li><a href="UI-14-mail-status.html">메일 상태</a></li>
+            <li><a href="UI-15-audit-log.html">감사 이력</a></li>
+          </ul>
+        </li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body" style="min-height: 200px">
+      <div class="wf-placeholder" style="margin-top: 110px">화면 본문</div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>시스템 메뉴는 UI-13 저장 공간과 보존, UI-14 메일 상태, UI-15 감사 이력을 연다. 이 화면들은 전역 배너에서도 연다(2절).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 전역 배너 종류</h2>
+  <p class="wf-state-desc">상단 메뉴 바로 아래에 붙는 배너의 종류 전부다. 배너를 누르면 해당 화면으로 간다.</p>
+  <div class="wf-screen">
+    <div class="wf-banners" role="region" aria-label="전역 배너">
+      <p class="wf-banner"><strong class="wf-banner-kind">메일 연결 오류</strong><span class="wf-banner-text">메일 서버에 연결하지 못하고 있습니다. 알림 메일과 운영 메일이 늦어지거나 나가지 않을 수 있습니다. 마지막 성공 전송 2026-11-05 09:12:40 (UTC+09:00)</span><a class="wf-banner-link" href="UI-14-mail-status.html">메일 상태 보기</a></p>
+      <p class="wf-banner"><strong class="wf-banner-kind">알림 평가 중단</strong><span class="wf-banner-text">2026-11-05 10:20:00 (UTC+09:00)부터 알림 규칙을 평가하지 못하고 있습니다. 평가하지 못한 구간은 규칙 상세에 미평가 구간으로 남습니다.</span><a class="wf-banner-link" href="UI-06-alert-rules.html">알림 규칙 보기</a></p>
+      <p class="wf-banner"><strong class="wf-banner-kind">메일 최종 실패</strong><span class="wf-banner-text">확인하지 않은 메일 최종 실패가 2건 있습니다. 재시도 상한(최대 12회, 총 4시간)이 지났거나 메일 서버가 받기를 거부해 보내지 못한 알림 메일입니다.</span><a class="wf-banner-link" href="UI-06-alert-rules.html">알림 규칙 보기</a></p>
+      <p class="wf-banner"><strong class="wf-banner-kind">감사 기록 장애</strong><span class="wf-banner-text">2026-11-05 10:31:00 (UTC+09:00)부터 감사 기록을 저장하지 못하고 있습니다. 로그인·검색·수집은 계속됩니다. 키 발급, 등록·설정 변경, 비밀번호 변경, 알림 규칙 변경 등은 보류되니 복구된 뒤 다시 실행하세요.</span><a class="wf-banner-link" href="UI-15-audit-log.html">감사 이력 보기</a></p>
+      <p class="wf-banner"><strong class="wf-banner-kind">감사 기록 공백</strong><span class="wf-banner-text">감사 기록이 복구됐습니다. 2026-11-05 10:31:00 ~ 10:52:00 (UTC+09:00) 구간은 기록이 비어 있습니다.</span><a class="wf-banner-link" href="UI-15-audit-log.html">감사 이력 보기</a></p>
+      <p class="wf-banner"><strong class="wf-banner-kind">디스크 경고</strong><span class="wf-banner-text">중앙 로그 저장 공간이 경고 기준(<span class="wf-n">N</span>)을 넘었습니다. 공간이 부족해지면 보관 기간(6개월)이 되기 전이라도 오래된 로그부터 삭제됩니다.</span><a class="wf-banner-link" href="UI-13-storage-retention.html">저장 공간 보기</a></p>
+      <p class="wf-banner"><strong class="wf-banner-kind">조기 삭제 발생</strong><span class="wf-banner-text">공간이 부족해 2026-11-05 03:00:12 (UTC+09:00)에 보관 기간(6개월)이 되기 전 로그를 삭제했습니다. 지금 조회 가능 시작일은 2026-07-21(수신 시각 기준)입니다.</span><a class="wf-banner-link" href="UI-13-storage-retention.html">저장 공간 보기</a></p>
+    </div>
+  </div>
+  <table class="wf-table" style="margin-top: 16px">
+    <thead><tr><th>배너</th><th>보이는 동안</th><th>누르면</th><th>근거</th></tr></thead>
+    <tbody>
+      <tr><td>메일 연결 오류</td><td>메일 서버 연결이 실패하는 동안</td><td>UI-14 메일 상태</td><td><span class="wf-ref">Q12 6절</span></td></tr>
+      <tr><td>알림 평가 중단</td><td>알림 평가가 멈춘 동안</td><td>UI-06 알림 규칙 목록</td><td><span class="wf-ref">Q12 6절</span> UI-06 그릴 상태</td></tr>
+      <tr><td>메일 최종 실패</td><td>확인하지 않은 최종 실패가 있는 동안</td><td>UI-06 알림 규칙 목록(검토 항목)</td><td><span class="wf-ref">Q12 5·6절</span> <span class="wf-ref">Q12-09</span></td></tr>
+      <tr><td>감사 기록 장애</td><td>감사 기록을 저장하지 못하는 동안</td><td>UI-15 감사 이력</td><td><span class="wf-ref">Q10-14</span> <span class="wf-ref">TD-17</span></td></tr>
+      <tr><td>감사 기록 공백</td><td>복구 뒤(내리는 시점은 검토 항목)</td><td>UI-15 감사 이력</td><td><span class="wf-ref">Q10-14</span></td></tr>
+      <tr><td>디스크 경고</td><td>경고 기준을 넘은 동안</td><td>UI-13 저장 공간과 보존</td><td><span class="wf-ref">Q13-01</span></td></tr>
+      <tr><td>조기 삭제 발생</td><td>조기 삭제 뒤(내리는 시점은 검토 항목)</td><td>UI-13 저장 공간과 보존</td><td><span class="wf-ref">Q13-01</span> <span class="wf-ref">SD-33</span></td></tr>
+    </tbody>
+  </table>
+  <ul class="wf-notes">
+    <li>메일 최종 실패를 확인 처리하는 방식은 API 설계에서 정한다(4절 CM-01). 그래서 확인 버튼을 그리지 않았다.</li>
+    <li><span class="wf-review">WQ-02 설계로 넘김:</span> 메일 최종 실패 배너가 어느 화면으로 가는지 문서에 없다. 규칙마다 <span class="wf-term">마지막 전달 결과</span>를 보여 주는 UI-06으로 그렸다. <strong>기본안:</strong> <span class="wf-term">최종 실패 미확인</span> 필터를 건 UI-06으로 간다. 확인 처리는 사건 단위로 UI-09에서 하고 API는 설계에서 정한다(WQ-31·32·37·49와 한 묶음).</li>
+    <li><span class="wf-review">WQ-03 설계로 넘김:</span> 지나간 일을 알리는 배너(감사 기록 공백, 조기 삭제 발생)를 언제 내릴지 문서에 없다. <strong>기본안:</strong> 감사 기록 공백·조기 삭제 발생 배너는 <span class="wf-term">확인</span>을 누를 때까지 보이고 같은 일이 다시 생기면 다시 보인다. 기록은 UI-13·UI-15에 남는다.</li>
+    <li>감사 기록 장애 중 보류되는 작업은 <span class="wf-ref">Q10-14</span>의 일반 민감 변경과 <span class="wf-ref">TD-17</span>의 알림 규칙 변경이다. 긴급 키 폐기와 전체 세션 종료는 차단 상태를 확정할 수 있으면 진행한다(CM-07 상태 6).</li>
+    <li>디스크 경고 기준은 정하지 않았다(7절). 조회 가능 시작일은 보관·조기 삭제 기준인 수신 시각으로 쓴다(<span class="wf-ref">SD-33</span>).</li>
+    <li>시각은 배포 설정의 표시 시간대로 쓰고 시간대를 함께 적는다(1절, <span class="wf-ref">SD-07</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 배너 여러 개</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item is-current" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-banners" role="region" aria-label="전역 배너">
+      <p class="wf-banner"><strong class="wf-banner-kind">메일 연결 오류</strong><span class="wf-banner-text">메일 서버에 연결하지 못하고 있습니다. 알림 메일과 운영 메일이 늦어지거나 나가지 않을 수 있습니다. 마지막 성공 전송 2026-11-05 09:12:40 (UTC+09:00)</span><a class="wf-banner-link" href="UI-14-mail-status.html">메일 상태 보기</a></p>
+      <p class="wf-banner"><strong class="wf-banner-kind">감사 기록 장애</strong><span class="wf-banner-text">2026-11-05 10:31:00 (UTC+09:00)부터 감사 기록을 저장하지 못하고 있습니다. 로그인·검색·수집은 계속됩니다. 키 발급, 등록·설정 변경, 비밀번호 변경, 알림 규칙 변경 등은 보류되니 복구된 뒤 다시 실행하세요.</span><a class="wf-banner-link" href="UI-15-audit-log.html">감사 이력 보기</a></p>
+      <p class="wf-banner"><strong class="wf-banner-kind">디스크 경고</strong><span class="wf-banner-text">중앙 로그 저장 공간이 경고 기준(<span class="wf-n">N</span>)을 넘었습니다. 공간이 부족해지면 보관 기간(6개월)이 되기 전이라도 오래된 로그부터 삭제됩니다.</span><a class="wf-banner-link" href="UI-13-storage-retention.html">저장 공간 보기</a></p>
+    </div>
+    <div class="wf-screen-body">
+      <div class="wf-placeholder">화면 본문</div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>여러 배너는 모두 쌓아 보여 주고, 순서는 4절 CM-01에 적힌 순서를 따른다(와이어프레임 표기). 닫기 버튼은 그리지 않았다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 조치 필요 수를 알 수 없음</h2>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item is-current" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 미확인</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-screen-body">
+      <div class="wf-placeholder">화면 본문</div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>연결 상태를 집계하지 못하면 숫자를 0으로 쓰거나 비우지 않고 <span class="wf-term">미확인</span>으로 쓴다(1절, 운영 명세 4절).</li>
+  </ul>
+</section>
+
+</body>
+</html>

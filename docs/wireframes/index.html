@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LogDock 와이어프레임 목록</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <h1>LogDock 와이어프레임</h1>
+  <p>첫 출시 화면의 회색조 저충실도 와이어프레임이다. 기준은 <a href="../specs/screen-flows-v0.1.md">화면 흐름 명세</a>이며 화면 구현 승인이나 구현 코드가 아니다.</p>
+  <p class="wf-meta">그리는 규칙·순서·검토 기준: 화면 흐름 명세 8절 · 정하지 않은 수치: 7절의 <span class="wf-n">N</span></p>
+</header>
+
+<section class="wf-state">
+  <h2 class="wf-state-title">공통 요소</h2>
+  <p class="wf-state-desc">묶음 1(공통 틀)이 먼저 그린다. 다른 묶음은 이 파일의 마크업을 그대로 가져다 쓰고 바꾸지 않는다.</p>
+  <table class="wf-table">
+    <thead><tr><th>ID</th><th>요소</th><th>파일</th></tr></thead>
+    <tbody>
+      <tr><td>CM-01</td><td>상단 메뉴와 전역 배너</td><td><a href="CM-01-top-menu-banners.html">CM-01-top-menu-banners.html</a></td></tr>
+      <tr><td>CM-02</td><td>시간 범위 선택</td><td><a href="CM-02-time-range.html">CM-02-time-range.html</a></td></tr>
+      <tr><td>CM-03</td><td>조건 편집기</td><td><a href="CM-03-condition-editor.html">CM-03-condition-editor.html</a></td></tr>
+      <tr><td>CM-04</td><td>결과 상태 표시</td><td><a href="CM-04-result-status.html">CM-04-result-status.html</a></td></tr>
+      <tr><td>CM-05</td><td>수집 상태 표시</td><td><a href="CM-05-collection-status.html">CM-05-collection-status.html</a></td></tr>
+      <tr><td>CM-06</td><td>시각·품질 표시</td><td><a href="CM-06-time-quality.html">CM-06-time-quality.html</a></td></tr>
+      <tr><td>CM-07</td><td>민감 작업 확인</td><td><a href="CM-07-sensitive-confirm.html">CM-07-sensitive-confirm.html</a></td></tr>
+      <tr><td>CM-08</td><td>토스트 알림(2026-11-05 추가)</td><td><a href="CM-08-toast.html">CM-08-toast.html</a></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="wf-state">
+  <h2 class="wf-state-title">화면</h2>
+  <p class="wf-state-desc">파일 이름은 이 표로 고정한다. 화면끼리 이 이름으로 링크하므로 묶음마다 바꾸지 않는다. 아직 그리지 않은 화면의 링크는 열리지 않는다.</p>
+  <table class="wf-table">
+    <thead><tr><th>ID</th><th>화면</th><th>묶음</th><th>파일</th></tr></thead>
+    <tbody>
+      <tr><td>UI-01</td><td>로그인</td><td>1 공통 틀</td><td><a href="UI-01-login.html">UI-01-login.html</a></td></tr>
+      <tr><td>UI-02</td><td>로그 탐색(알림 조사 모드 포함)</td><td>2 검색·조사</td><td><a href="UI-02-log-search.html">UI-02-log-search.html</a></td></tr>
+      <tr><td>UI-03</td><td>이벤트 상세</td><td>2 검색·조사</td><td><a href="UI-03-event-detail.html">UI-03-event-detail.html</a></td></tr>
+      <tr><td>UI-04</td><td>주변 로그</td><td>2 검색·조사</td><td><a href="UI-04-nearby-logs.html">UI-04-nearby-logs.html</a></td></tr>
+      <tr><td>UI-05</td><td>저장 검색</td><td>3 저장 검색·알림</td><td><a href="UI-05-saved-searches.html">UI-05-saved-searches.html</a></td></tr>
+      <tr><td>UI-06</td><td>알림 규칙 목록</td><td>3 저장 검색·알림</td><td><a href="UI-06-alert-rules.html">UI-06-alert-rules.html</a></td></tr>
+      <tr><td>UI-07</td><td>알림 규칙 편집</td><td>3 저장 검색·알림</td><td><a href="UI-07-alert-rule-edit.html">UI-07-alert-rule-edit.html</a></td></tr>
+      <tr><td>UI-08</td><td>알림 규칙 상세</td><td>3 저장 검색·알림</td><td><a href="UI-08-alert-rule-detail.html">UI-08-alert-rule-detail.html</a></td></tr>
+      <tr><td>UI-09</td><td>사건 상세</td><td>3 저장 검색·알림</td><td><a href="UI-09-incident-detail.html">UI-09-incident-detail.html</a></td></tr>
+      <tr><td>UI-10</td><td>수집 연결 목록</td><td>4 수집 연결</td><td><a href="UI-10-connections.html">UI-10-connections.html</a></td></tr>
+      <tr><td>UI-11</td><td>수집 연결 등록</td><td>4 수집 연결</td><td><a href="UI-11-connection-register.html">UI-11-connection-register.html</a></td></tr>
+      <tr><td>UI-12</td><td>수집 연결 상세</td><td>4 수집 연결</td><td><a href="UI-12-connection-detail.html">UI-12-connection-detail.html</a></td></tr>
+      <tr><td>UI-13</td><td>저장 공간과 보존</td><td>5 시스템</td><td><a href="UI-13-storage-retention.html">UI-13-storage-retention.html</a></td></tr>
+      <tr><td>UI-14</td><td>메일 상태</td><td>3 저장 검색·알림</td><td><a href="UI-14-mail-status.html">UI-14-mail-status.html</a></td></tr>
+      <tr><td>UI-15</td><td>감사 이력</td><td>5 시스템</td><td><a href="UI-15-audit-log.html">UI-15-audit-log.html</a></td></tr>
+      <tr><td>UI-16</td><td>계정과 세션</td><td>1 공통 틀</td><td><a href="UI-16-account-session.html">UI-16-account-session.html</a></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="wf-state">
+  <h2 class="wf-state-title">파일 작성 방식</h2>
+  <ul class="wf-notes">
+    <li>모든 파일은 <span class="wf-mono">wireframe.css</span> 하나만 불러온다. 외부 스크립트·글꼴을 쓰지 않고 브라우저에서 바로 연다.</li>
+    <li>파일 제목과 <span class="wf-mono">&lt;h1&gt;</span>은 <span class="wf-term">UI-02 로그 탐색</span>처럼 ID와 이름으로 쓴다.</li>
+    <li>한 파일 안에 상태를 <span class="wf-term">상태 1.</span>부터 차례로 그리고, 상태마다 근거 ID를 주석(<span class="wf-mono">ul.wf-notes</span>)에 적는다.</li>
+    <li>화면 전체는 <span class="wf-mono">div.wf-screen</span> 안에 CM-01 상단 메뉴부터 그리고, 현재 메뉴에 <span class="wf-mono">is-current</span>를 붙인다.</li>
+    <li>예시 시각은 <span class="wf-mono">2026-11-05</span>, 표시 시간대는 <span class="wf-mono">UTC+09:00</span>으로 쓴다. 시간대는 배포 설정 하나를 쓰는 합성 예시다.</li>
+    <li>문서에 없어 정해야 할 점은 주석에 <span class="wf-review">검토 항목:</span>으로 적는다. 2026-11-05까지 나온 91건은 처리를 정해 <span class="wf-review">WQ-nn 설계로 넘김:</span>처럼 바꿨고 결과는 정리표(<span class="wf-mono">docs/planning/wireframe-review-items-v0.1.md</span>)에 있다.</li>
+  </ul>
+</section>
+
+</body>
+</html>

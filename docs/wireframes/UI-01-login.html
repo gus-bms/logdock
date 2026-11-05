@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI-01 로그인</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body class="wf">
+
+<header class="wf-doc">
+  <p class="wf-doc-nav"><a href="index.html">와이어프레임 목록</a></p>
+  <h1>UI-01 로그인</h1>
+  <p>공용 계정으로 로그인하고 원래 가려던 화면으로 돌아간다. 세션이 없거나 만료됐을 때, 알림 메일 링크를 열었을 때 이 화면이 열린다.</p>
+  <p class="wf-meta">근거: <span class="wf-ref">Q10-03</span> <span class="wf-ref">Q10-06</span> <span class="wf-ref">Q10-14</span> <span class="wf-ref">Q12 5절</span> · 기준: 화면 흐름 명세 5절 UI-01</p>
+  <nav class="wf-toc" aria-label="상태 목차">
+    <ol>
+      <li><a href="#s1">기본</a></li>
+      <li><a href="#s2">로그인 실패</a></li>
+      <li><a href="#s3">시도 제한으로 잠시 막힘</a></li>
+      <li><a href="#s4">세션 만료 안내</a></li>
+      <li><a href="#s5">알림 메일 링크로 들어옴</a></li>
+      <li><a href="#s6">감사 기록 장애 중 로그인</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section class="wf-state" id="s1">
+  <h2 class="wf-state-title">상태 1. 기본</h2>
+  <div class="wf-screen">
+    <div class="wf-topbar"><span class="wf-brand">LogDock</span></div>
+    <div style="display: flex; justify-content: center; padding: 64px 0 80px">
+      <div class="wf-frame wf-stack" style="width: 420px">
+        <h3 class="wf-page-title" style="margin-bottom: 0">로그인</h3>
+        <div class="wf-field"><span class="wf-label">계정 이름</span><span class="wf-input is-empty">계정 이름</span></div>
+        <div class="wf-field"><span class="wf-label">비밀번호</span><span class="wf-input is-empty">비밀번호</span></div>
+        <span class="wf-btn wf-btn--primary" style="justify-content: center">로그인</span>
+        <p class="wf-help">비밀번호를 잊었거나 계정이 잠겼으면 서버 운영자가 서버에서 직접 재설정합니다.</p>
+      </div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>로그인 전이라 상단 메뉴와 전역 배너를 두지 않는다. 제품 소개 문구도 두지 않는다(1절).</li>
+    <li>공용 계정 하나를 여러 사람이 동시에 쓴다. 회원 가입, 계정 선택, MFA는 그리지 않는다(1절, 3절).</li>
+    <li>이메일 비밀번호 자동 복구는 첫 출시 밖이다. 잊었거나 잠기면 서버 운영자가 로컬 절차로 재설정한다(<span class="wf-ref">Q10-03</span>, 3절).</li>
+    <li>성공하면 원래 가려던 화면으로 간다. 알림 메일 링크였으면 같은 사건의 알림 조사 모드(UI-02)로, 그 밖에는 로그 탐색(UI-02)으로 간다(5절 UI-01).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s2">
+  <h2 class="wf-state-title">상태 2. 로그인 실패</h2>
+  <div class="wf-frame wf-stack" style="width: 420px">
+    <h3 class="wf-page-title" style="margin-bottom: 0">로그인</h3>
+    <p class="wf-error">계정 이름이나 비밀번호가 맞지 않습니다.</p>
+    <div class="wf-field"><span class="wf-label">계정 이름</span><span class="wf-input">ops</span></div>
+    <div class="wf-field"><span class="wf-label">비밀번호</span><span class="wf-input is-empty is-focus">비밀번호</span></div>
+    <span class="wf-btn wf-btn--primary" style="justify-content: center">로그인</span>
+    <p class="wf-help">비밀번호를 잊었거나 계정이 잠겼으면 서버 운영자가 서버에서 직접 재설정합니다.</p>
+  </div>
+  <ul class="wf-notes">
+    <li>계정이 있는지, 어느 칸이 틀렸는지 드러내지 않는 문구 하나만 쓴다(5절 UI-01). 비밀번호 칸은 비우고 초점을 둔다(와이어프레임 표기).</li>
+    <li>그림의 계정 이름 <span class="wf-mono">ops</span>는 합성 예시다.</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s3">
+  <h2 class="wf-state-title">상태 3. 시도 제한으로 잠시 막힘</h2>
+  <div class="wf-frame wf-stack" style="width: 420px">
+    <h3 class="wf-page-title" style="margin-bottom: 0">로그인</h3>
+    <p class="wf-callout wf-callout--strong">로그인 시도가 많아 잠시 막혔습니다. <span class="wf-n">N</span>분 뒤에 다시 시도하세요.</p>
+    <div class="wf-field"><span class="wf-label">계정 이름</span><span class="wf-input">ops</span></div>
+    <div class="wf-field"><span class="wf-label">비밀번호</span><span class="wf-input is-empty">비밀번호</span></div>
+    <span class="wf-btn is-disabled" style="justify-content: center">로그인(잠시 막힘)</span>
+    <p class="wf-help">비밀번호를 잊었거나 계정이 잠겼으면 서버 운영자가 서버에서 직접 재설정합니다.</p>
+  </div>
+  <ul class="wf-notes">
+    <li>로그인 시도 제한 횟수와 대기 시간은 정하지 않았다(7절, <span class="wf-ref">Q10-03</span> 후속 설계).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s4">
+  <h2 class="wf-state-title">상태 4. 세션 만료 안내</h2>
+  <div class="wf-frame wf-stack" style="width: 420px">
+    <h3 class="wf-page-title" style="margin-bottom: 0">로그인</h3>
+    <p class="wf-callout">로그인 세션이 끝났습니다. 다시 로그인하면 보던 화면으로 돌아갑니다.</p>
+    <div class="wf-field"><span class="wf-label">계정 이름</span><span class="wf-input is-empty">계정 이름</span></div>
+    <div class="wf-field"><span class="wf-label">비밀번호</span><span class="wf-input is-empty">비밀번호</span></div>
+    <span class="wf-btn wf-btn--primary" style="justify-content: center">로그인</span>
+    <p class="wf-help">활동이 1시간 없거나 로그인한 지 24시간이 지나면 다시 로그인해야 합니다.</p>
+  </div>
+  <ul class="wf-notes">
+    <li>세션은 비활동 1시간 또는 로그인 후 최대 24시간에 끝난다(<span class="wf-ref">Q10-06</span>, 7절).</li>
+    <li>검색 조건은 URL에 넣지 않는다. 다시 로그인한 뒤 조건이 복원되는지는 이 화면에서 약속하지 않는다(1절, <span class="wf-ref">SD-35</span>).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s5">
+  <h2 class="wf-state-title">상태 5. 알림 메일 링크로 들어옴</h2>
+  <div class="wf-frame wf-stack" style="width: 420px">
+    <h3 class="wf-page-title" style="margin-bottom: 0">로그인</h3>
+    <p class="wf-callout">알림 사건을 보려면 로그인하세요. 로그인하면 같은 사건의 알림 조사 화면이 열립니다.</p>
+    <div class="wf-field"><span class="wf-label">계정 이름</span><span class="wf-input is-empty">계정 이름</span></div>
+    <div class="wf-field"><span class="wf-label">비밀번호</span><span class="wf-input is-empty">비밀번호</span></div>
+    <span class="wf-btn wf-btn--primary" style="justify-content: center">로그인</span>
+  </div>
+  <ul class="wf-notes">
+    <li>메일 링크로 들어오면 로그인 뒤 같은 사건으로 돌아가 알림 조사 모드(UI-02)를 연다(<span class="wf-ref">Q12 5절</span>, 6절 <span class="wf-term">알림 받고 조사</span>).</li>
+    <li>로그인 전에는 사건의 규칙 이름이나 건수를 보여 주지 않는다(와이어프레임 표기).</li>
+  </ul>
+</section>
+
+<section class="wf-state" id="s6">
+  <h2 class="wf-state-title">상태 6. 감사 기록 장애 중 로그인</h2>
+  <p class="wf-state-desc">로그인 화면은 상태 1과 같고, 로그인은 그대로 된다. 로그인한 뒤 열린 로그 탐색 화면에서 전역 배너로 장애를 알린다.</p>
+  <div class="wf-screen">
+    <nav class="wf-topbar" aria-label="상단 메뉴">
+      <span class="wf-brand">LogDock</span>
+      <ul class="wf-menu">
+        <li><a class="wf-menu-item is-current" href="UI-02-log-search.html">로그 탐색</a></li>
+        <li><a class="wf-menu-item" href="UI-05-saved-searches.html">저장 검색</a></li>
+        <li><a class="wf-menu-item" href="UI-06-alert-rules.html">알림</a></li>
+        <li><a class="wf-menu-item" href="UI-10-connections.html">수집 연결 <span class="wf-menu-count">조치 필요 3</span></a></li>
+        <li><span class="wf-menu-item">시스템 ▾</span></li>
+      </ul>
+      <ul class="wf-menu wf-menu-end">
+        <li><a class="wf-menu-item" href="UI-16-account-session.html">계정</a></li>
+      </ul>
+    </nav>
+    <div class="wf-banners" role="region" aria-label="전역 배너">
+      <p class="wf-banner"><strong class="wf-banner-kind">감사 기록 장애</strong><span class="wf-banner-text">2026-11-05 10:31:00 (UTC+09:00)부터 감사 기록을 저장하지 못하고 있습니다. 로그인·검색·수집은 계속됩니다. 키 발급, 등록·설정 변경, 비밀번호 변경, 알림 규칙 변경 등은 보류되니 복구된 뒤 다시 실행하세요.</span><a class="wf-banner-link" href="UI-15-audit-log.html">감사 이력 보기</a></p>
+    </div>
+    <div class="wf-screen-body">
+      <div class="wf-placeholder">로그 탐색(UI-02) 본문</div>
+    </div>
+  </div>
+  <ul class="wf-notes">
+    <li>감사 기록만 실패하고 인증과 세션이 정상이면 로그인은 계속된다(<span class="wf-ref">Q10-14</span>). 이 로그인 기록은 감사 이력에 공백으로 남을 수 있다.</li>
+    <li>로그인 전 화면에는 장애를 알리지 않는다. 로그인하지 않은 사람에게 내부 상태를 보이지 않기 위해서다(와이어프레임 표기). 로그인 뒤 CM-01 배너로 알린다.</li>
+  </ul>
+</section>
+
+</body>
+</html>
