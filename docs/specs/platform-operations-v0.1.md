@@ -343,6 +343,6 @@ DB migration·DDL·seed·동기화·복원 SQL 등 상태 변경이 필요하면
 
 ## 11 후속 기술 설계의 산출물
 
-설계 담당은 합의된 범위 안에서 논리 event schema·관리 객체 수명·ACK 상태표·error/capability·권한 평가·query/cursor·live/export 작업 계약을 작성한다. 상태 변경에는 재시도/중복 방지와 version 충돌 처리를 포함한다. 공개 API 제공 여부와 외부 client 호환 범위도 D17에서 선택한다.
+설계 담당은 합의된 범위 안에서 논리 event schema·관리 객체 수명·ACK 상태표·error/capability·권한 평가·query/cursor·live/export 작업 계약을 작성한다. 상태 변경에는 재시도/중복 방지와 version 충돌 처리를 포함한다. 외부 공개 API는 첫 출시에 두지 않기로 2026-11-05 합의했다([결정 기록](../decisions.md)). 조회·관리 API는 함께 배포하는 웹 화면 전용이며 외부 client용 토큰과 호환 보장을 두지 않는다. 계약 초안은 [API 계약 초안](api-contract-v0.1.md)에 있다.
 
 collector·저장/검색·metadata/queue·backend/auth·packaging별로 한 가지 채택안과 탈락 이유를 남긴다. Q04의 응답 전 후속 전송·미확인 버퍼 유지·프로그램 재시작 보존을 충족하되, 중앙 하드웨어 고장용 별도 복제·자동 장애조치·로그 백업 복구를 추가 요구로 넣지 않는다. 제품·버전·라이선스·보안·호환성은 선정 시 공식 자료로 다시 확인한다. 특정 엔진·프레임워크·수집기·인증 라이브러리는 아직 채택하지 않았다.
