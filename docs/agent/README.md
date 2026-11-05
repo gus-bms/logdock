@@ -20,7 +20,7 @@ Codex에서 처음 사용하거나 훅 정의가 바뀌면 프로젝트를 신�
 2026-11-05 기준이다. 단계가 바뀌면 이 절을 고친다.
 
 - **기획:** 사용자 협의는 Q15 수치(측정 뒤 제안)만 남았다. 기획 종료 기준은 설계와 측정이 남아 아직 충족하지 않았다([잔여 기획 6절](../planning/remaining-plan-v0.1.md#6-기획-종료-기준)).
-- **기술:** D17에서 Go 에이전트, Go 수신 서버, ClickHouse, PostgreSQL, 중앙 서버 디스크 저장으로 정했다. 버전은 Go 1.27, ClickHouse 26.8 LTS, PostgreSQL 18로 고정했고 같은 날 이 PC에 Go와 개발용 PostgreSQL을 설치했고 사용자가 개발용 DB에 DDL 초안을 적용했다(2026-11-05, [개발 환경](refs/dev-environment.md)). 중앙 서버 메모리는 16GB이고 측정은 그 서버에서 한다([D17 기획안](../planning/d17-tech-selection-v0.1.md)).
+- **기술:** D17에서 Go 에이전트, Go 수신 서버, ClickHouse, PostgreSQL, 중앙 서버 디스크 저장으로 정했고, 조회·관리 API는 NestJS를 유지한다(2026-11-05 합의). 버전은 Go 1.27, ClickHouse 26.8 LTS, PostgreSQL 18로 고정했고 같은 날 이 PC에 Go와 개발용 PostgreSQL을 설치했고 사용자가 개발용 DB에 DDL 초안을 적용했다(2026-11-05, [개발 환경](refs/dev-environment.md)). 중앙 서버 메모리는 16GB이고 측정은 그 서버에서 한다([D17 기획안](../planning/d17-tech-selection-v0.1.md)).
 - **화면:** [화면 흐름 명세](../specs/screen-flows-v0.1.md)를 따라 첫 출시 [와이어프레임](../wireframes/index.html)(화면 16개, 공통 요소 8개)을 그렸고, 그리며 남긴 검토 항목 91건의 처리를 [정리표](../planning/wireframe-review-items-v0.1.md)로 정했다. 2026-11-05 API 계약 초안(api-contract-draft)이 `API` 46건을, [디자인 시스템 초안](../design/design-system-v0.1.md)(design-system)이 `화면` 31건을 확정했다(WQ-83은 사용자 합의). 디자인 시스템은 기준값·부품·API 응답 문구와 대표 시안 2개(로그 탐색, 수집 연결 상세)까지 마쳤고, 글꼴 파일 제공·실제 화면 접근성 확인은 화면 구현 때 한다. 화면 구현은 기획 완료와 와이어프레임 뒤에 한다.
 - **코드:** NestJS의 health API와 React 연결 확인 화면만 있다. 로그 수집·저장·검색, 수집 연결 등록, 인증, 에이전트, 알림은 구현하지 않았다. 기존 scaffold는 최종 설계 승인이 아니다.
 - **사용자 준비:** 메모리 16GB 중앙 서버, 첫 대상 서버의 웹·워커 컨테이너 journald 전환. 사용량이 더 많은 서비스의 하루 로그량은 중앙 디스크와 에이전트 대기 크기를 정할 때 쓴다.
