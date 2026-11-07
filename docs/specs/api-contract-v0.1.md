@@ -1,6 +1,6 @@
 # LogDock API·저장 구조·전송 규약 계약 초안 v0.1
 
-작성일: 2026-11-05. **상태: 2~5절과 8절 첫 초안을 모두 썼다. 7절에서 검증 시나리오 77건과 대조해 빈 곳 18군데를, 9절 누락 조사에서 빠진 계약 34건과 어긋남 6건을 고쳤다. 누락 조사에서 올린 공개 API 제공 여부는 2026-11-05 두지 않기로 합의했다. 3.4절에 PostgreSQL DDL 초안을 썼고, 2026-11-05 사용자가 개발용 PostgreSQL 18.6에 한 트랜잭션으로 적용해 테이블과 도메인이 만들어지는 것을 확인했다. 버전은 2026-11-05 ClickHouse 26.8 LTS, PostgreSQL 18, Go 1.27로 고정했고, 버전에 따라 달라지는 기능(ClickHouse `JSON` 타입·text 색인·경량 삭제, PostgreSQL 생성 열·`IS NFC NORMALIZED` 등)을 그 버전의 공식 문서로 확인했다. 같은 날 사용자 요청으로 계약 전체를 검토해 12곳을 고쳤다(10절). 남은 것은 수치 `N`, 측정, DDL 제약의 동작 시험이다.** 이 문서는 설계 초안이며 사용자 합의가 아니다. 합의는 [결정 기록](../decisions.md)이 기준이고, 이 문서는 그 합의를 지키는 구현 계약을 제안한다. 구현·실행 검증은 하지 않았다.
+작성일: 2026-11-05. **상태: 2~5절과 8절 첫 초안을 모두 썼다. 7절에서 검증 시나리오 77건과 대조해 빈 곳 18군데를, 9절 누락 조사에서 빠진 계약 34건과 어긋남 6건을 고쳤다. 누락 조사에서 올린 공개 API 제공 여부는 2026-11-05 두지 않기로 합의했다. 3.4절에 PostgreSQL DDL 초안을 썼고, 2026-11-05 사용자가 개발용 PostgreSQL 18.6에 한 트랜잭션으로 적용해 테이블과 도메인이 만들어지는 것을 확인했다. 버전은 2026-11-05 ClickHouse 26.8 LTS, PostgreSQL 18, Go 1.27로 고정했고, 버전에 따라 달라지는 기능(ClickHouse `JSON` 타입·text 색인·경량 삭제, PostgreSQL 생성 열·`IS NFC NORMALIZED` 등)을 그 버전의 공식 문서로 확인했다. 같은 날 사용자 요청으로 계약 전체를 검토해 12곳을 고쳤다(10절). 남은 것은 수치 `N`과 측정이다. DDL은 2026-11-06 마이그레이션 파일로 옮기고 제약 동작을 임시 PostgreSQL에서 시험했다(3.6절).** 이 문서는 설계 초안이며 사용자 합의가 아니다. 합의는 [결정 기록](../decisions.md)이 기준이고, 이 문서는 그 합의를 지키는 구현 계약을 제안한다. 구현·실행 검증은 하지 않았다.
 
 입력은 [D17 기술 선정안](../planning/d17-tech-selection-v0.1.md) 5·6절, [수집 명세](collection-agent-v0.1.md) 04~09절, [관리·운영 상세](platform-operations-v0.1.md) 3·4절, [Q05·Q07·Q10 기획안](../planning/q05-q07-q10-plan-v0.1.md), [화면 흐름 명세](screen-flows-v0.1.md), [와이어프레임 검토 항목 정리표](../planning/wireframe-review-items-v0.1.md)다.
 
@@ -81,12 +81,13 @@
 | `rejected` | 크기 상한을 넘어 거부한 이벤트(D03). 사유·적용 상한·관측 시각을 담는다 | 없음 |
 | `boundary` | 읽기 경계. 최초 연결의 시작 위치(D02), 회전 뒤 새 파일, 새로 발견한 파일, 복구 근거가 없어 건너뛴 구간(Q06), 읽기 전에 원본이 사라진 구간 | 없음. 경계 종류와 알 수 있는 범위만 담는다 |
 
-- 경계 종류는 `initial_tail`(최초 연결, 끝에서 시작), `new_file_head`(새로 생긴 파일을 처음부터), `new_file_tail`(생성 시점을 모르는 파일을 끝부터), `rotated`(회전 뒤 다음 파일), `truncated`(같은 파일이 잘림·copytruncate), `identity_reused`(inode 재사용 의심), `gone_before_read`(읽기 전에 사라짐), `resume_after_hold`(Q06 다시 수집)다. 건너뛴 바이트·시각 범위를 알면 담고 모르면 미확인으로 둔다(D02, AT-05).
+- 경계 종류는 `initial_tail`(최초 연결, 끝에서 시작), `new_file_head`(새로 생긴 파일을 처음부터), `new_file_tail`(생성 시점을 모르는 파일을 끝부터), `rotated`(회전 뒤 다음 파일), `truncated`(같은 파일이 잘림·copytruncate), `identity_reused`(inode 재사용 의심), `gone_before_read`(읽기 전에 사라짐), `resume_after_hold`(Q06 다시 수집)다. 건너뛴 바이트·시각 범위를 알면 담고 모르면 미확인으로 둔다(D02, AT-05). journald는 `initial_tail`(최초 연결 때 journal의 마지막 항목 뒤부터)과 `source_dropped`(journald가 속도 제한으로 버림)를 쓴다. `source_dropped`는 버린 unit(`unit`)과 수(`dropped_entries`)를 담고, 컨테이너 대상이면 그 수가 Docker 데몬 unit 전체의 수라 `skipped_unknown: true`도 단다(2026-11-06 에이전트 시제품 7단계 설계).
 - `rotated` 경계는 앞 파일의 `file_id`와 순서 확인 여부(`order_confirmed`)를 담는다. 같은 경로의 이름 바꾸기를 관측하는 등 앞뒤 파일의 순서를 에이전트가 확인했을 때만 `true`이고, 주변 로그는 `true`일 때만 경계 너머를 이어 붙인다(Q09-02, UI-04).
+- 파일명 규칙(`file_pattern`) 연결은 파일마다 따로 읽고 파일 사이의 순서는 없다. 이름이 아니라 장치·inode로 파일을 구분해, 규칙 안에서 이름이 바뀐 파일은 같은 `file_id`로 이어 읽고 `rotated`를 내지 않는다. 처음 보는 파일의 시작은 D02대로 가른다. 최초 연결 때 있던 파일은 `initial_tail`, 연결 뒤 폴더 목록에 새로 나타난 파일은 `new_file_head`다. 같은 규칙으로 다시 시작하면 저장한 상태에 없는 파일은 마지막으로 폴더를 본 뒤에 생긴 것이므로 `new_file_head`로 처음부터 읽는다. 정상 재시작에 끝 위치 규칙을 다시 쓰지 않는다는 D02 원칙에 맞추기 위해서다. 규칙을 바꿨거나 한도·열기 오류로 따라가지 못한 파일이 있었으면 그런 파일은 언제 생겼는지 모르므로 `new_file_tail`이다(2026-11-06 에이전트 시제품 6단계 설계).
 - `seq`는 빈틈 없이 1씩 는다. 에이전트는 이벤트를 대기 파일에 쓸 때 순번을 붙이고 같은 기록에 읽기 위치를 남긴다(D17 5절, AG-12).
 - `config_version`은 이 묶음의 기록을 읽고 조립할 때 쓴 설정 버전이다. 설정이 바뀌면 에이전트는 버전 경계에서 묶음을 나눈다. 수신 서버는 그 버전의 추출 규칙·로그 시간대로 해석해, 대기 중이던 로그도 원래 설정대로 해석한다(Q08-07, AT-09).
 - 같은 순번을 다시 보낼 때 내용은 처음과 같아야 한다. 관측 시각도 대기에 함께 기록해 바뀌지 않는다(SD-01).
-- `stream`은 이벤트가 나온 흐름이다. 파일은 `file_id`(장치·inode로 에이전트가 만든 값. 경로가 같아도 회전으로 바뀐 파일은 다른 값), 표시용 `path`, 바이트 `offset`·`length`를 담는다. journald는 커서와 `_SOURCE_REALTIME_TIMESTAMP`·`__REALTIME_TIMESTAMP`·`PRIORITY`, 등록한 대상 범위의 식별 필드를 담는다(SD-02, SD-10).
+- `stream`은 이벤트가 나온 흐름이다. 파일은 `file_id`(장치·inode로 에이전트가 만든 값. 경로가 같아도 회전으로 바뀐 파일은 다른 값), 표시용 `path`, 바이트 `offset`·`length`를 담는다. journald는 기록 첫 항목의 `cursor`, `realtime_us`(`__REALTIME_TIMESTAMP`), 있으면 `source_realtime_us`(`_SOURCE_REALTIME_TIMESTAMP`)·`priority`(`PRIORITY`), 컨테이너 대상이면 `container_id`(`CONTAINER_ID_FULL`, 같은 이름으로 다시 만든 컨테이너를 가른다)를 담는다(SD-02, SD-10). 커서는 조사용 표시이고 위치 확인에 쓰지 않는다. systemd 문서상 같은 항목도 커서 문자열이 다를 수 있어서다(2026-11-06 설계).
 - 본문은 UTF-8 문자열이다. 잘못된 UTF-8이 있으면 원래 바이트를 `body_base64`로 보내고 `flags`에 `encoding_error`를 단다. 중앙의 표시·검색 방식은 남은 설계다(Q02-04).
 - 묶음 하나의 상한은 압축 전 `N`바이트·기록 `N`개다. 이벤트 하나의 상한은 에이전트의 D03 상한과 같은 값을 쓴다.
 - `rejected`와 `boundary`도 순번 자리를 차지하므로 주변 로그에서 거부·경계가 흐름 안 정확한 자리에 보일 수 있다(UI-04 상태 5, 정리표 WQ-25 참고).
@@ -167,7 +168,7 @@
 | `queue` | 대기 기록 수·바이트, 가장 오래된 관측 시각, 한도 | UI-12 대기량. 보고가 없으면 미확인 |
 | `send` | 전송 상태와 사유, 에이전트가 아는 마지막 `acked_through`와 응답 시각 | UI-12 |
 | `rejected` | 크기 초과 건수, 집계 시작 시각, 적용 상한 | UI-12, D03 |
-| `loss` | 누락 의심 구간과 사유. 사유는 2.3절 경계 종류 가운데 누락이 생길 수 있는 `truncated`·`identity_reused`·`gone_before_read`·`new_file_tail`·`resume_after_hold`를 쓴다. 구간은 파일 위치(`offset`)와 잃은 바이트 수(`skipped_bytes`, 모르면 `skipped_unknown: true`), 에이전트가 알아챈 시각(`observed_at`)으로 보낸다. 읽지 못한 내용의 발생 시각은 에이전트가 알 수 없기 때문이다(2026-11-05 에이전트 시제품 5단계에서 정함) | UI-04, UI-12 |
+| `loss` | 누락 의심 구간과 사유. 사유는 2.3절 경계 종류 가운데 누락이 생길 수 있는 `truncated`·`identity_reused`·`gone_before_read`·`new_file_tail`·`resume_after_hold`를 쓴다. 구간은 파일 위치(`offset`)와 잃은 바이트 수(`skipped_bytes`, 모르면 `skipped_unknown: true`), 에이전트가 알아챈 시각(`observed_at`)으로 보낸다. 읽지 못한 내용의 발생 시각은 에이전트가 알 수 없기 때문이다(2026-11-05 에이전트 시제품 5단계에서 정함). journald는 파일 위치 대신 `source_dropped`와 `unit`·`dropped_entries`를 보낸다(2026-11-06) | UI-04, UI-12 |
 | `resources` | CPU·메모리·디스크·열린 파일 | UI-12 진단 |
 | `diag_write_error` | 진단 저장 실패 여부 | Q14, OB-04 |
 
@@ -222,8 +223,8 @@ max_event_bytes = N              # 정하지 않음(D03)
 | 항목 | 규칙 | 근거 |
 | --- | --- | --- |
 | `file` | 로그 서버 기준 절대 경로의 파일 하나 | Q02·Q16 인계서 3절 |
-| `file_pattern` | 폴더는 고정 경로이고 파일 이름 부분에만 `*`·`?`를 쓴다. 하위 폴더를 찾지 않으며(`**` 불가) 하위 폴더는 따로 등록한다 | Q02-06 |
-| `journald` | 대상 종류 하나와 이름을 받는다. 종류는 `container`(컨테이너 이름)와 `unit`(systemd 서비스 단위 이름)이다. 이름이 비었거나 호스트 전체를 뜻하는 입력은 받지 않는다. 컨테이너를 다시 만들어도 이름이 같으면 같은 대상이다. 실제 journal 필드 대응은 구현 때 공식 문서로 확인한다 | 수집 명세 journald 입력, 2026-11-03 컨테이너 로그 합의 |
+| `file_pattern` | 폴더는 고정 경로이고 파일 이름 부분에만 `*`·`?`를 쓴다. 하위 폴더를 찾지 않으며(`**` 불가) 하위 폴더는 따로 등록한다. 설계(2026-11-06): `[`·`]`·`\`는 받지 않고, 경로는 `..`·`//`·끝 `/`가 없는 절대 경로다. 이름에 `*`·`?`가 없으면 `file`로 등록하게 한다. 폴더 안의 심볼릭 링크는 따라가지 않는다. 링크는 폴더 밖 파일을 가리키거나 같은 파일을 두 번 읽게 할 수 있기 때문이며, 링크만 있는 폴더는 링크가 가리키는 실제 폴더를 등록해야 한다. 이름이 맞으면 숨김 파일도 읽는다. 수집 대상 폴더가 에이전트 상태 폴더이거나 그 아래면 받지 않는다(자체 재수집 방지) | Q02-06 |
+| `journald` | 대상 종류 하나와 이름을 받는다. 종류는 `container`(컨테이너 이름)와 `unit`(systemd 서비스 단위 이름)이다. 이름이 비었거나 호스트 전체를 뜻하는 입력은 받지 않는다. 컨테이너를 다시 만들어도 이름이 같으면 같은 대상이다. 설계(2026-11-06): 설정 파일은 `[target]`의 `kind`·`name`이다. 컨테이너 이름은 영문자·숫자로 시작하고 영문자·숫자·`_`·`.`·`-`만, unit 이름은 영문자·숫자와 `:`·`-`·`_`·`.`·`\`·`@`만 받는다(와일드카드 불가). unit 이름에 `.service` 같은 종류 접미사가 없으면 `.service`를 붙인다. journal 조건은 `CONTAINER_NAME`(Docker journald 드라이버가 컨테이너를 시작할 때의 이름. `docker rename`은 반영되지 않는다)과 `_SYSTEMD_UNIT`이다 | 수집 명세 journald 입력, 2026-11-03 컨테이너 로그 합의 |
 | 새 이벤트 시작 규칙 | `multiline`에만 쓰는 정규식. 한 줄의 시작에 맞춘다 | Q02-03, D02 |
 | 로그 시간대 | IANA 시간대 이름(`Asia/Seoul`). 비우면 에이전트 서버 시간대로 해석하고 `시간대 추정`을 단다 | Q08-06 |
 | 추출 규칙 | 내장 형식이 맞지 않을 때만 넣는 선택 입력. 이름 붙은 묶음 `time`·`level`과 필드용 이름 묶음을 쓰고, `time`에는 시각 형식 문자열을 함께 넣는다. 규칙을 바꾸면 새 설정 버전부터 적용하고 지난 로그는 다시 해석하지 않는다 | Q08-07, SD-25, Q02-05 |
@@ -237,9 +238,10 @@ max_event_bytes = N              # 정하지 않음(D03)
 - 수치: 묶음·기록 상한, 전송 창, 상태 보고 주기, 재시도 예산, 이벤트 크기 상한(측정 M1~M8, Q15).
 - 압축: gzip으로 시작하고 CPU 비용을 측정한다. 다른 방식은 측정 결과로 다시 본다.
 - HTTP/1.1 keep-alive와 HTTP/2 중 무엇을 쓸지, 에이전트당 동시 연결 수.
-- 잘못된 UTF-8의 중앙 표시·검색, journald 커서와 대상 필드의 정확한 목록, journald의 Q06 다시 수집 절차(수집 명세 journald 입력).
+- 잘못된 UTF-8의 중앙 표시·검색, journald의 Q06 다시 수집 절차(수집 명세 journald 입력). journald 커서와 대상 필드는 2.3·2.8절에 설계로 적었다(2026-11-06).
+- journald 시제품이 쓰는 값을 계약에 더할지: 마지막 조각을 받지 못하고 낸 이벤트의 `incomplete` 표시, journal 파일이 없을 때의 `path_missing` 재사용(전용 사유를 둘지), 컨테이너별 기록 번호(`CONTAINER_LOG_ORDINAL`, 처음 들어간 Docker 판 확인 전)로 이 컨테이너의 버려진 수를 셀지.
 - 지원할 이전 규약 버전의 범위와 대기 형식 버전의 호환 규칙(Q16-08).
-- 상태 보고 사유에 원본을 읽다 난 그 밖의 입출력 오류(`read_error`, `read.state`)와 대기를 읽을 수 없는 손상(`queue_corrupt`, `send.state`)을 더할지. 에이전트 시제품은 이 값으로 각각 `held`를 보고한다.
+- 상태 보고 사유에 원본을 읽다 난 그 밖의 입출력 오류(`read_error`, `read.state`)와 대기를 읽을 수 없는 손상(`queue_corrupt`, `send.state`)을 더할지. 에이전트 시제품은 이 값으로 각각 `held`를 보고한다. 파일명 규칙에 맞는 파일이 따라가는 파일 수나 동시에 여는 파일 수의 한도를 넘어 못 읽는 파일이 있다는 사유(`file_limit`)도 같다. 시제품은 이때 `read.state = paused`로 보고한다.
 - 응답 전에 여러 묶음을 보내는 전송 창(2.5절)의 크기. 에이전트 시제품은 측정 전까지 연결마다 한 묶음씩 보낸다.
 - 검증 시나리오와의 문서 대조는 7절, 누락 조사는 9절에 있다. 실행 검증은 하지 않았다.
 
@@ -342,7 +344,7 @@ SETTINGS ttl_only_drop_parts = 1;
 
 ### 3.4 PostgreSQL 관리 테이블
 
-아래 표는 개요이고 열의 정확한 목록과 제약은 이 절 끝의 DDL 초안이 기준이다. 모든 수정 대상 행에는 `version` 열을 두어 동시 수정을 감지한다(TD-06, Q11 덮어쓰기 경고, UI-11 동시 수정 충돌).
+아래 표는 개요이고 열의 정확한 목록과 제약은 [마이그레이션 파일](../../db/postgres/migrations/0001_initial.sql)이 기준이다(이 절 끝 `DDL 초안`). 모든 수정 대상 행에는 `version` 열을 두어 동시 수정을 감지한다(TD-06, Q11 덮어쓰기 경고, UI-11 동시 수정 충돌).
 
 | 묶음 | 테이블 | 주요 열 | 근거 |
 | --- | --- | --- | --- |
@@ -368,8 +370,8 @@ SETTINGS ttl_only_drop_parts = 1;
 | | `ops_mail_batches` | id, created_at. 한 통으로 묶어 보낸 운영 메일 | Q12-06 묶어서 1통 |
 | | `ops_episodes` | id, kind(연결 관측 불가·알림 평가 실패·디스크 경고), connection_id(연결일 때), started_at, ops_batch_id(이 일을 실어 보낸 운영 메일 묶음), ended_at | Q12-06 연결별 지속 중 1회, TD-21 |
 | 계정·감사 | `accounts` | id, name, password_hash, password_changed_at | Q10-03 |
-| | `sessions` | 세션 ID 해시, account_id, created_at, last_active_at, reauth_at(최근 비밀번호 재확인), revoked_at, revoke_reason | Q10-05·06 |
-| | `login_throttle` | 시도 키 해시, failures, blocked_until. 감사와 따로 짧게 보관 | Q10-03, Q10-12 |
+| | `sessions` | 세션 ID 해시, account_id, created_at, last_active_at, reauth_at(최근 비밀번호 재확인), revoked_at, revoke_reason, csrf_token(세션별 CSRF 토큰, 마이그레이션 0002) | Q10-05·06, T04 |
+| | `login_throttle` | 시도 키 해시, failures, blocked_until, 계정 이름 열쇠의 연속 실패 수·잠긴 시각(0003). 감사와 따로 짧게 보관 | Q10-03, Q10-12 |
 | | `audit_log` | id, logged_at, actor_type(공용 계정·서버 운영자 로컬·시스템), account_id, action, target_type, target_ref, result, stage, changed_fields, reason_code, event_count, time_trusted | Q10-12~14, TD-17 |
 | | `audit_gaps` | 공백 시작·끝 | Q10-14 |
 | | `audit_cleanups` | cleaned_at, removed_from, removed_to, removed_rows, early(90일 전 정리 여부) | Q10-13, UI-15 조기 정리 구간 |
@@ -379,512 +381,11 @@ SETTINGS ttl_only_drop_parts = 1;
 | | `idempotency_keys` | account_id, idem_key, 요청 종류, 요청 해시, 결과 요약(대상 ID·상태 코드. 비밀 값 없음), created_at. `N`시간 보관 | 4.1절 중복 요청 방지 |
 
 - **지우지 않는 행:** `connections`·`ingest_progress`·`deletion_blocks`는 연결을 보관해도 지우지 않는다. 연결 등록의 완전 삭제는 후속이고(Q07-07), 순번 판정 근거와 삭제 차단 구간을 잃으면 늦게 온 재전송이 다시 저장되기 때문이다. 판정 근거를 잃은 드문 경우만 Q13-04를 따른다(T08).
-- **보관 기간:** `alert_incidents`·`alert_evaluations`·`mail_jobs`·`ops_episodes`는 로그 보관 기간과 같이 두고 전용 저장 상한 안에서 관리한다(Q12-14, TD-19). `audit_log`는 90일이 목표이고 감사 저장 상한이 우선이라 일찍 정리하면 `audit_cleanups`에 남긴다(Q10-13). `status_history`는 `N`일(Q14), `login_throttle`과 끝난 `sessions`는 `N`시간 뒤 지운다. `early_deletions`는 최근 보관 기간 안을 보이므로 보관 기간만큼 둔다(WQ-72).
+- **보관 기간:** `alert_incidents`·`alert_evaluations`·`mail_jobs`·`ops_episodes`는 로그 보관 기간과 같이 두고 전용 저장 상한 안에서 관리한다(Q12-14, TD-19). `audit_log`는 90일이 목표이고 감사 저장 상한이 우선이라 일찍 정리하면 `audit_cleanups`에 남긴다(Q10-13). `status_history`는 `N`일(Q14), `login_throttle`과 끝난 `sessions`는 `N`시간 뒤 지운다. 연속 실패로 잠긴 `login_throttle` 행은 로컬 재설정 전까지 지우지 않는다(4.3절). `early_deletions`는 최근 보관 기간 안을 보이므로 보관 기간만큼 둔다(WQ-72).
 
 #### DDL 초안
 
-PostgreSQL 관리 DB의 DDL 초안이다. DB에 적용하는 일은 사용자가 한다(AGENTS.md DB 안전 규칙). **2026-11-05 사용자가 개발용 로컬 PostgreSQL 18.6에 아래 SQL 블록을 이어 붙여 한 트랜잭션으로 적용했고, 테이블·도메인 개수 확인까지 마쳤다고 알렸다.** 에이전트는 DB에 접속하지 않았다. 제약이 실제로 막는지(부분 유일 색인, CHECK)는 시험하지 않았다. 구현 때 마이그레이션 파일로 옮긴다(2026-11-05 [결정 기록](../decisions.md)). 정하지 않은 상한 `N`은 SQL에 넣지 않고 앱이 검사한다. 테이블 31개, 도메인 2개다.
-
-```sql
--- 초안. 2026-11-05 개발용 PostgreSQL 18.6에 적용 확인(사용자 실행).
--- 1. 공통과 계정
-CREATE SCHEMA logdock;
-SET search_path = logdock;
-
--- 이름 규칙(5.3절): 앞뒤 공백·빈 값·제어 문자 불가, NFC로 저장. 길이 상한은 앱이 검사한다
-CREATE DOMAIN name_text AS text
-    CHECK (VALUE = btrim(VALUE) AND VALUE <> '' AND VALUE !~ '[[:cntrl:]]'
-           AND VALUE IS NFC NORMALIZED);
-
--- 메일 주소: 형식은 앱이 검사하고 DB는 공백·제어 문자와 @ 개수만 막는다
-CREATE DOMAIN mail_address AS text
-    CHECK (VALUE ~ '^[^@[:space:][:cntrl:]]+@[^@[:space:][:cntrl:]]+$');
-
-CREATE TABLE accounts (
-    id                  integer     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name                name_text   NOT NULL,
-    password_hash       text        NOT NULL,
-    password_changed_at timestamptz NOT NULL DEFAULT now(),
-    created_at          timestamptz NOT NULL DEFAULT now(),
-    version             integer     NOT NULL DEFAULT 1
-);
-CREATE UNIQUE INDEX accounts_name_uq ON accounts (lower(name));
-
-CREATE TABLE sessions (
-    id_hash        bytea       PRIMARY KEY,
-    account_id     integer     NOT NULL REFERENCES accounts (id),
-    created_at     timestamptz NOT NULL DEFAULT now(),
-    last_active_at timestamptz NOT NULL DEFAULT now(),
-    reauth_at      timestamptz,
-    revoked_at     timestamptz,
-    revoke_reason  text,
-    CONSTRAINT sessions_revoke CHECK (
-        (revoked_at IS NULL) = (revoke_reason IS NULL)
-        AND (revoke_reason IS NULL OR revoke_reason IN
-             ('logout', 'terminate_all', 'password_change', 'password_reset_local')))
-);
-CREATE INDEX sessions_active_idx ON sessions (account_id) WHERE revoked_at IS NULL;
-
-CREATE TABLE login_throttle (
-    key_hash          bytea       PRIMARY KEY,
-    failures          integer     NOT NULL DEFAULT 0,
-    window_started_at timestamptz NOT NULL DEFAULT now(),
-    blocked_until     timestamptz,
-    updated_at        timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT login_throttle_failures CHECK (failures >= 0)
-);
-```
-
-```sql
--- 2. 수집
-CREATE TABLE services (
-    id          integer     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name        name_text   NOT NULL,
-    state       text        NOT NULL DEFAULT 'active',
-    archived_at timestamptz,
-    created_at  timestamptz NOT NULL DEFAULT now(),
-    updated_at  timestamptz NOT NULL DEFAULT now(),
-    version     integer     NOT NULL DEFAULT 1,
-    CONSTRAINT services_state CHECK (state IN ('active', 'archived')),
-    CONSTRAINT services_archived_at CHECK ((state = 'archived') = (archived_at IS NOT NULL))
-);
-CREATE UNIQUE INDEX services_name_uq ON services (lower(name));
-
-CREATE TABLE servers (
-    id           integer     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    display_name name_text   NOT NULL,
-    created_at   timestamptz NOT NULL DEFAULT now(),
-    updated_at   timestamptz NOT NULL DEFAULT now(),
-    version      integer     NOT NULL DEFAULT 1
-);
-CREATE UNIQUE INDEX servers_display_name_uq ON servers (lower(display_name));
-
-CREATE TABLE connections (
-    id                    integer     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    service_id            integer     NOT NULL REFERENCES services (id),
-    server_id             integer     REFERENCES servers (id),
-    environment           name_text,
-    target_type           text        NOT NULL,
-    target_path           text,
-    journald_kind         text,
-    journald_name         text,
-    target_identity       text        GENERATED ALWAYS AS (
-                              CASE WHEN target_type = 'journald'
-                                   THEN 'journald:' || journald_kind || ':' || journald_name
-                                   ELSE 'path:' || target_path
-                              END) STORED,
-    format_type           text        NOT NULL,
-    event_start_pattern   text,
-    log_timezone          text,
-    extraction_rule       jsonb,
-    max_event_bytes       integer     NOT NULL,
-    config_version        integer     NOT NULL DEFAULT 1,
-    management_state      text        NOT NULL DEFAULT 'pending',
-    agent_instance_id     text,
-    duplicate_of          integer     REFERENCES connections (id),
-    archived_at           timestamptz,
-    archived_with_service boolean     NOT NULL DEFAULT false,
-    created_at            timestamptz NOT NULL DEFAULT now(),
-    config_issued_at      timestamptz,
-    agent_applied_at      timestamptz,
-    first_read_at         timestamptz,
-    first_received_at     timestamptz,
-    first_searchable_at   timestamptz,
-    updated_at            timestamptz NOT NULL DEFAULT now(),
-    version               integer     NOT NULL DEFAULT 1,
-    -- 수집 대상(2.8절): 절대 경로, 파일명 규칙은 이름 부분에만 * ?, journald는 종류와 이름
-    CONSTRAINT connections_target CHECK (
-        (target_type = 'file'
-            AND target_path IS NOT NULL AND target_path LIKE '/%' AND target_path !~ '[*?]'
-            AND journald_kind IS NULL AND journald_name IS NULL)
-     OR (target_type = 'file_pattern'
-            AND target_path IS NOT NULL AND target_path LIKE '/%' AND target_path ~ '[*?]'
-            AND target_path !~ '[*?].*/'
-            AND journald_kind IS NULL AND journald_name IS NULL)
-     OR (target_type = 'journald'
-            AND target_path IS NULL
-            AND journald_kind IS NOT NULL AND journald_kind IN ('container', 'unit')
-            AND journald_name IS NOT NULL AND journald_name <> ''
-            AND journald_name !~ '[[:cntrl:]]')),
-    CONSTRAINT connections_format CHECK (format_type IN ('text', 'json', 'multiline')),
-    CONSTRAINT connections_event_start CHECK ((format_type = 'multiline') = (event_start_pattern IS NOT NULL)),
-    CONSTRAINT connections_extraction_rule CHECK (extraction_rule IS NULL OR jsonb_typeof(extraction_rule) = 'object'),
-    CONSTRAINT connections_max_event_bytes CHECK (max_event_bytes > 0),
-    CONSTRAINT connections_config_version CHECK (config_version >= 1),
-    CONSTRAINT connections_state CHECK (management_state IN ('pending', 'active', 'stopping', 'blocked', 'archived')),
-    CONSTRAINT connections_archived_at CHECK ((management_state = 'archived') = (archived_at IS NOT NULL)),
-    CONSTRAINT connections_archived_with_service CHECK (NOT archived_with_service OR management_state = 'archived')
-);
--- 같은 서버·같은 대상의 보관되지 않은 연결은 하나(Q07-06). 서버 표시명이 없으면 2.7절 관측으로 확인한다
-CREATE UNIQUE INDEX connections_same_target_uq ON connections (server_id, target_identity)
-    WHERE server_id IS NOT NULL AND management_state <> 'archived';
-CREATE INDEX connections_service_idx ON connections (service_id);
-
-CREATE TABLE connection_configs (
-    connection_id integer     NOT NULL REFERENCES connections (id),
-    version       integer     NOT NULL,
-    content       jsonb       NOT NULL,
-    created_at    timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (connection_id, version),
-    CONSTRAINT connection_configs_content CHECK (jsonb_typeof(content) = 'object')
-);
-
-CREATE TABLE ingest_keys (
-    key_id              text        PRIMARY KEY,
-    connection_id       integer     NOT NULL REFERENCES connections (id),
-    secret_hash         bytea       NOT NULL,
-    state               text        NOT NULL DEFAULT 'valid',
-    slot                smallint,
-    issued_as           text        NOT NULL,
-    issued_at           timestamptz NOT NULL DEFAULT now(),
-    revoke_requested_at timestamptz,
-    revoked_at          timestamptz,
-    revoke_observed_at  timestamptz,
-    invalidated_at      timestamptz,
-    CONSTRAINT ingest_keys_key_id CHECK (key_id ~ '^[a-z0-9]+$'),
-    CONSTRAINT ingest_keys_state CHECK (state IN ('valid', 'revoke_requested', 'revoked', 'invalidated')),
-    CONSTRAINT ingest_keys_slot CHECK ((state = 'valid') = (slot IS NOT NULL) AND (slot IS NULL OR slot IN (1, 2))),
-    CONSTRAINT ingest_keys_issued_as CHECK (issued_as IN ('register', 'issue', 'rotate')),
-    CONSTRAINT ingest_keys_times CHECK (
-        (state <> 'revoke_requested' OR revoke_requested_at IS NOT NULL)
-        AND (state <> 'revoked' OR revoked_at IS NOT NULL)
-        AND (state <> 'invalidated' OR invalidated_at IS NOT NULL))
-);
--- 연결마다 유효 키는 둘까지(Q10-07). 앱의 연결 행 잠금과 함께 쓴다(PT-10)
-CREATE UNIQUE INDEX ingest_keys_valid_slot_uq ON ingest_keys (connection_id, slot) WHERE state = 'valid';
-CREATE INDEX ingest_keys_connection_idx ON ingest_keys (connection_id);
-
-CREATE TABLE ingest_progress (
-    connection_id integer     NOT NULL REFERENCES connections (id),
-    generation    integer     NOT NULL,
-    next_seq      bigint      NOT NULL,
-    updated_at    timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (connection_id, generation),
-    CONSTRAINT ingest_progress_generation CHECK (generation BETWEEN 1 AND 65535),
-    CONSTRAINT ingest_progress_next_seq CHECK (next_seq >= 1)
-);
-
-CREATE TABLE deletion_blocks (
-    id            bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    connection_id integer     NOT NULL REFERENCES connections (id),
-    ref_time_from timestamptz NOT NULL,
-    ref_time_to   timestamptz NOT NULL,
-    state         text        NOT NULL DEFAULT 'requested',
-    requested_at  timestamptz NOT NULL DEFAULT now(),
-    confirmed_at  timestamptz,
-    CONSTRAINT deletion_blocks_range CHECK (ref_time_from < ref_time_to),
-    CONSTRAINT deletion_blocks_state CHECK (state IN ('requested', 'confirmed', 'failed')),
-    CONSTRAINT deletion_blocks_confirmed CHECK ((state = 'confirmed') = (confirmed_at IS NOT NULL))
-);
-CREATE INDEX deletion_blocks_connection_idx ON deletion_blocks (connection_id, ref_time_from);
-
-CREATE TABLE connection_status (
-    connection_id     integer     PRIMARY KEY REFERENCES connections (id),
-    last_report_at    timestamptz NOT NULL,
-    report            jsonb       NOT NULL,
-    agent_instance_id text        NOT NULL,
-    agent_version     text        NOT NULL,
-    key_id            text        NOT NULL REFERENCES ingest_keys (key_id),
-    clock_offset_ms   bigint,
-    observed_states   text[]      NOT NULL DEFAULT '{}',
-    updated_at        timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE status_history (
-    id               bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    connection_id    integer     NOT NULL REFERENCES connections (id),
-    reported_at      timestamptz NOT NULL,
-    changes          jsonb       NOT NULL,
-    diag_write_error boolean     NOT NULL DEFAULT false
-);
-CREATE INDEX status_history_connection_idx ON status_history (connection_id, reported_at DESC);
-CREATE INDEX status_history_reported_idx ON status_history (reported_at);
-
-CREATE TABLE ingest_watermark (
-    id                 smallint    PRIMARY KEY DEFAULT 1,
-    searchable_through timestamptz NOT NULL,
-    updated_at         timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT ingest_watermark_single CHECK (id = 1)
-);
-```
-
-```sql
--- 3. 검색·알림·메일
-CREATE TABLE saved_searches (
-    id               integer     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    owner_account_id integer     NOT NULL REFERENCES accounts (id),
-    name             name_text   NOT NULL,
-    condition        jsonb       NOT NULL,
-    time_mode        text        NOT NULL,
-    time_range       jsonb       NOT NULL,
-    time_basis       text        NOT NULL,
-    created_at       timestamptz NOT NULL DEFAULT now(),
-    updated_at       timestamptz NOT NULL DEFAULT now(),
-    version          integer     NOT NULL DEFAULT 1,
-    CONSTRAINT saved_searches_condition CHECK (jsonb_typeof(condition) = 'object'),
-    CONSTRAINT saved_searches_time CHECK (
-        (time_mode = 'relative' AND time_range ? 'last')
-     OR (time_mode = 'absolute' AND time_range ?& ARRAY['from', 'to'])),
-    CONSTRAINT saved_searches_time_basis CHECK (time_basis IN ('occurred', 'received'))
-);
-CREATE UNIQUE INDEX saved_searches_name_uq ON saved_searches (owner_account_id, lower(name));
-
-CREATE TABLE alert_rules (
-    id                   integer     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    owner_account_id     integer     NOT NULL REFERENCES accounts (id),
-    name                 name_text   NOT NULL,
-    enabled              boolean     NOT NULL,
-    condition            jsonb       NOT NULL,
-    condition_version    integer     NOT NULL DEFAULT 1,
-    window_minutes       integer     NOT NULL,
-    threshold            integer     NOT NULL,
-    resolve_wait_minutes integer,
-    eval_state           text        NOT NULL DEFAULT 'normal',
-    state_since          timestamptz NOT NULL DEFAULT now(),
-    resolve_streak       integer     NOT NULL DEFAULT 0,
-    quality              text,
-    last_success_eval_at timestamptz,
-    last_fired_at        timestamptz,
-    deleted_at           timestamptz,
-    created_at           timestamptz NOT NULL DEFAULT now(),
-    updated_at           timestamptz NOT NULL DEFAULT now(),
-    version              integer     NOT NULL DEFAULT 1,
-    CONSTRAINT alert_rules_name CHECK (char_length(name) <= 100),
-    CONSTRAINT alert_rules_condition CHECK (jsonb_typeof(condition) = 'object'),
-    CONSTRAINT alert_rules_window CHECK (window_minutes BETWEEN 1 AND 1440),
-    CONSTRAINT alert_rules_threshold CHECK (threshold >= 1),
-    -- 비우면 시간 구간과 같은 길이(Q12-03)
-    CONSTRAINT alert_rules_resolve_wait CHECK (resolve_wait_minutes IS NULL OR resolve_wait_minutes BETWEEN 1 AND 1440),
-    CONSTRAINT alert_rules_eval_state CHECK (eval_state IN ('normal', 'firing', 'resolving')),
-    CONSTRAINT alert_rules_resolve_streak CHECK (resolve_streak >= 0 AND (eval_state = 'resolving') = (resolve_streak >= 1)),
-    CONSTRAINT alert_rules_quality CHECK (quality IS NULL OR quality IN ('complete', 'partially_unobserved', 'unmonitorable', 'no_targets')),
-    CONSTRAINT alert_rules_deleted CHECK (deleted_at IS NULL OR NOT enabled)
-);
-
-CREATE TABLE alert_rule_recipients (
-    id           bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    rule_id      integer      NOT NULL REFERENCES alert_rules (id),
-    address      mail_address NOT NULL,
-    confirmed_at timestamptz,
-    added_at     timestamptz  NOT NULL DEFAULT now()
-);
-CREATE UNIQUE INDEX alert_rule_recipients_uq ON alert_rule_recipients (rule_id, lower(address));
-
-CREATE TABLE alert_incidents (
-    id                 bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    public_ref         text        NOT NULL UNIQUE,
-    rule_id            integer     NOT NULL REFERENCES alert_rules (id),
-    condition_version  integer     NOT NULL,
-    rule_name          text        NOT NULL,
-    condition          jsonb       NOT NULL,
-    window_minutes     integer     NOT NULL,
-    threshold          integer     NOT NULL,
-    window_start       timestamptz NOT NULL,
-    window_end         timestamptz NOT NULL,
-    fired_at           timestamptz NOT NULL,
-    matched_count      bigint      NOT NULL,
-    unknown_count      bigint,
-    oldest_occurred_at timestamptz,
-    partial            boolean     NOT NULL DEFAULT false,
-    quality            text        NOT NULL,
-    closed_at          timestamptz,
-    close_reason       text,
-    CONSTRAINT alert_incidents_window CHECK (window_start < window_end),
-    CONSTRAINT alert_incidents_quality CHECK (quality IN ('complete', 'partially_unobserved', 'unmonitorable', 'no_targets')),
-    CONSTRAINT alert_incidents_close CHECK (
-        (closed_at IS NULL) = (close_reason IS NULL)
-        AND (close_reason IS NULL OR close_reason IN ('resolved', 'condition_changed', 'rule_disabled', 'rule_deleted'))),
-    CONSTRAINT alert_incidents_round_uq UNIQUE (rule_id, condition_version, window_end)
-);
-CREATE UNIQUE INDEX alert_incidents_open_uq ON alert_incidents (rule_id) WHERE closed_at IS NULL;
-CREATE INDEX alert_incidents_rule_idx ON alert_incidents (rule_id, fired_at DESC);
-CREATE INDEX alert_incidents_fired_idx ON alert_incidents (fired_at);
-
-CREATE TABLE alert_evaluations (
-    rule_id           integer     NOT NULL REFERENCES alert_rules (id),
-    window_end        timestamptz NOT NULL,
-    window_start      timestamptz NOT NULL,
-    condition_version integer     NOT NULL,
-    status            text        NOT NULL,
-    matched_count     bigint,
-    unknown_count     bigint,
-    partial           boolean     NOT NULL DEFAULT false,
-    quality           text,
-    error_code        text,
-    evaluated_at      timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (rule_id, window_end),
-    CONSTRAINT alert_evaluations_window CHECK (window_start < window_end),
-    CONSTRAINT alert_evaluations_status CHECK (status IN ('met', 'below', 'unevaluable', 'skipped'))
-);
-CREATE INDEX alert_evaluations_window_idx ON alert_evaluations (window_end);
-
-CREATE TABLE ops_recipients (
-    id           bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    address      mail_address NOT NULL,
-    confirmed_at timestamptz,
-    added_at     timestamptz  NOT NULL DEFAULT now()
-);
-CREATE UNIQUE INDEX ops_recipients_uq ON ops_recipients (lower(address));
-
-CREATE TABLE ops_recipient_list (
-    id         smallint    PRIMARY KEY DEFAULT 1,
-    version    integer     NOT NULL DEFAULT 1,
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT ops_recipient_list_single CHECK (id = 1)
-);
-
-CREATE TABLE ops_mail_batches (
-    id         bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    created_at timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE ops_episodes (
-    id            bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    kind          text        NOT NULL,
-    connection_id integer     REFERENCES connections (id),
-    started_at    timestamptz NOT NULL,
-    ops_batch_id  bigint      REFERENCES ops_mail_batches (id),
-    ended_at      timestamptz,
-    CONSTRAINT ops_episodes_kind CHECK (kind IN ('connection_unobserved', 'alert_eval_failed', 'disk_warning')),
-    CONSTRAINT ops_episodes_connection CHECK ((kind = 'connection_unobserved') = (connection_id IS NOT NULL))
-);
--- 같은 일은 이어지는 동안 하나만 열린다(Q12-06 지속 중 1회)
-CREATE UNIQUE INDEX ops_episodes_open_uq ON ops_episodes (kind, coalesce(connection_id, 0)) WHERE ended_at IS NULL;
-
-CREATE TABLE mail_jobs (
-    id                 bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    kind               text         NOT NULL,
-    incident_id        bigint       REFERENCES alert_incidents (id),
-    ops_batch_id       bigint       REFERENCES ops_mail_batches (id),
-    recipient          mail_address NOT NULL,
-    message_id         text         NOT NULL UNIQUE,
-    state              text         NOT NULL DEFAULT 'queued',
-    attempts           integer      NOT NULL DEFAULT 0,
-    next_attempt_at    timestamptz,
-    last_attempt_at    timestamptz,
-    last_error         text,
-    accepted_at        timestamptz,
-    sent_after_resolve boolean      NOT NULL DEFAULT false,
-    cancel_reason      text,
-    acknowledged_at    timestamptz,
-    created_at         timestamptz  NOT NULL DEFAULT now(),
-    CONSTRAINT mail_jobs_kind CHECK (
-        (kind = 'alert' AND incident_id IS NOT NULL AND ops_batch_id IS NULL)
-     OR (kind = 'ops' AND ops_batch_id IS NOT NULL AND incident_id IS NULL)
-     OR (kind = 'test' AND incident_id IS NULL AND ops_batch_id IS NULL)),
-    CONSTRAINT mail_jobs_state CHECK (state IN
-        ('queued', 'sending', 'retry_wait', 'unknown', 'accepted', 'failed', 'cancelled')),
-    CONSTRAINT mail_jobs_attempts CHECK (attempts >= 0),
-    CONSTRAINT mail_jobs_accepted CHECK ((state = 'accepted') = (accepted_at IS NOT NULL)),
-    CONSTRAINT mail_jobs_cancel CHECK (
-        (state = 'cancelled') = (cancel_reason IS NOT NULL)
-        AND (cancel_reason IS NULL OR cancel_reason IN ('rule_disabled', 'rule_deleted', 'recipient_removed'))),
-    CONSTRAINT mail_jobs_ack CHECK (acknowledged_at IS NULL OR state = 'failed')
-);
-CREATE UNIQUE INDEX mail_jobs_incident_recipient_uq ON mail_jobs (incident_id, lower(recipient)) WHERE incident_id IS NOT NULL;
-CREATE UNIQUE INDEX mail_jobs_ops_recipient_uq ON mail_jobs (ops_batch_id, lower(recipient)) WHERE ops_batch_id IS NOT NULL;
-CREATE INDEX mail_jobs_due_idx ON mail_jobs (next_attempt_at) WHERE state IN ('queued', 'retry_wait', 'unknown');
-CREATE INDEX mail_jobs_unacked_failure_idx ON mail_jobs (incident_id) WHERE state = 'failed' AND acknowledged_at IS NULL;
-CREATE INDEX mail_jobs_created_idx ON mail_jobs (created_at);
-
-CREATE TABLE mail_status (
-    id              smallint    PRIMARY KEY DEFAULT 1,
-    last_attempt_at timestamptz,
-    last_success_at timestamptz,
-    last_error      text,
-    updated_at      timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT mail_status_single CHECK (id = 1)
-);
-```
-
-```sql
--- 4. 감사·운영
--- 감사는 허용한 열만 둔다(T06). 비밀번호·키·검색어·로그 본문·수신 주소 원문을 담을 열이 없다
-CREATE TABLE audit_log (
-    id             bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    logged_at      timestamptz NOT NULL DEFAULT now(),
-    time_trusted   boolean     NOT NULL DEFAULT true,
-    actor_type     text        NOT NULL,
-    account_id     integer     REFERENCES accounts (id),
-    action         text        NOT NULL,
-    target_type    text,
-    target_ref     text,
-    result         text        NOT NULL,
-    stage          text,
-    changed_fields text[],
-    reason_code    text,
-    event_count    integer     NOT NULL DEFAULT 1,
-    CONSTRAINT audit_log_actor CHECK (actor_type IN ('shared_account', 'local_operator', 'system')),
-    CONSTRAINT audit_log_action CHECK (action ~ '^[a-z_]+\.[a-z_]+$'),
-    CONSTRAINT audit_log_result CHECK (result IN ('success', 'failure', 'partial')),
-    CONSTRAINT audit_log_stage CHECK (stage IS NULL OR stage IN ('requested', 'confirmed', 'agent_observed')),
-    CONSTRAINT audit_log_event_count CHECK (event_count >= 1)
-);
-CREATE INDEX audit_log_logged_idx ON audit_log (logged_at DESC);
-CREATE INDEX audit_log_action_idx ON audit_log (action, logged_at DESC);
-
-CREATE TABLE audit_gaps (
-    id         bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    started_at timestamptz NOT NULL,
-    ended_at   timestamptz,
-    CONSTRAINT audit_gaps_range CHECK (ended_at IS NULL OR started_at <= ended_at)
-);
-
-CREATE TABLE audit_cleanups (
-    id           bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    cleaned_at   timestamptz NOT NULL DEFAULT now(),
-    removed_from timestamptz NOT NULL,
-    removed_to   timestamptz NOT NULL,
-    removed_rows bigint      NOT NULL,
-    early        boolean     NOT NULL,
-    CONSTRAINT audit_cleanups_range CHECK (removed_from <= removed_to)
-);
-
-CREATE TABLE storage_metrics (
-    measured_at           timestamptz PRIMARY KEY,
-    log_bytes             bigint,
-    log_limit_bytes       bigint,
-    disk_free_bytes       bigint,
-    estimated             boolean     NOT NULL DEFAULT false,
-    earliest_available_at timestamptz
-);
-
-CREATE TABLE early_deletions (
-    id            bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    happened_at   timestamptz NOT NULL DEFAULT now(),
-    received_from timestamptz NOT NULL,
-    received_to   timestamptz NOT NULL,
-    bytes         bigint,
-    CONSTRAINT early_deletions_range CHECK (received_from < received_to)
-);
-CREATE INDEX early_deletions_happened_idx ON early_deletions (happened_at DESC);
-
-CREATE TABLE notices (
-    id              bigint      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    kind            text        NOT NULL,
-    raised_at       timestamptz NOT NULL DEFAULT now(),
-    cleared_at      timestamptz,
-    acknowledged_at timestamptz,
-    item_count      integer,
-    CONSTRAINT notices_kind CHECK (kind IN ('mail_connection_error', 'alert_eval_stopped', 'mail_final_failures',
-        'audit_unavailable', 'audit_gap', 'disk_warning', 'early_deletion', 'storage_unmeasurable',
-        'ops_recipients_missing'))
-);
--- 종류마다 떠 있는 배너는 하나. 지나간 일이 또 생기면 같은 행의 건수를 늘린다
-CREATE UNIQUE INDEX notices_open_uq ON notices (kind) WHERE cleared_at IS NULL AND acknowledged_at IS NULL;
-
-CREATE TABLE idempotency_keys (
-    account_id   integer     NOT NULL REFERENCES accounts (id),
-    idem_key     text        NOT NULL,
-    request_kind text        NOT NULL,
-    request_hash bytea       NOT NULL,
-    status_code  smallint    NOT NULL,
-    result       jsonb       NOT NULL,
-    created_at   timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (account_id, idem_key)
-);
-CREATE INDEX idempotency_keys_created_idx ON idempotency_keys (created_at);
-```
+PostgreSQL 관리 DB의 DDL은 [`db/postgres/migrations/0001_initial.sql`](../../db/postgres/migrations/0001_initial.sql)이 기준이다(테이블 31개, 도메인 2개). 2026-11-06 이 절에 있던 초안 블록 넷을 그대로 옮겼다(2026-11-05 [결정 기록](../decisions.md)의 "구현 때 마이그레이션 파일로 옮긴다"). 2026-11-05 사용자가 개발용 로컬 PostgreSQL 18.6에 같은 내용을 한 트랜잭션으로 적용했고 테이블·도메인 개수 확인까지 마쳤다고 알렸다. DB에 적용하는 일은 사용자가 한다(AGENTS.md DB 안전 규칙). 정하지 않은 상한 `N`은 SQL에 넣지 않고 앱이 검사한다. 제약이 실제로 막는지는 2026-11-06 시험이 스스로 띄우고 지우는 임시 PostgreSQL에서 확인했다(3.6절). 적용한 뒤의 변경은 이 파일을 고치지 않고 번호를 이은 새 파일로 더한다. 2026-11-06 `0002_session_csrf.sql`로 세션 CSRF 토큰 열을 더했다(4.1절 `비밀 저장`). 적용 기록과 되돌리는 절차는 3.6절의 남은 것이다.
 
 #### 저장 값과 화면 이름
 
@@ -913,7 +414,7 @@ CREATE INDEX idempotency_keys_created_idx ON idempotency_keys (created_at);
 - **같은 서버 배치:** 운영에서 PostgreSQL과 ClickHouse가 같은 서버와 디스크를 쓰므로 관리 DB 공간은 로그 전용 상한 밖에 두고 디스크 경고 기준에 함께 넣는다. 디스크가 차서 관리 DB에 쓰지 못하면 수신 서버는 성공으로 답하지 않는다(2.4절, Q04). 감사가 같은 DB에 있어 감사만 쓰지 못하는 경우는 감사 테이블 쓰기 오류처럼 드물다.
 - **정리:** 보관 기간 정리는 시각 색인으로 지운다. 감사·평가·진단 이력을 월 단위로 나눌지는 측정 뒤 정한다.
 - **한 행 테이블:** `ingest_watermark`·`mail_status`·`ops_recipient_list`는 행이 하나여야 갱신이 된다. DDL은 행을 넣지 않으므로, 그 테이블을 쓰는 프로그램이 시작할 때 없으면 `INSERT ... ON CONFLICT DO NOTHING`으로 넣는다.
-- **남긴 것:** CSRF 토큰과 비밀번호 해시의 저장 형식은 구현 때 정한다(T04). 스키마 변경 절차는 3.6절이다.
+- **남긴 것:** CSRF 토큰과 비밀번호 해시의 저장 형식은 2026-11-06 4.1절 `비밀 저장`에 설계로 정했고, CSRF 토큰 열은 마이그레이션 0002로 더했다(T04). 스키마 변경 절차는 3.6절이다.
 
 DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
 
@@ -942,7 +443,7 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
 ### 3.6 남은 것
 
 - 측정: 정렬 키 후보, 필드 형식(`JSON` 타입과 타입별 `Map`), 본문 색인과 대소문자·NFC 비교 비용, 경량 삭제와 TTL의 실제 공간 회수 시간(M1~M8).
-- PostgreSQL DDL 초안은 3.4절에 있고 2026-11-05 사용자가 개발용 PostgreSQL 18.6에 적용했다. 제약 동작(같은 대상 중복, 유효 키 둘 초과, 열린 사건 중복을 막는 부분 유일 색인과 CHECK)은 구현 때 시험한다. 감사·진단·알림 이력의 저장 상한(TD-19, Q10-13, Q14)은 측정 뒤 정한다.
+- PostgreSQL DDL은 2026-11-06 [마이그레이션 파일](../../db/postgres/migrations/0001_initial.sql)로 옮겼고, 2026-11-05 사용자가 개발용 PostgreSQL 18.6에 같은 내용을 적용했다. 제약 동작은 2026-11-06 시험이 스스로 띄우고 지우는 임시 PostgreSQL 18.6에 마이그레이션 0001·0002를 적용해 [시험 18건](../../db/postgres/schema.test.mjs)으로 확인했다(`npm run test:db`). 2026-11-07 로그인 잠금 열(0003)을 더해 시험은 19건이다. 같은 대상 중복, 유효 키 둘 초과, 열린 사건·회차 중복을 막는 부분 유일 색인과 CHECK, 이름 규칙과 builtin `C.UTF-8`의 대소문자 무시 유일성, 한 행 테이블이다. 임시 DB에서 돌린 시험이며 개발 DB나 중앙 서버에서 확인한 것은 아니다. 마이그레이션 적용 기록(어디까지 적용했는지 남기는 표)과 적용 도구는 아래 스키마 변경 절차와 함께 정한다. 감사·진단·알림 이력의 저장 상한(TD-19, Q10-13, Q14)은 측정 뒤 정한다.
 - 스키마 변경 절차(관리 DB 마이그레이션, ClickHouse 테이블 변경, 되돌릴 때의 호환)는 중앙 업데이트와 함께 개발팀이 정한다(Q16-08 담당 범위 확인, OT-09).
 
 ## 4 조회·관리 API
@@ -960,7 +461,7 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
 - **권한 검사:** 공용 계정 하나지만 모든 `/api/v1` 요청은 서버의 한 검사 지점에서 세션을 확인한다(로그인과 `GET /api/v1/auth/session` 제외). 수집 키로는 조회·관리 API를 쓸 수 없고 웹 세션으로는 수신 API를 쓸 수 없다(T05, SD-36). 검색·조회·로그인은 감사 저장에 기대지 않아 감사 장애에도 계속된다(Q10-14, SD-36).
 - **API 범위:** `/api/v1`은 함께 배포하는 웹 화면 전용이다. 첫 출시에는 외부 프로그램용 공개 API를 두지 않으므로 외부용 토큰과 버전 호환 보장이 없고, 화면과 함께 바뀔 수 있다(2026-11-05 합의, [결정 기록](../decisions.md)). 실시간 조회와 내보내기는 Q01 합의로 후속이라 경로를 두지 않는다(조사 명세 5·6절).
 - **중복 요청 방지:** 무언가를 새로 만들거나 보내는 요청(연결 등록, 키 발급·교체, 구간 로그 삭제, 저장 검색·알림 규칙 만들기, 테스트 메일)은 화면이 만든 `Idempotency-Key` 헤더를 단다. 같은 키가 다시 오면 다시 실행하지 않고 처음 결과를 돌려준다. 같은 키로 내용이 다른 요청이 오면 `409 idempotency_key_reused`다(요청 해시로 판정, 3.4절). 두 번 누름처럼 같은 키의 앞 요청이 아직 처리 중이면 뒤 요청은 앞 요청이 끝날 때까지 기다렸다가 같은 결과를 받는다. 키 행을 작업과 같은 트랜잭션의 처음에 넣어 유일 제약이 두 번째 실행을 막게 한다. 실행 전에 거절한 응답(재확인 필요·입력 오류·감사 장애 보류)은 남기지 않아 같은 키로 다시 보낼 수 있다. 키 원문은 다시 돌려줄 수 없으므로 등록·발급의 재응답은 만든 대상과 `secret_unavailable: true`만 담고, 화면은 그 키를 폐기하고 새로 받으라고 안내한다(5.2절, PT-10).
-- **비밀 저장:** 계정 비밀번호는 느린 비밀번호 해시로, 수집 키의 비밀 값과 세션 ID는 단방향 해시로 저장한다. 알고리즘·비용 값·라이브러리는 구현 때 당시 공식 보안 자료로 정한다(T04, Q10-03).
+- **비밀 저장:** 계정 비밀번호는 느린 비밀번호 해시로, 수집 키의 비밀 값과 세션 ID는 단방향 해시로 저장한다. 알고리즘·비용 값·라이브러리는 구현 때 당시 공식 보안 자료로 정한다(T04, Q10-03). 설계(2026-11-06): 비밀번호는 Node 내장 `crypto.argon2`(v24.7.0부터)의 Argon2id로, [OWASP 비밀번호 저장 지침](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)의 최소 설정(메모리 19456KiB, 반복 2, 병렬 1)과 무작위 16바이트 salt, 32바이트 결과를 쓴다. `password_hash`에는 비용 값이 함께 든 PHC 문자열(`$argon2id$m=19456,t=2,p=1$<salt>$<hash>`, base64)로 두어, 비용 값을 올리면 다음 로그인 때 새 값으로 다시 해시한다. 개발 PC(Node 24.22.2)에서 한 번에 약 15ms였고 중앙 서버에서 다시 잰다. 세션 ID는 무작위 32바이트로 쿠키에는 base64url, DB에는 SHA-256만 둔다. 수집 키의 비밀 값도 SHA-256이다. 둘 다 무작위 값이라 느린 해시가 필요 없다. CSRF 토큰은 [OWASP CSRF 방지 지침](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)이 서버에 세션 상태가 있는 앱에 권하는 synchronizer token이다. 세션마다 무작위 32바이트를 `sessions.csrf_token`(마이그레이션 0002)에 두고 `X-CSRF-Token`과 일정 시간 비교로 맞춘다. SameSite=Strict 쿠키는 함께 두는 겹 방어다.
 - **값 표기:** 응답의 시각은 UTC RFC 3339 문자열(마이크로초)이고 요청은 오프셋을 담은 RFC 3339 시각을 받는다. 화면은 `GET /api/v1/settings`의 표시 시간대로 바꿔 보인다(SD-07). 모르는 값은 `null`로 보내고 0이나 빈 값으로 채우지 않는다(UI-12 대기량 미상, SD-22). 경로와 본문의 ID는 수집 연결이 외부에 보이는 ID(`c_8f3k2`, 3.1절), 사건이 `public_ref`(4.2절), 서비스·서버·저장 검색·알림 규칙이 정수 ID다.
 - **목록 나누기:** 관리 목록(연결·저장 검색·알림 규칙·사건·감사)은 `limit`과 불투명한 `cursor`로 나눠 받는다. 정렬은 목록마다 고정하고 같은 값이면 ID로 정렬한다.
 - **자체 로그:** 두 서버의 접근 기록과 자체 로그에는 경로 틀·상태 코드·걸린 시간·요청 참조(`request_id`)만 남긴다. 검색 조건·로그 본문·키·쿠키·비밀번호·메일 수신 주소는 남기지 않는다(SD-35, SC-02, TD-20).
@@ -1068,8 +569,26 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
 | `GET /api/v1/settings` | 서버 설정 가운데 화면에 필요한 읽기 전용 값: 표시 시간대, 로그 보관 기간, 세션 규칙, 개수 상한(저장 검색·알림 규칙·수신 주소), 제품 버전. 비밀 값은 없다 | | |
 
 - 서비스·서버 이름 변경과 운영 수신 주소 변경은 알림 규칙 변경과 같이 재확인 없이 감사에 남기고 감사 장애 때 보류한다(정리표 WQ-52·81·88, TD-17).
+- **서비스·서버 구현 설계(2026-11-07):**
+  - `GET /api/v1/services`는 보관된 서비스도 `state`·`archived_at`과 함께, 대소문자를 가리지 않는 이름순으로 모두 준다. 목록이 작아 나누지 않는다. `GET /api/v1/servers`도 같다.
+  - 이름 변경 본문은 서비스 `{name, version}`, 서버 `{display_name, version}`이고 바뀐 대상을 돌려준다. 이름은 NFC로 맞추고 앞뒤 공백을 뺀 뒤 1~100자다(5.3절 `N`의 시제품 설정값). 어기면 `422 validation_failed`이고 사유는 `too_small`·`too_big`·`control_characters`다.
+  - 대소문자까지 같은 이름이면 바꾸지 않고 감사도 남기지 않는다. `version_conflict`는 `params.current`에 지금 값을 주고, 바뀐 항목은 화면이 가진 값과 비교해 보인다. 경로의 ID가 양의 정수가 아니면 `404 not_found`다.
+  - 감사에는 대상 ID와 바뀐 항목 이름(`changed_fields`)만 남긴다.
+  - 서비스 보관·재활성과 보관 전 영향은 하위 수집 연결과 키 상태를 함께 바꾸므로 수집 연결과 같이 만든다.
 - **로그인:** `POST /api/v1/auth/login`은 계정 이름, 비밀번호, 돌아갈 곳(`return_to`)을 받는다. 실패는 계정이 있는지와 무엇이 틀렸는지 드러내지 않는 `401 login_failed` 하나다. 시도 제한에 걸리면 `429 login_throttled`와 남은 대기 시간을 준다(Q10-03, UI-01). `return_to`는 이 웹의 내부 경로만 받고 다른 호스트나 `//`로 시작하는 값은 버린다. 메일 링크(`/alerts/incidents/{public_ref}`)는 로그인 뒤 그 사건의 알림 조사 모드로 돌아간다(TD-16).
 - **재확인:** `POST /api/v1/auth/reauth`는 비밀번호를 받아 세션의 `reauth_at`을 갱신한다. 틀리면 `422 validation_failed`(사유 `current_password_wrong`)로 답해 CM-07 창을 유지하게 한다(CM-07 상태 3). 세션을 가진 사람이 이 경로로 비밀번호를 끝없이 맞혀 보지 못하게 실패는 로그인과 같은 시도 제한에 세고, 넘으면 `429 login_throttled`다. 재확인 실패도 로그인 실패처럼 감사에 묶어 남긴다(Q10-03, Q10-12).
+- **인증 구현 설계(2026-11-06):** 수치는 측정·협의 전의 시제품 값이며 코드가 아닌 설정값이다.
+  - 시도 제한은 계정 이름과 접속 주소를 묶은 좁은 열쇠(15분에 5회)와 계정 이름만의 넓은 열쇠(15분에 50회)로 세고, 닿으면 15분 막는다. 좁은 열쇠는 한 사람의 오타가 다른 사람의 로그인을 막지 않게 하고, 넓은 열쇠는 여러 주소에서 나눠 맞혀 보는 것을 막는다. 열쇠는 해시로만 두고, 한도에 닿은 시도부터 바로 `429`이며, 막힌 동안에는 맞는 비밀번호도 받지 않는다. 같은 사내 주소 뒤의 여러 사람은 좁은 열쇠를 함께 쓴다. 공용 계정이 막혔을 때 푸는 길은 로컬 재설정(8.2절)이다.
+  - **연속 실패 잠금(2026-11-07 사용자 합의, [결정 기록](../decisions.md)):** 같은 계정 이름의 연속 실패가 100회([NIST SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html) 3.2.2절의 100회 이하, 설정값)에 닿으면 로그인을 잠근다. 로그인·재확인·비밀번호 변경의 현재 비밀번호 실패를 함께 세고 성공하면 0으로 돌아간다. 창이 지나도 이어 센다. 잠기면 맞는 비밀번호도 받지 않고 `423 login_locked`이며, 기다려도 풀리지 않고 서버 운영자의 로컬 재설정으로만 풀린다. 이미 있는 웹 세션은 끝내지 않는다. 계정 이름 열쇠(`login_throttle`의 `consecutive_failures`·`locked_at`, 마이그레이션 0003)로 세므로 없는 계정 이름도 똑같이 잠겨 잠금으로 계정 유무가 드러나지 않는다. 잠긴 순간에는 감사에 `auth.login_locked`(시스템)를 남기고 자체 로그에 경고를 쓴다. 잠기면 아무도 웹으로 들어와 배너를 볼 수 없기 때문이다. 감수한 영향은 사내망·VPN 안의 누군가가 일부러 100번 틀리면 팀 전체가 로컬 재설정 전까지 로그인하지 못하는 것이다.
+  - 없는 계정 이름도 같은 비용의 해시 비교를 거쳐 응답 시간으로 계정 유무를 드러내지 않는다. 비밀번호는 같은 글자의 조합형·완성형이 같도록 NFC로 맞춘 뒤 해시한다.
+  - 세션 쿠키 이름은 `__Host-logdock_session`(Secure·Path=/·Domain 없음, Max-Age는 최대 수명)이다. `GET /api/v1/auth/session`은 세션이 없으면 `200`과 `authenticated: false`를 돌려준다. 활동 시각은 1분보다 자주 고쳐 쓰지 않아 비활동 한도가 최대 1분 짧아질 수 있다.
+  - 재확인 유효 시간은 15분(Q10-05의 `N`, 미정)이다. JSON으로 읽을 수 없는 본문은 `422 validation_failed`(`invalid_json`)다.
+  - 로그인·로그아웃·전체 세션 종료는 감사 쓰기가 실패해도 진행한다. 실패한 감사만 되돌리고 `audit_gaps`와 `audit_gap` 배너를 남기며, 전체 세션 종료는 응답에 `audit_gap: true`를 단다.
+  - **비밀번호 규칙(2026-11-07):** NIST SP 800-63B-4의 비밀번호 검증 요구를 따른다. 해시하는 형태(NFC, NIST가 권하는 정규화)의 유니코드 코드 포인트로 15자 이상이고, 로그인이 받는 길이(UTF-16 1,024단위)를 넘으면 `password_too_long`이다. 글자 종류 조합 규칙과 정기 변경은 두지 않는다. 흔한 값은 비밀번호 전체를 비교하고 들어 있는 낱말로는 막지 않는다. 비교 형태는 NFKC·소문자·공백 제거다. 막는 값은 셋이고 사유는 모두 `password_common`이다. NIST가 거절 사유와 고르는 요령을 보이라고 하므로 화면은 어떤 값이 막히는지 안내한다.
+    - 차단 목록: 영국 NCSC가 Have I Been Pwned의 Pwned Passwords에서 가장 많이 쓰인 10만 개로 공개한 목록의 SecLists 사본(MIT, 커밋 고정·해시 확인)에서 비교 형태가 10자 이상인 9,123개다. 15자 이상이어도 공백을 빼면 짧아질 수 있어 10자까지 남겼고, 공개 저장소라 메일 주소 모양은 뺐다. Have I Been Pwned는 Pwned Passwords에 라이선스·출처 표시 요구가 없다고 밝힌다([라이선스](https://haveibeenpwned.com/API/v3#License)). NCSC 원래 게시 페이지는 2026-11-07 내려가 있었다. 목록은 `apps/api/scripts/build-common-passwords.mjs`로 다시 만든다. NIST는 목록이 시도 제한 전에 맞혀 볼 만한 값을 덮으면 되고 너무 크면 이득이 적다고 한다. 더 큰 목록은 출처와 라이선스를 확인한 뒤 바꾼다.
+    - 서비스 이름(`logdock`)이나 계정 이름에 숫자·기호만 더한 값(NIST의 서비스 이름·계정 이름과 그 변형). 이 낱말이 들어 있기만 하거나 숫자만으로 된 값은 막지 않는다.
+    - 같은 덩어리를 되풀이한 값과 숫자·알파벳·자판 줄을 한 방향으로 이어 친 값.
+  - **비밀번호 변경 순서:** 새 비밀번호 규칙을 먼저 보고 시도 제한에 세지 않는다. 그다음 시도 제한 확인, 계정 행 잠금(`FOR UPDATE`), 현재 비밀번호 확인, 해시 교체와 `password_changed_at` 갱신, 모든 세션 종료(`password_change`), 감사 순서다. 현재 비밀번호가 틀리면 재확인과 같은 열쇠로 세고 `auth.password_change` 실패(`current_password_wrong`)를 묶어 남긴다. 감사를 쓸 수 없으면 트랜잭션 전체를 되돌리고 `409 held_audit_unavailable`이다(Q10-14 (4)). 성공하면 `password_changed_at`과 끝낸 세션 수(`terminated`)를 돌려주고 쿠키를 지운다. 로그인과 재확인은 계정 행을 `FOR SHARE`로 읽어, 바뀌는 중에 들어온 로그인이 변경이 끝난 뒤의 해시로 비교하게 한다. 그러지 않으면 바뀌기 전 비밀번호로 만든 세션이 모든 세션 종료를 비켜 갈 수 있다.
 - **연결 상세 항목:** 관리·관측 상태와 마지막 보고 시각, 마지막 ACK 순번과 시각, 대기(기록 수·바이트·가장 오래된 관측 시각, 모르면 `null`), 크기 초과 거부와 해석 실패(`parse_status`가 `failed`·`partial`)의 최근 `N`시간 건수, 누락 의심 구간, 시계·시간대 경고, 적용된 설정 버전, 등록 단계(등록 완료·설정 제공·에이전트 적용 확인·읽기·중앙 수신 확인·검색 가능 단계마다 처음 확인한 시각, 아직이면 `null`)와 파일별 시작 경계, 복구 보류(파일, 사유, 시작 시각, 알 수 있는 누락 범위, 서버에서 쓸 명령은 8.3절), 키 메타데이터, 진단 이력과 진단을 남기지 못한 공백 구간. 보고에서 온 값은 받은 시각을 함께 줘 미관측 때 `마지막 보고 기준`으로 보이게 한다(UI-11 7단계, UI-12).
 - **알림 규칙 항목:** 목록은 규칙마다 이름, 켬/끔, 평가 상태, 감시 품질, 조건 요약, 마지막 발화, 마지막 전달 결과, 마지막 성공 평가 시각, 확인하지 않은 최종 실패 수를 준다. 평가 상태·켬/끔·`final_failure_unacked` 필터를 받는다(UI-06). 상세는 여기에 해소 대기 진행(연속 회차와 필요 회차), 최근 미평가 구간, 관측되지 않는 대상 연결, 사건 이력을 더한다(UI-08).
 - **알림 규칙 입력:** 이름 1~100자·제어 문자 불가이며 같은 이름은 경고만 한다(TD-01). 시간 구간과 해소 대기는 1~1,440분 정수이고 해소 대기를 비우면 시간 구간과 같다. 임계는 1 이상 정수, 수신 주소는 10개까지이며 형식만 검사한다(Q12-01·03·12). 출처·레벨·본문·필드 조건이 하나도 없으면 `confirm_no_filter: true` 없이는 `422 validation_failed`(사유 `no_filter_needs_confirm`)로 돌려보내 화면이 경고하고 확인받게 한다(TD-05, UI-07).
@@ -1131,6 +650,7 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
 | 410 | `event_unavailable` | 보존 만료나 삭제로 가져올 수 없음 | UI-03 상태 7 |
 | 422 | `validation_failed` | 입력 오류. 칸 경로와 이유를 줌 | 입력 칸 옆 |
 | 422 | `condition_invalid` | 검색 조건 오류. 조건 경로와 이유를 줌 | CM-03 상태 5, CM-04 `이전 조건의 결과` |
+| 423 | `login_locked` | 연속 실패로 로그인이 잠김. 기다려도 풀리지 않고 서버 운영자의 로컬 재설정으로만 풀림(2026-11-07 합의) | UI-01 잠김 상태, CM-07·UI-16도 같은 안내 |
 | 429 | `login_throttled` | 로그인 시도 제한. 남은 대기 시간을 줌 | UI-01 `대기 N분` |
 | 429 | `search_busy` | 동시 검색 수 상한. `Retry-After` | CM-04 `시간 초과·오류`와 재시도 |
 | 429 | `rate_limited` | 요청이 너무 잦음. `Retry-After` | 실패 토스트 |
@@ -1141,7 +661,7 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
 
 테스트 메일 실패 사유는 5.5절 발송 결과표의 코드(`mail_connect_timeout`, `mail_tls_failed`, `mail_auth_failed`, `mail_recipient_rejected` 등)를 쓴다. 연결 문제와 주소 문제를 구분한다(Q12 5절).
 
-비밀번호 변경의 입력 오류 사유는 `current_password_wrong`, `password_too_short`, `password_common`(흔하거나 알려진 유출 값)이다(Q10-03, PT-15). 새 비밀번호 확인 칸이 다른 것은 화면에서 거른다. 현재 비밀번호 확인이 재확인을 겸하므로 최근 재확인이 없어도 `reauth_required`를 돌려주지 않고, 현재 비밀번호 오류는 재확인 실패와 같은 시도 제한에 센다(4.3절).
+비밀번호 변경의 입력 오류 사유는 `current_password_wrong`, `password_too_short`, `password_too_long`(2026-11-07 구현 때 더함), `password_common`(흔하거나 알려진 유출 값, 4.3절 `비밀번호 규칙`)이다(Q10-03, PT-15). 새 비밀번호 확인 칸이 다른 것은 화면에서 거른다. 현재 비밀번호 확인이 재확인을 겸하므로 최근 재확인이 없어도 `reauth_required`를 돌려주지 않고, 현재 비밀번호 오류는 재확인 실패와 같은 시도 제한에 센다(4.3절).
 
 ### 4.6 정리표 항목
 
@@ -1318,7 +838,7 @@ stateDiagram-v2
 
 ### 5.6 감사에 남기는 동작
 
-로그인 성공·실패, 로그아웃, 비밀번호 변경·로컬 재설정, 세션 종료, 수집 연결 등록·설정 수정·보관·재활성·구간 로그 삭제, 키 발급·교체·폐기, 서비스 이름 변경·보관·재활성, 서버 이름 변경과 연결의 서버·환경 태그 변경, 알림 규칙 생성·수정·켬/끔·삭제와 수신 주소 변경, 운영 수신 주소 변경이다(Q10-12, TD-17, WQ-81·88). 저장 검색은 업무 설정이 아니라 조사 조건이라 남기지 않는다. 에이전트에 닿는 작업은 단계마다 행을 남긴다(3.5절 WQ-85). 로그인·재확인 실패가 짧은 시간에 몰리면 `N`분마다 한 행으로 묶어 건수를 남겨 감사 기록이 폭주하지 않게 한다. 감사 값은 데이터로만 저장하고 화면에서 글자로만 보인다(Q10-12, PT-20).
+로그인 성공·실패, 로그아웃, 비밀번호 변경·로컬 초기 설정·재설정, 세션 종료, 수집 연결 등록·설정 수정·보관·재활성·구간 로그 삭제, 키 발급·교체·폐기, 서비스 이름 변경·보관·재활성, 서버 이름 변경과 연결의 서버·환경 태그 변경, 알림 규칙 생성·수정·켬/끔·삭제와 수신 주소 변경, 운영 수신 주소 변경이다(Q10-12, TD-17, WQ-81·88). 저장 검색은 업무 설정이 아니라 조사 조건이라 남기지 않는다. 에이전트에 닿는 작업은 단계마다 행을 남긴다(3.5절 WQ-85). 로그인·재확인 실패가 짧은 시간에 몰리면 `N`분마다 한 행으로 묶어 건수를 남겨 감사 기록이 폭주하지 않게 한다. 감사 값은 데이터로만 저장하고 화면에서 글자로만 보인다(Q10-12, PT-20).
 
 - **기록 순서(T06):** 감사 행은 바꾸는 관리 DB 트랜잭션 안에 함께 쓴다. 감사 쓰기가 실패하면 변경도 되돌리고 `held_audit_unavailable`로 답한다. 긴급 키 폐기·전체 세션 종료는 감사 없이 차단 상태만 확정하는 트랜잭션으로 다시 하고 `audit_gaps`와 `audit_gap` 배너를 남긴다(Q10-14 (5)). 로그인·로그아웃은 감사 쓰기가 실패해도 진행하고 공백으로 남긴다(Q10-14 (3)). 에이전트에 닿는 작업의 `에이전트 관측` 단계는 관측한 때 행을 더한다.
 - **보관과 정리:** 90일이 목표이고 감사 저장 상한이 우선이다. 상한에 닿으면 가장 오래된 행부터 지우고 `audit_cleanups`에 남겨 UI-15에 조회 가능 시작과 조기 정리 구간을 보인다(Q10-13).
@@ -1326,7 +846,7 @@ stateDiagram-v2
 
 | 묶음 | 코드 |
 | --- | --- |
-| 인증 | `auth.login`, `auth.login_failed`, `auth.reauth_failed`, `auth.logout`, `auth.password_change`, `auth.password_reset_local`, `auth.sessions_terminate` |
+| 인증 | `auth.login`, `auth.login_failed`, `auth.reauth_failed`, `auth.logout`, `auth.password_change`, `auth.password_set_local`(설치 때 초기 비밀번호, 2026-11-07 더함), `auth.password_reset_local`, `auth.sessions_terminate`, `auth.login_locked`(연속 실패로 잠긴 순간, 시스템, 2026-11-07 더함) |
 | 수집 연결 | `connection.register`, `connection.update`, `connection.move`(서버·환경 태그), `connection.archive`, `connection.reactivate`, `connection.delete_range` |
 | 키 | `key.issue`, `key.rotate`, `key.revoke` |
 | 서비스·서버 | `service.rename`, `service.archive`, `service.reactivate`, `server.rename` |
@@ -1491,8 +1011,14 @@ stateDiagram-v2
 | 명령(초안) | 하는 일 | 근거 |
 | --- | --- | --- |
 | `logdock admin set-password` | 설치 때 고유 초기 비밀번호를 정한다. 웹의 비밀번호 규칙을 같이 검사한다 | Q10-03 |
-| `logdock admin reset-password` | 분실·잠금 때 새 비밀번호를 정하고 모든 웹 세션을 끝내며 로그인 시도 제한을 푼다. 감사에 `서버 운영자(로컬)`로 남기고, 감사를 쓸 수 없으면 공백으로 남긴 채 진행한다 | Q10-03, Q10-14(6), WQ-89 |
+| `logdock admin reset-password` | 분실·잠금 때 새 비밀번호를 정하고 모든 웹 세션을 끝내며 로그인 시도 제한과 연속 실패 잠금을 푼다. 감사에 `서버 운영자(로컬)`로 남기고, 감사를 쓸 수 없으면 공백으로 남긴 채 진행한다 | Q10-03, Q10-14(6), WQ-89 |
 | `logdock config check` | 설정 파일과 비밀 파일의 권한을 검사만 한다 | Q16-05 |
+
+- **비밀번호 명령 구현(2026-11-07):** `apps/api`를 빌드한 `dist/cli.js`가 `admin set-password`·`admin reset-password`를 받는다. `logdock` 명령으로 묶는 방식은 배포 방식과 함께 정한다. DB 접속은 API와 같은 설정이다.
+  - 비밀번호는 터미널에서 화면에 보이지 않게 두 번 받거나 표준 입력의 첫 줄로 받는다. 명령 인자로는 받지 않는다. 프로세스 목록과 셸 기록에 남기 때문이다. 둘 다 웹과 같은 비밀번호 규칙(4.3절)을 검사한다.
+  - `set-password`는 계정이 하나도 없을 때만 공용 계정을 만들고 감사에 `auth.password_set_local`을 남긴다. 계정 이름은 5.3절 이름 규칙이고 길이 상한은 시제품 값 100자다. 계정이 있으면 바꾸지 않고 `reset-password`를 쓰라고 안내한다. 세션 종료와 시도 제한 해제를 빠뜨리지 않기 위해서다.
+  - `reset-password`는 이름이 없으면 하나뿐인 계정을 고른다. 모든 웹 세션을 끝내고(`password_reset_local`) 잠금을 포함한 시도 제한 기록을 모두 지운다. 시도 제한 열쇠는 계정 이름과 접속 주소의 해시라 이 계정의 열쇠만 골라낼 수 없고, 계정이 하나뿐이기 때문이다.
+  - 종료 코드는 0 성공, 1 실행 오류, 2 사용법·입력 오류다.
 
 ### 8.3 에이전트 로컬 명령
 
@@ -1600,4 +1126,4 @@ stateDiagram-v2
 
 - 구간 삭제는 요청 즉시 검색에서 빠진다. UI-12 상태 9는 `요청 접수`부터 검색에서 빠졌다고 보여도 된다.
 - 비밀번호 변경은 현재 비밀번호 확인이 재확인을 겸하므로, CM-07에서 비밀번호를 다시 묻지 않고 영향만 확인해도 된다(CM-07 적용 대상 목록 정리는 화면 쪽에서 한다).
-- CM-07 상태 3(비밀번호 틀림)은 `validation_failed`의 `current_password_wrong`으로, 시도 제한은 `login_throttled`의 남은 시간으로 그린다.
+- CM-07 상태 3(비밀번호 틀림)은 `validation_failed`의 `current_password_wrong`으로, 시도 제한은 `login_throttled`의 남은 시간으로 그린다. 연속 실패 잠금(`423 login_locked`, 2026-11-07 합의)은 기다려도 풀리지 않으므로 남은 시간 없이 서버 운영자의 로컬 재설정을 안내한다.

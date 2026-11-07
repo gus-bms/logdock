@@ -126,5 +126,21 @@ D17-06(서버 디스크와 object storage 중 어디에 저장할지)의 근거�
 이 절에서 확인하지 못한 것:
 
 - 에이전트를 올릴 서버의 kernel·아키텍처와 중앙 서버 배포판에서 고른 버전을 설치할 수 있는지.
-- DDL 초안의 제약이 실제로 막는지. 테이블과 도메인 생성은 2026-11-05 사용자가 개발용 PostgreSQL 18.6에 적용해 확인했다.
+- DDL 초안의 제약이 실제로 막는지. 테이블과 도메인 생성은 2026-11-05 사용자가 개발용 PostgreSQL 18.6에 적용해 확인했다. 제약 동작은 2026-11-06 임시 PostgreSQL 18.6에서 시험했다([계약 초안 3.6절](../specs/api-contract-v0.1.md#36-남은-것)).
 - PostgreSQL 19의 정식 출시일과 18과의 비호환 변경.
+
+## 9 중앙 서버 환경(NCP)
+
+2026-11-06 중앙 서버를 NCP(네이버 클라우드 플랫폼)에 두기로 해 서버 사양을 고르기 전에 공식 안내를 확인했다. 사양 결정은 [결정 기록](../decisions.md)에 있다. 가격과 성능은 바뀔 수 있으므로 서버를 만들 때 콘솔에서 다시 확인한다.
+
+| ID | 출처 | 확인한 내용 | 적용 |
+| --- | --- | --- | --- |
+| R51 | [서버 스펙(VPC)](https://guide.ncloud-docs.com/docs/server-spec-vpc), [서버 관리](https://guide.ncloud-docs.com/docs/server-manage-vpc), [OS 지원 종료](https://guide.ncloud-docs.com/docs/ncp-os-lifecycle) | 3세대(g3)는 KVM 기반이고 한국·싱가포르·일본 리전에서 쓴다. Standard는 vCPU 1개당 메모리 4GB(2/8, 4/16, 8/32 …), High Memory는 1:8(2/16, 4/32 …)이다. 서버 한도는 Standard 4 vCPU·16GB가 7,875 IOPS·144MB/s·1Gbps, Standard 8 vCPU·32GB가 15,000 IOPS·288MB/s·2Gbps, High Memory 4 vCPU·32GB가 7,875 IOPS·144MB/s·2Gbps다. VPC에서는 서버를 정지한 뒤 사양을 바꿀 수 있다(베어메탈·KVM GPU 서버 제외). 공인 IP는 Public Subnet의 서버에만 줄 수 있다. 공급사 지원 종료는 Ubuntu 22.04가 2028-04-30, Rocky Linux 9.X가 2032-05-31이다(2026-10 갱신 페이지) | 중앙 서버를 Standard 4 vCPU·16GB로 정했다. OS와 사설 서브넷 배치를 권장했다 |
+| R52 | [스토리지(VPC)](https://guide.ncloud-docs.com/docs/server-storage-vpc), [스토리지 추가](https://guide.ncloud-docs.com/docs/server-storage-add-vpc), [스토리지 변경](https://guide.ncloud-docs.com/docs/server-storage-modify-vpc) | 3세대 서버의 블록 스토리지는 CB1/CB2(SSD)와 FB1/FB2(HDD)다. FB는 기본(OS) 스토리지로 쓸 수 없다. CB는 10GB~16TB(기본 스토리지는 최대 2TB)이고 성능은 크기에 비례한다(GB당 3 IOPS, 300GB 안팎까지 순간 3,000 IOPS, 300GB부터 최대 250MB/s, 5,340GB에서 16,000 IOPS). FB는 크기와 무관하게 500 IOPS이고 100GB면 4MB/s다. 볼륨 성능은 서버 한도와 볼륨 값 가운데 낮은 쪽이다. 크기는 늘리기만 된다. 기본 스토리지는 서버를 정지해야 늘릴 수 있고 추가 스토리지는 운영 중에도 늘릴 수 있다. 기본 스토리지 외에 20개까지 더한다. 성능 값은 최대값이며 보장값이 아니다 | OS 디스크와 데이터 디스크를 나눈 SSD 구성과 데이터 300GB 시작을 권장했다 |
+| R53 | [Ubuntu release cycle](https://ubuntu.com/about/release-cycle), [Docker Engine 설치](https://docs.docker.com/engine/install/), ClickHouse [Debian/Ubuntu](https://clickhouse.com/docs/get-started/setup/self-managed/debian-ubuntu)·[RPM](https://clickhouse.com/docs/get-started/setup/self-managed/redhat) 설치, PostgreSQL [Ubuntu](https://www.postgresql.org/download/linux/ubuntu/)·[Red Hat 계열](https://www.postgresql.org/download/linux/redhat/) 내려받기 | Ubuntu 24.04 LTS의 표준 보안 지원은 2029-05, Ubuntu Pro의 확장 지원은 2034-05까지다. Ubuntu Pro는 개인 용도 5대까지 무료이고 업무용은 유료다. Docker Engine 설치 문서는 Ubuntu Noble 24.04를 지원 목록에 두고, Rocky Linux는 없으며 RHEL 8·9·10만 있다. 파생 배포판은 "Docker doesn't test or verify installation"이라고 밝힌다. ClickHouse는 자체 저장소에서 DEB와 RPM("all other rpm-based Linux distributions")을 모두 낸다. PostgreSQL apt 저장소는 noble(24.04)을, yum 저장소는 Rocky Linux를 지원한다(18 버전을 배포판별로 명시하지는 않는다). Rocky Linux 자체 문서의 지원 종료 페이지는 열리지 않았다(R51의 NCP 표 2032-05-31을 쓴다) | 중앙 서버 OS로 Ubuntu 24.04를 권장했다 |
+
+이 절에서 확인하지 못한 것:
+
+- 서버·스토리지 가격. 가격 페이지가 스크립트로 그려져 읽지 못했다. [요금 계산기](https://www.ncloud.com/charge/calc)에서 확인한다.
+- 기본 스토리지의 기본 크기. 콘솔의 서버 생성 화면에서 확인한다. OS 이미지는 2026-11-06 사용자가 콘솔에 Ubuntu 24.04가 있음을 확인했다.
+- 사설 서브넷 서버의 관리 접속 방식(SSL VPN이나 접속용 서버). 회사의 기존 방식을 따른다.

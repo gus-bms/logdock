@@ -6,10 +6,12 @@
 
 | 영역 | 소스에서 확인한 동작 |
 | --- | --- |
-| NestJS API | `GET /api/health` 상태 확인 응답, 로컬 loopback 바인딩 |
+| NestJS API | `GET /api/health` 상태 확인 응답, 로컬 loopback 바인딩. 인증·세션(로그인·로그아웃·재확인·세션 확인·전체 세션 종료)과 한 검사 지점의 세션·CSRF 확인, 로그인 시도 제한·연속 실패 잠금, 인증 감사. 비밀번호 변경(흔한·유출 값 차단)과 계정 설정 로컬 명령(`admin set-password`·`reset-password`). 서비스·서버 목록과 이름 변경 |
 | React 화면 | API 연결 확인, 실패·시간 초과·재시도 |
 | 개발 환경 | npm workspaces, typecheck/build, Vite API 프록시 |
-| 로그 기능 | 수집·저장·검색·source 등록·운영 인증은 미구현 |
+| 관리 DB | `db/postgres/migrations`의 마이그레이션(계약 초안 3.4절 DDL, 세션 CSRF 토큰 열, 로그인 잠금 열)과 임시 PostgreSQL 제약 시험 |
+| 에이전트 시제품 | 측정용 Go 시제품(`agent/`): 파일·파일명 규칙·journald 읽기, 디스크 대기, 묶음 보내기, 상태 보고. macOS 시험만 |
+| 로그 기능 | 중앙 저장·검색, 수신 서버, source 등록은 미구현 |
 
 API health는 중앙 저장소나 로그 수집 상태를 의미하지 않는다. 현재 코드를 최종 기술 선택으로 간주하지 않는다.
 

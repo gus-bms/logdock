@@ -13,15 +13,18 @@
 - Node는 `.node-version`의 pin(24.22.2)과 engines(`>=24.22.2 <25`), npm 11.12.1을 쓴다. 다른 프로젝트용 전역 기본 버전은 바꾸지 않는다. fnm을 쓰면 저장소 루트에서 `fnm install`, `fnm use`로 고른다.
 - 개발 명령은 루트 README에 있다. 문서 작업만 할 때는 앱 실행이나 의존성 설치가 필요 없다.
 - 설치, 대량 다운로드, 장시간 빌드, 로그인은 직접 실행하지 않고 사용자에게 명령을 넘긴다.
-- 개발용 PostgreSQL은 이 PC에 둔다. PC 안에서만 열고 합성 데이터만 넣으며 중앙 서버와 같은 메이저 버전(PostgreSQL 18)을 쓴다. ClickHouse는 이 PC에 띄우지 않고, ClickHouse가 필요한 개발과 측정은 사용자가 준비하는 중앙 서버(메모리 16GB)에서 한다. 서버 준비 전에는 PostgreSQL만 쓰는 관리 기능과 DB 없이 할 수 있는 설계·에이전트 개발을 먼저 한다(2026-11-05, [결정 기록](../../decisions.md)).
+- 개발용 PostgreSQL은 이 PC에 둔다. PC 안에서만 열고 합성 데이터만 넣으며 중앙 서버와 같은 메이저 버전(PostgreSQL 18)을 쓴다. ClickHouse는 이 PC에 띄우지 않고, ClickHouse가 필요한 개발과 측정은 사용자가 준비하는 NCP 중앙 서버(Standard 4 vCPU·16GB, 2026-11-06 결정)에서 한다. 서버 준비 전에는 PostgreSQL만 쓰는 관리 기능과 DB 없이 할 수 있는 설계·에이전트 개발을 먼저 한다(2026-11-05, [결정 기록](../../decisions.md)).
 - 테이블 생성, 데이터 입력 같은 DB 변경 명령은 로컬 개발용 DB(`logdock_dev`)라도 사용자가 실행하고 에이전트는 SQL과 스크립트만 제공한다. 예외는 시험이 이 PC의 임시 폴더에 스스로 띄우고 끝나면 지우는 임시 PostgreSQL뿐이다. 네트워크 포트 없이 그 폴더의 소켓으로만 접속하고 합성 데이터만 쓴다(2026-11-05 [결정 기록](../../decisions.md), AGENTS.md DB 규칙).
 - 2026-11-05 사용자 요청으로 고정 버전([D17 근거 8절](../../research/d17-tech-evidence-2026-11-03.md#8-버전-고정))을 Homebrew로 설치했다. Go는 1.27.3이고 PATH에 있다. PostgreSQL은 18.6이며 다른 버전과 겹치지 않게 PATH에 올라가지 않으므로 `$(brew --prefix postgresql@18)/bin`의 명령을 쓴다. 설치 때 UTF8 인코딩의 기본 클러스터가 만들어졌고, 기본 설정은 localhost에서만 접속을 받으며 로컬 접속은 비밀번호 없는 `trust` 인증이다. 서버 시작, DB 생성, DDL 적용은 위 DB 규칙에 따라 사용자가 한다.
 - 개발용 DB는 소유 역할 `logdock_owner`, DB 이름 `logdock_dev`, UTF8, builtin `C.UTF-8` 로캘이다([계약 초안 3.4절 설계 메모](../../specs/api-contract-v0.1.md)). 2026-11-05 사용자가 서버를 시작하고 이 역할과 DB를 만든 뒤 DDL 초안을 한 트랜잭션으로 적용해 확인 질의(테이블 31, 도메인 2 기준)까지 마쳤다고 알렸다. 에이전트는 이 DB에 접속하지 않으며, 읽어야 할 일이 생기면 사용자가 `.env`에 읽기 전용 접속 정보를 둔 뒤에만 읽는다. 서버를 `brew services run`으로 켰다면 재부팅 뒤에는 꺼져 있으니 같은 명령으로 다시 켠다.
+- 관리 DB의 DDL은 2026-11-06 계약 초안에서 [`db/postgres/migrations`](../../../db/postgres/migrations/)로 옮겼다. `0001_initial.sql`은 `logdock_dev`에 적용한 초안과 내용이 같아 다시 적용하지 않는다. `0002_session_csrf.sql`(세션 CSRF 토큰 열)과 `0003_login_lockout.sql`(로그인 연속 실패 잠금 열)은 2026-11-07 사용자가 `logdock_dev`에 적용했고, 같은 날 `admin set-password`로 공용 계정을 만들었다. 이후 마이그레이션도 사용자가 적용한다. 파일은 사용자가 소유 역할로 번호 순서대로, 파일마다 한 트랜잭션으로 실행한다.
+- 스키마 제약 시험은 `npm run test:db`다. 시험이 이 PC의 임시 폴더에 PostgreSQL을 띄우고(TCP 포트 없음, 소켓만) 마이그레이션을 적용해 합성 데이터로 확인한 뒤 폴더째 지운다. 외부 패키지가 필요 없고 PostgreSQL 명령은 `LOGDOCK_PG_BIN`, Homebrew `postgresql@18`, PATH 순서로 찾는다. 시험을 강제로 끊으면 임시 폴더(`ldpg-`로 시작)가 남을 수 있다.
 - 사용자의 서버 셸은 zsh다. 사용자에게 넘기는 명령 블록에 `#` 주석이나 꺾쇠 자리표시를 넣지 않는다.
 
 ## 실행 경계
 
 - 운영 서버 접속, 수집기 설치, 권한·rotation·앱 설정 변경, 배포는 사용자가 그때 요청한 범위에서만 한다.
+- 중앙 서버(NCP)는 이 PC에서 SSH(`logdock-central`, sudo 없는 전용 계정)로 상태 확인 명령만 직접 실행한다. 설치·설정 변경·DB 변경은 명령을 넘겨 사용자가 실행하고, 실행한 명령은 보고한다. 중앙 DB는 사용자가 만든 읽기 전용 계정 정보가 `.env`에 있을 때만 읽는다. 서버 주소와 키는 저장소에 두지 않는다(2026-11-06 [결정 기록](../../decisions.md)).
 - 수집·조사·운영 검증 시나리오(AT, IT, OT)는 정의한 계획이며 실행 결과가 아니다. 과거 빌드 결과를 현재 검증으로 쓰지 않는다.
 - GitHub CLI 로그인, Git 작성자, 원격 쓰기 권한은 환경마다 다시 확인하고 토큰을 출력하거나 기록하지 않는다.
 
@@ -29,9 +32,11 @@
 
 | 영역 | 실제 소스에서 확인한 범위 |
 | --- | --- |
-| API | NestJS의 `GET /api/health`, loopback 주소의 3001 포트 |
+| API | NestJS, loopback 주소의 3001 포트. `GET /api/health`와 인증·세션(로그인·로그아웃·재확인·세션 확인·전체 세션 종료, 검사 지점·CSRF, 시도 제한·연속 실패 잠금, 인증 감사), 비밀번호 변경, 서비스·서버 목록과 이름 변경. 계정 설정 로컬 명령은 빌드한 `apps/api/dist/cli.js`의 `admin set-password`·`reset-password`다. DB 접속은 `LOGDOCK_DB_*` 환경 변수다. 시험은 `npm run test:api`(임시 PostgreSQL) |
 | 웹 | React·Vite, API 연결 정상/실패·시간 초과·재시도 표시 |
 | 개발 구성 | npm workspaces, typecheck/build 스크립트, 개발 API 프록시 |
-| 미구현 | 로그 수집·저장·검색, 수집 연결 등록, 인증·권한, 에이전트, 알림 |
+| 관리 DB | `db/postgres/migrations`의 마이그레이션 3개(테이블 31개·도메인 2개, 세션 CSRF 토큰 열, 로그인 잠금 열)와 임시 PostgreSQL 제약 시험(`npm run test:db`) |
+| 에이전트 | 측정용 Go 시제품(`agent/`). 파일 하나·파일명 규칙·journald 읽기, 디스크 대기, 묶음 보내기, 상태 보고. 시험은 macOS에서만 돌렸다 |
+| 미구현 | 로그 저장·검색, 수신 서버, 수집 연결 등록, 알림 |
 
 health API 정상은 수집기·저장소·검색 정상의 증거가 아니다. 현재 연결 확인 화면은 와이어프레임을 거치기 전에는 고치지 않는다.
