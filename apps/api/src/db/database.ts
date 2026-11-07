@@ -65,6 +65,17 @@ export async function trySavepoint(c: Queryable, name: string, fn: () => Promise
   }
 }
 
+/** advisory lock의 첫 키(기능 구분). 다른 기능이 쓰면 여기에 다른 값을 더한다. */
+const COUNT_LOCKS = { savedSearches: 1 } as const;
+
+/**
+ * 개수 상한을 지키려고 같은 계정의 만들기 요청을 트랜잭션 끝까지 줄 세운다. 세고 넣는 사이에 다른 요청이 끼면 상한을
+ * 넘을 수 있어서다. 계정 행을 잠그면 로그인(`FOR SHARE`)까지 기다리게 되므로 advisory lock을 쓴다.
+ */
+export async function lockCount(c: Queryable, kind: keyof typeof COUNT_LOCKS, accountId: number): Promise<void> {
+  await c.query('SELECT pg_advisory_xact_lock($1::int, $2::int)', [COUNT_LOCKS[kind], accountId]);
+}
+
 /** timestamptz를 UTC RFC 3339 마이크로초 문자열로 바꾸는 SQL 식(계약 4.1절 값 표기). */
 export function utc(expr: string): string {
   return `to_char((${expr}) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;

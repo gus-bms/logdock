@@ -10,3 +10,11 @@ export function parse<T extends z.ZodType>(schema: T, input: unknown): z.infer<T
     r.error.issues.map((i) => ({ path: i.path.map(String).join('.'), reason: i.code })),
   );
 }
+
+/** 경로의 정수 ID. 정수가 아니면 그런 대상이 없는 것으로 본다. */
+export function idParam(raw: string): number {
+  if (!/^[1-9][0-9]{0,9}$/.test(raw)) throw errors.notFound();
+  const id = Number(raw);
+  if (id > 2147483647) throw errors.notFound();
+  return id;
+}

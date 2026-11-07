@@ -54,6 +54,13 @@ export interface AppConfig {
    * `등록·연결 대기`가 pendingSeconds보다 오래 이어지면 `조치 필요`에 센다. 측정·Q15 전의 시제품 값이다.
    */
   observation: { staleSeconds: number; pendingSeconds: number };
+  /**
+   * 검색 조건 한도(조건 수·검색식 길이, Q15의 `N`, 미정). 저장 검색·알림 규칙·검색이 같이 쓴다. 시제품 값이다.
+   * maxConditions는 본문·필드 조건의 합이고, maxSourceValues는 출처 목록마다의 값 수다.
+   */
+  search: { maxConditions: number; maxTextLength: number; maxSourceValues: number; maxFieldPathLength: number };
+  /** 저장 검색 개수 상한(WQ-33과 같은 `N`, 미정). 시제품 값이다. */
+  savedSearchLimit: number;
   /** 요청 본문 상한. */
   bodyLimit: string;
 }
@@ -77,6 +84,8 @@ export const DEFAULTS: Omit<AppConfig, 'db'> = {
   // 에이전트 설정 검사가 받는 범위는 1바이트~64MiB다(agent/internal/config).
   maxEventBytes: { default: 1024 * 1024, max: 64 * 1024 * 1024 },
   observation: { staleSeconds: 3 * 60, pendingSeconds: 24 * 60 * 60 },
+  search: { maxConditions: 20, maxTextLength: 1000, maxSourceValues: 100, maxFieldPathLength: 256 },
+  savedSearchLimit: 100,
   bodyLimit: '1mb',
 };
 
