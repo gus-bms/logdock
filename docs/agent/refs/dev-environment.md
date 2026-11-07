@@ -33,11 +33,11 @@
 
 | 영역 | 실제 소스에서 확인한 범위 |
 | --- | --- |
-| API | NestJS, loopback 주소의 3001 포트. `GET /api/health`와 인증·세션(로그인·로그아웃·재확인·세션 확인·전체 세션 종료, 검사 지점·CSRF, 시도 제한·연속 실패 잠금, 인증 감사), 비밀번호 변경, 서비스·서버 목록과 이름 변경, 수집 연결 사전 검사·등록 확정·설정 내려받기·목록·상세·조치 필요 수·설정 수정·환경 태그와 서버 바꾸기·보관·재활성, 수집 키 발급·교체·폐기, 서비스 보관·재활성·보관 전 영향, 저장 검색(검색·알림 규칙이 같이 쓸 조건 검사 포함), 알림 규칙(만들기·수정·켬/끔·삭제·`받았음` 표시)과 사건 조회·최종 실패 확인, 메일 상태·테스트 발송(자체 SMTP 제출)·운영 수신 주소, 화면용 설정값·전역 배너·조건 값 목록·감사 조회. 백그라운드 작업은 같은 코드의 `logdock-worker`(`npm run start:worker`)가 알림·운영 메일을 보낸다. API 서버는 수신 서버 주소 `LOGDOCK_INGEST_URL`(https)이 있어야 시작한다. 수집 대상·형식 검사는 에이전트의 Go 규칙을 WebAssembly로 빌드해 쓰므로 API 빌드·시험에 Go가 필요하다(`npm run build:wasm`, 빌드·시험 스크립트가 먼저 부른다). 계정 설정 로컬 명령은 빌드한 `apps/api/dist/cli.js`의 `admin set-password`·`reset-password`다. DB 접속은 `LOGDOCK_DB_*` 환경 변수다. 시험은 `npm run test:api`(임시 PostgreSQL) |
+| API | NestJS, loopback 주소의 3001 포트. `GET /api/health`와 인증·세션(로그인·로그아웃·재확인·세션 확인·전체 세션 종료, 검사 지점·CSRF, 시도 제한·연속 실패 잠금, 인증 감사), 비밀번호 변경, 서비스·서버 목록과 이름 변경, 수집 연결 사전 검사·등록 확정·설정 내려받기·목록·상세·조치 필요 수·설정 수정·환경 태그와 서버 바꾸기·보관·재활성, 수집 키 발급·교체·폐기, 서비스 보관·재활성·보관 전 영향, 저장 검색(검색·알림 규칙이 같이 쓸 조건 검사 포함), 알림 규칙(만들기·수정·켬/끔·삭제·`받았음` 표시)과 사건 조회·최종 실패 확인, 메일 상태·테스트 발송(자체 SMTP 제출)·운영 수신 주소, 화면용 설정값·전역 배너·조건 값 목록·감사 조회. 백그라운드 작업은 같은 코드의 `logdock-worker`(`npm run start:worker`)가 알림·운영 메일 발송과 기록 정리를 맡는다. API 서버는 수신 서버 주소 `LOGDOCK_INGEST_URL`(https)이 있어야 시작한다. 수집 대상·형식 검사는 에이전트의 Go 규칙을 WebAssembly로 빌드해 쓰므로 API 빌드·시험에 Go가 필요하다(`npm run build:wasm`, 빌드·시험 스크립트가 먼저 부른다). 계정 설정 로컬 명령은 빌드한 `apps/api/dist/cli.js`의 `admin set-password`·`reset-password`다. DB 접속은 `LOGDOCK_DB_*` 환경 변수다. 시험은 `npm run test:api`(임시 PostgreSQL) |
 | 웹 | React·Vite, API 연결 정상/실패·시간 초과·재시도 표시 |
 | 개발 구성 | npm workspaces, typecheck/build 스크립트, 개발 API 프록시 |
 | 관리 DB | `db/postgres/migrations`의 마이그레이션 3개(테이블 31개·도메인 2개, 세션 CSRF 토큰 열, 로그인 잠금 열)와 임시 PostgreSQL 제약 시험(`npm run test:db`) |
 | 에이전트 | 측정용 Go 시제품(`agent/`). 파일 하나·파일명 규칙·journald 읽기, 디스크 대기, 묶음 보내기, 상태 보고. 시험은 macOS에서만 돌렸다 |
-| 미구현 | 로그 저장·검색, 수집 연결 구간 삭제, 알림 평가, 기록 정리 작업, ClickHouse를 쓰는 API(검색·이벤트·저장 공간 등). 수신 서버는 시제품을 만드는 중이다(ingest-prototype) |
+| 미구현 | 로그 저장·검색, 수집 연결 구간 삭제, 알림 평가, ClickHouse를 쓰는 API(검색·이벤트·저장 공간 등). 수신 서버는 시제품을 만드는 중이다(ingest-prototype) |
 
 health API 정상은 수집기·저장소·검색 정상의 증거가 아니다. 현재 연결 확인 화면은 와이어프레임을 거치기 전에는 고치지 않는다.
