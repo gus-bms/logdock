@@ -6,7 +6,7 @@
 
 | 영역 | 소스에서 확인한 동작 |
 | --- | --- |
-| NestJS API | `GET /api/health` 상태 확인 응답, 로컬 loopback 바인딩. 인증·세션(로그인·로그아웃·재확인·세션 확인·전체 세션 종료)과 한 검사 지점의 세션·CSRF 확인, 로그인 시도 제한·연속 실패 잠금, 인증 감사. 비밀번호 변경(흔한·유출 값 차단)과 계정 설정 로컬 명령(`admin set-password`·`reset-password`). 서비스·서버 목록과 이름 변경. 수집 연결 사전 검사(에이전트와 같은 Go 규칙을 WebAssembly로)·등록 확정(키 원문과 설정 파일)·설정 내려받기·목록·상세·조치 필요 수. 수집 키 발급·교체·폐기 |
+| NestJS API | `GET /api/health` 상태 확인 응답, 로컬 loopback 바인딩. 인증·세션(로그인·로그아웃·재확인·세션 확인·전체 세션 종료)과 한 검사 지점의 세션·CSRF 확인, 로그인 시도 제한·연속 실패 잠금, 인증 감사. 비밀번호 변경(흔한·유출 값 차단)과 계정 설정 로컬 명령(`admin set-password`·`reset-password`). 서비스·서버 목록과 이름 변경. 수집 연결 사전 검사(에이전트와 같은 Go 규칙을 WebAssembly로)·등록 확정(키 원문과 설정 파일)·설정 내려받기·목록·상세·조치 필요 수·보관·재활성. 수집 키 발급·교체·폐기. 서비스 보관·재활성 |
 | React 화면 | API 연결 확인, 실패·시간 초과·재시도 |
 | 개발 환경 | npm workspaces, typecheck/build, Vite API 프록시 |
 | 관리 DB | `db/postgres/migrations`의 마이그레이션(계약 초안 3.4절 DDL, 세션 CSRF 토큰 열, 로그인 잠금 열)과 임시 PostgreSQL 제약 시험 |

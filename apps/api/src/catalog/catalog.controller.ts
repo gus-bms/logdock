@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Req } from '@nestjs/common';
 import { z } from 'zod';
 
+import { RequireReauth } from '../auth/auth.guard.js';
 import { errors } from '../common/api-error.js';
 import type { ApiRequest } from '../common/http.js';
 import { parse } from '../common/validate.js';
+import { ArchiveService } from '../connections/archive.service.js';
 import { CatalogService } from './catalog.service.js';
 
 const Version = z.number().int().positive();
@@ -21,7 +23,32 @@ function idParam(raw: string): number {
 /** 서비스·서버 목록과 이름 변경(계약 4.3·5.3절). 재확인 없이 감사에 남기고 감사 장애 때 보류한다(WQ-52). */
 @Controller('v1')
 export class CatalogController {
-  constructor(private readonly catalog: CatalogService) {}
+  constructor(
+    private readonly catalog: CatalogService,
+    private readonly archives: ArchiveService,
+  ) {}
+
+  /** 서비스 보관 전 영향(UI-10 상태 7): 하위 연결의 수신 차단과 대기, 이 서비스를 쓰는 저장 검색·알림 규칙. */
+  @Get('services/:id/archive-impact')
+  async archiveImpact(@Param('id') id: string) {
+    return this.archives.serviceImpact(idParam(id));
+  }
+
+  /** 서비스 보관(CM-07). 보관되지 않은 하위 연결을 모두 보관하고 `서비스와 함께 보관` 표시를 남긴다. */
+  @Post('services/:id/archive')
+  @HttpCode(200)
+  @RequireReauth()
+  async archiveService(@Param('id') id: string, @Req() req: ApiRequest) {
+    return this.archives.archiveService(idParam(id), req.session!.accountId);
+  }
+
+  /** 서비스 재활성(CM-07). 서비스와 함께 보관된 연결만 되살린다(WQ-55). */
+  @Post('services/:id/reactivate')
+  @HttpCode(200)
+  @RequireReauth()
+  async reactivateService(@Param('id') id: string, @Req() req: ApiRequest) {
+    return this.archives.reactivateService(idParam(id), req.session!.accountId);
+  }
 
   @Get('services')
   async services() {

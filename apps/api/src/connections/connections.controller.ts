@@ -5,6 +5,7 @@ import { RequireReauth } from '../auth/auth.guard.js';
 import { type ApiRequest, type ApiResponse, header } from '../common/http.js';
 import { idempotencyKey } from '../common/idempotency.js';
 import { parse } from '../common/validate.js';
+import { ArchiveService } from './archive.service.js';
 import { ConnectionBody } from './connection-input.js';
 import { ConnectionViewsService, OBSERVATION_STATES } from './connection-views.service.js';
 import { ConnectionsService } from './connections.service.js';
@@ -27,6 +28,7 @@ export class ConnectionsController {
     private readonly connections: ConnectionsService,
     private readonly views: ConnectionViewsService,
     private readonly keys: KeysService,
+    private readonly archives: ArchiveService,
   ) {}
 
   /** 서비스별 연결 목록(UI-10). 기본은 보관되지 않은 연결이고 `archived=true`면 보관된 연결이다. */
@@ -81,6 +83,22 @@ export class ConnectionsController {
   @Get(':id/config')
   async config(@Param('id') id: string) {
     return this.connections.configFile(id);
+  }
+
+  /** 연결 보관(CM-07). 새 수신을 막고 유효 키를 모두 무효로 한다. 남은 대기는 에이전트에 보존한다(WQ-53). */
+  @Post(':id/archive')
+  @HttpCode(200)
+  @RequireReauth()
+  async archive(@Param('id') id: string, @Req() req: ApiRequest) {
+    return this.archives.archiveConnection(id, req.session!.accountId);
+  }
+
+  /** 연결 재활성(CM-07). `등록·연결 대기`로 돌아가며 새 키를 받아야 한다(WQ-56). */
+  @Post(':id/reactivate')
+  @HttpCode(200)
+  @RequireReauth()
+  async reactivate(@Param('id') id: string, @Req() req: ApiRequest) {
+    return this.archives.reactivateConnection(id, req.session!.accountId);
   }
 
   /**

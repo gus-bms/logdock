@@ -575,8 +575,8 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
   - 이름 변경 본문은 서비스 `{name, version}`, 서버 `{display_name, version}`이고 바뀐 대상을 돌려준다. 이름은 NFC로 맞추고 앞뒤 공백을 뺀 뒤 1~100자다(5.3절 `N`의 시제품 설정값). 어기면 `422 validation_failed`이고 사유는 `too_small`·`too_big`·`control_characters`다.
   - 대소문자까지 같은 이름이면 바꾸지 않고 감사도 남기지 않는다. `version_conflict`는 `params.current`에 지금 값을 주고, 바뀐 항목은 화면이 가진 값과 비교해 보인다. 경로의 ID가 양의 정수가 아니면 `404 not_found`다.
   - 감사에는 대상 ID와 바뀐 항목 이름(`changed_fields`)만 남긴다.
-  - 서비스 보관·재활성과 보관 전 영향은 하위 수집 연결과 키 상태를 함께 바꾸므로 수집 연결과 같이 만든다.
-- **수집 연결 사전 검사 구현(2026-11-07):** 연결·서비스 보관·재활성은 다음 단계다.
+  - 서비스 보관·재활성과 보관 전 영향은 하위 수집 연결과 키 상태를 함께 바꾸므로 수집 연결과 같이 만들었다(아래 `보관·재활성 구현`).
+- **수집 연결 사전 검사 구현(2026-11-07):** 설정 수정(새 설정 버전)·환경 태그와 서버 바꾸기·구간 로그 삭제는 다음 단계다.
   - 본문은 등록과 같다: `service`(기존 `{id, version}` 또는 새 `{name}`), `server_display_name`·`environment`(선택, 비우면 `null`), `target`(`type`·`path` 또는 `kind`·`name`), `format`(`type`·`event_start`·`log_timezone`·`max_event_bytes`), `extraction_rule`(지금은 비워 둠).
   - 통과하면 `200`과 저장할 형태로 맞춘 값(`valid: true`, 새 서비스 여부, unit 이름의 `.service` 붙임, 기본 이벤트 크기)을 주고 아무것도 만들지 않는다. `max_event_bytes`를 주지 않으면 1MiB, 최대 64MiB다(D03의 `N`이 정해지기 전의 시제품 설정값, 64MiB는 에이전트가 받는 상한).
   - 입력 오류는 모든 칸을 한 번에 `422 validation_failed`로 준다. 사유: 수집 대상 `required`·`path_not_absolute`·`wildcard_not_allowed`·`control_characters`·`path_not_clean`·`wildcard_in_folder`·`wildcard_not_supported`·`pattern_without_wildcard`·`pattern_invalid`·`path_not_for_journald`·`name_invalid`·`kind_invalid`·`only_for_journald`·`type_invalid`, 형식 `required`·`only_for_multiline`·`pattern_invalid`(오류가 난 부분 `expr`)·`type_invalid`, 서비스 `required`·`id_or_name`·`not_found`, 이름 칸 `too_small`·`too_big`·`control_characters`, `timezone_invalid`, 이벤트 크기 `too_small`·`too_big`, 추출 규칙 `not_supported`.
@@ -597,6 +597,11 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
   - `조치 필요`는 4.4절대로 SQL에서 한 번 계산해 목록과 `GET /api/v1/connections/summary`(`{needs_action}`)가 같이 쓴다: `전송 차단`, `needs_check`·`disk_unavailable`·`clock_check`·`stale`·`events_rejected`, 키 무효·폐기로 인한 `send_error`, 기준(시제품 설정값 24시간)보다 오래 이어진 `등록·연결 대기`. 등록·연결 대기가 언제 시작됐는지는 따로 두지 않아 연결의 마지막 변경 시각으로 잰다. 보관된 연결과 키 교체 중은 세지 않는다.
   - `GET /api/v1/connections`는 서비스 이름(대소문자 무시)·서비스 ID·연결 ID 순이고, `archived`(기본 보관 안 됨)·`observation`·`needs_action`·`service_id`로 거른다. `limit`(기본 50, 최대 200)과 불투명한 `cursor`로 나눠 받는다. 항목은 연결·서비스·서버·환경 태그·대상·관리 상태·관측 상태와 마지막 보고 시각·보고의 대기량(없으면 `null`)·유효 키 수·조치 필요다.
   - `GET /api/v1/connections/{id}`는 여기에 형식, 지금·적용된 설정 버전, 보관 정보, 상태 보고의 에이전트·읽기·전송·누락 의심·자원 값, 중앙 ACK(`ingest_progress`의 마지막 세대와 확인 순번), 등록 단계 시각, 모든 키의 상태, 최근 진단 이력 20건을 더한다. 로그 저장소에서 세는 최근 거부·해석 실패 수는 ClickHouse 연동 때 채우며 그전에는 `null`이다.
+- **보관·재활성 구현(2026-11-07):** 모두 최근 재확인이 필요하고, 감사를 쓸 수 없으면 아무것도 바꾸지 않고 보류한다.
+  - `POST /api/v1/connections/{id}/archive`는 연결을 `보관`으로 바꾸고 유효 키를 모두 `보관으로 무효`로 한다. 폐기 요청 중인 키는 수신 서버가 확정하게 둔다. 요청 접수와 중앙 확정이 한 트랜잭션에서 일어나 응답의 `stages`는 두 시각이 같고 `에이전트 관측`은 `null`이며, 감사 `connection.archive`를 단계 `confirmed`로 남긴다. 이미 보관됐으면 `409 target_archived`다.
+  - `POST /api/v1/connections/{id}/reactivate`는 보관된 연결만 `등록·연결 대기`로 되돌린다(아니면 `409 invalid_state`). 옛 키는 살아나지 않아 키 발급으로 새 키를 받는다. 서비스가 보관돼 있으면 `409 target_archived`이고, 그 사이 같은 서버·같은 대상의 다른 연결이 등록됐으면 `409 duplicate_connection`(그 연결의 외부 ID)이다.
+  - `GET /api/v1/services/{id}/archive-impact`는 보관되지 않은 하위 연결과 보고된 대기(보고가 없으면 `null`), 이 서비스나 그 연결을 조건 출처로 쓰는 저장 검색과 지우지 않은 알림 규칙을 준다.
+  - `POST /api/v1/services/{id}/archive`는 서비스와 보관되지 않은 하위 연결을 모두 보관하고 그 연결에 `서비스와 함께 보관` 표시를 남긴다. `POST /api/v1/services/{id}/reactivate`는 그 표시가 있는 연결만 되살리고 따로 보관한 연결은 그대로 둔다(WQ-55). 감사는 `service.archive`·`service.reactivate`와 연결마다 사유 `with_service`의 `connection.archive`·`connection.reactivate`다.
 - **로그인:** `POST /api/v1/auth/login`은 계정 이름, 비밀번호, 돌아갈 곳(`return_to`)을 받는다. 실패는 계정이 있는지와 무엇이 틀렸는지 드러내지 않는 `401 login_failed` 하나다. 시도 제한에 걸리면 `429 login_throttled`와 남은 대기 시간을 준다(Q10-03, UI-01). `return_to`는 이 웹의 내부 경로만 받고 다른 호스트나 `//`로 시작하는 값은 버린다. 메일 링크(`/alerts/incidents/{public_ref}`)는 로그인 뒤 그 사건의 알림 조사 모드로 돌아간다(TD-16).
 - **재확인:** `POST /api/v1/auth/reauth`는 비밀번호를 받아 세션의 `reauth_at`을 갱신한다. 틀리면 `422 validation_failed`(사유 `current_password_wrong`)로 답해 CM-07 창을 유지하게 한다(CM-07 상태 3). 세션을 가진 사람이 이 경로로 비밀번호를 끝없이 맞혀 보지 못하게 실패는 로그인과 같은 시도 제한에 세고, 넘으면 `429 login_throttled`다. 재확인 실패도 로그인 실패처럼 감사에 묶어 남긴다(Q10-03, Q10-12).
 - **인증 구현 설계(2026-11-06):** 수치는 측정·협의 전의 시제품 값이며 코드가 아닌 설정값이다.
