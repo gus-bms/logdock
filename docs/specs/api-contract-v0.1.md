@@ -639,6 +639,12 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
   - `DELETE /api/v1/alert-rules/{id}`(`204`)는 지운 시각을 남기고 목록·상세에서 뺀다. 열린 사건을 `rule_deleted`로 닫고 보내지 않은 메일을 취소한다. 사건과 메일 링크는 남는다.
   - `POST /api/v1/alert-rules/{id}/recipients/confirm`(`{"address"}`)은 대소문자를 가리지 않고 그 주소에 `받았음` 시각을 처음 한 번만 남긴다(`alert_rule.update`, `recipient_confirmed`). 편집 중인 화면과 부딪히지 않게 규칙의 `version`은 올리지 않는다. 규칙에 없는 주소는 `404`다.
   - 사건 이력(`GET /api/v1/alert-rules/{id}/incidents`)은 발화 시각 최신순이다. 사건 상세(`GET /api/v1/incidents/{public_ref}`)는 발화 때의 이름·조건·구간·임계(`at_fire`, 조건의 대상은 지금 이름), 규칙의 지금 상태(`rule.status`: `same`·`changed`·`deleted`), 수신자별 전달 상태(상태·시도 수·사유 코드·확인 시각)를 준다. `POST .../ack-final-failures`는 그 사건의 확인하지 않은 최종 실패에 확인 시각을 남기고 그 수를 돌려준다. 사건과 메일 작업은 평가·발송 작업(아직 없음)이 쓴다.
+- **메일 구현(2026-11-07):** 메일 서버 설정은 서버 설정으로만 바꾸고(8.1절) 화면에는 비밀이 아닌 값만 준다(TD-20). 발송 속도 상한(시제품 분당 30통)과 단계별 대기(시제품 30초, 본문 뒤 60초)는 설정값이다.
+  - `GET /api/v1/mail`은 설정 여부(`configured`), 서버 주소·포트·방식·발신 주소, 평문 사내 릴레이 여부(`plain_relay`), 연결 상태(`connection`), 마지막 시도·성공 시각과 마지막 연결 오류 코드를 준다. 연결 상태는 마지막 발송 시도로 정한다. 시도가 없으면 `unknown`, 연결·설정 문제로 실패했으면 `error`, 아니면 `connected`다. 수신자 거부처럼 주소 문제로 실패한 것은 연결이 된 것이라 `connected`다.
+  - 테스트 발송은 `POST /api/v1/mail/test`(`{"address"}`)와 규칙 편집의 `POST /api/v1/alert-rules/test-mail`(`{"addresses": [...], "rule_name"}`, 저장 전 주소도 1~10개)이다. `Idempotency-Key`가 필요하다. 주소마다 한 통씩 바로 보내고 주소마다 결과(`result`: `accepted`·`failed`, `reason`: 5.5절 코드, `problem`: `connection`·`address`·`unknown`)를 준다. 같은 키로 다시 오면 다시 보내지 않고 그 발송의 지금 결과를 준다. 아직 보내는 중이면 `202`와 `sending`이다. 테스트 메일은 결과를 바로 알리려는 것이라 전송 여부 불명이어도 다시 보내지 않고 실패로 남긴다. 발송마다 `mail_jobs`(`test`)와 `mail_status`에 남긴다.
+  - 발송 속도 상한은 설치 전체에서 모든 종류의 메일을 마지막 시도 시각으로 센다. 넘으면 한 통도 보내지 않고 `429 rate_limited`(`Retry-After: 60`)다(TD-19).
+  - SMTP 제출은 라이브러리 없이 필요한 명령만 쓴다. 본문을 보낸 뒤 응답을 못 받은 경우(전송 여부 불명, Q12-10)를 다른 실패와 가르려면 어느 단계에서 실패했는지 알아야 해서다. TLS가 기본이고 인증서 검증은 끄지 않는다. 사설 CA는 `LOGDOCK_MAIL_CA_FILE`로 시스템 신뢰 목록에 더한다. STARTTLS를 골랐는데 서버가 내놓지 않으면 평문으로 내려가지 않고 `mail_tls_failed`다. 인증은 서버가 내놓은 AUTH PLAIN이나 LOGIN이다. 주소에 ASCII 밖 글자가 있으면 서버가 SMTPUTF8을 지원해야 한다. 메시지 형식은 5.5절 메일 형식대로다. 머리 값의 제어 문자는 빼고, ASCII 밖 제목은 RFC 2047로 나눠 쓴다.
+  - `GET /api/v1/mail/ops-recipients`는 주소와 `받았음` 시각, 목록 `version`, 상한(10)을 준다. `PUT`(`{"version", "addresses"}`, 0~10개)은 목록 전체를 바꾼다. `version`이 다르면 덮어쓰지 않는다. 대소문자만 다른 주소는 같은 주소로 보아 `받았음` 표시를 지키고, 뺀 주소로 아직 보내지 않은 운영 메일은 `recipient_removed`로 취소한다. 감사는 `ops_recipients.update`(`recipients`)이고 감사를 쓸 수 없으면 보류한다. `POST .../confirm`(`{"address"}`)은 처음 한 번만 남기고(`recipient_confirmed`) 목록 `version`은 올리지 않는다. 없는 주소는 `404`다. 운영 수신 주소가 없을 때의 `ops_recipients_missing` 배너는 배너 API를 만들 때 붙인다.
 - 상태 전이와 각 동작의 허용 조건(보관된 연결에서 쓸 수 있는 동작, 재활성 뒤 상태 등)은 5절에서 정한다.
 
 ### 4.4 운영 표시 계산
@@ -1048,7 +1054,7 @@ stateDiagram-v2
 - 비밀 값(메일·DB 비밀번호, TLS 개인 키)은 설정 파일에 직접 쓰지 않고 중앙 서비스 계정만 읽을 수 있는 파일의 경로로 받는다. 웹과 API는 비밀 값을 돌려주지 않는다(TD-20, SC-03).
 - TLS는 두 서버가 이미 관리 중인 인증서로 직접 종료하는 것을 기본안으로 둔다. 앞단 프록시가 종료하면 프록시와 서버 사이 구간의 보호를 설치 때 정한다(Q10-02, Q16-04/E01, T04).
 - 바꾼 설정은 중앙을 다시 시작해 적용한다(Q12-08). 보관 기간을 줄이면 이미 저장된 로그에도 적용한다(Q13-02). 웹은 읽기만 한다(UI-13, UI-14, 4.3절 `GET /api/v1/settings`).
-- 시작할 때 설정을 검사하고 틀리면 시작하지 않는다. 메일 설정이 없으면 시작은 하되 알림 규칙을 켤 수 없다(TD-08). 구현(2026-11-07): 조회·관리 API는 수신 서버 주소 `LOGDOCK_INGEST_URL`(HTTPS, 사용자 정보·쿼리 없음)이 없으면 시작하지 않는다. 연결 설정 파일의 `ingest_url`에 쓴다. 메일 서버는 `LOGDOCK_MAIL_HOST`·`LOGDOCK_MAIL_PORT`(기본 465, STARTTLS면 587)·`LOGDOCK_MAIL_SECURITY`(`tls` 기본, `starttls`, 명시할 때만 `plain_relay`)·`LOGDOCK_MAIL_FROM`·`LOGDOCK_MAIL_USER`·`LOGDOCK_MAIL_PASSWORD_FILE`(비밀번호 파일 경로)로 받는다. 호스트가 없으면 메일 설정 없음이다.
+- 시작할 때 설정을 검사하고 틀리면 시작하지 않는다. 메일 설정이 없으면 시작은 하되 알림 규칙을 켤 수 없다(TD-08). 구현(2026-11-07): 조회·관리 API는 수신 서버 주소 `LOGDOCK_INGEST_URL`(HTTPS, 사용자 정보·쿼리 없음)이 없으면 시작하지 않는다. 연결 설정 파일의 `ingest_url`에 쓴다. 메일 서버는 `LOGDOCK_MAIL_HOST`·`LOGDOCK_MAIL_PORT`(기본 465, STARTTLS면 587)·`LOGDOCK_MAIL_SECURITY`(`tls` 기본, `starttls`, 명시할 때만 `plain_relay`)·`LOGDOCK_MAIL_FROM`·`LOGDOCK_MAIL_USER`·`LOGDOCK_MAIL_PASSWORD_FILE`(비밀번호 파일 경로)·`LOGDOCK_MAIL_CA_FILE`(사설 CA, 선택)로 받는다. 호스트가 없으면 메일 설정 없음이다.
 
 ### 8.2 중앙 로컬 명령
 

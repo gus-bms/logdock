@@ -67,15 +67,15 @@ export function hasNoFilter(cond: Condition): boolean {
 }
 
 /** 수신 주소 목록. 앞뒤 공백만 걷고 형식만 본다(Q12-12). 대소문자만 다른 같은 주소는 거절한다(DB 유일 색인과 같은 기준). */
-export function checkRecipients(raw: string[], limit: number, problems: FieldProblem[]): string[] {
-  if (raw.length === 0) problems.push({ path: 'recipients', reason: 'too_small' });
-  if (raw.length > limit) problems.push({ path: 'recipients', reason: 'too_many' });
+export function checkRecipients(raw: string[], limit: number, problems: FieldProblem[], path = 'recipients', min = 1): string[] {
+  if (raw.length < min) problems.push({ path, reason: 'too_small' });
+  if (raw.length > limit) problems.push({ path, reason: 'too_many' });
   const seen = new Set<string>();
   return raw.map((r, i) => {
     const a = r.trim();
-    if ([...a].length > ADDRESS_MAX) problems.push({ path: `recipients.${i}`, reason: 'too_big' });
-    else if (hasInvalidCharacters(a) || !MAIL_ADDRESS.test(a)) problems.push({ path: `recipients.${i}`, reason: 'format_invalid' });
-    else if (seen.has(a.toLowerCase())) problems.push({ path: `recipients.${i}`, reason: 'duplicate' });
+    if ([...a].length > ADDRESS_MAX) problems.push({ path: `${path}.${i}`, reason: 'too_big' });
+    else if (hasInvalidCharacters(a) || !MAIL_ADDRESS.test(a)) problems.push({ path: `${path}.${i}`, reason: 'format_invalid' });
+    else if (seen.has(a.toLowerCase())) problems.push({ path: `${path}.${i}`, reason: 'duplicate' });
     seen.add(a.toLowerCase());
     return a;
   });

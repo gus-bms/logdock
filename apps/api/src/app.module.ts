@@ -22,6 +22,8 @@ import { ConnectionsService } from './connections/connections.service.js';
 import { KeysService } from './connections/keys.service.js';
 import { Database } from './db/database.js';
 import { HealthController } from './health.controller.js';
+import { MailController } from './mail/mail.controller.js';
+import { MailService } from './mail/mail.service.js';
 import { SavedSearchesController } from './saved-searches/saved-searches.controller.js';
 import { SavedSearchesService } from './saved-searches/saved-searches.service.js';
 import { APP_CONFIG } from './tokens.js';
@@ -40,6 +42,7 @@ export class AppModule {
         KeysController,
         SavedSearchesController,
         AlertsController,
+        MailController,
       ],
       providers: [
         { provide: APP_CONFIG, useValue: config },
@@ -57,6 +60,7 @@ export class AppModule {
         SavedSearchesService,
         AlertRulesService,
         IncidentsService,
+        MailService,
         // 모든 경로를 한 검사 지점에서 확인한다(계약 4.1절). 세션 없이 부르는 경로는 @Public으로 연다.
         { provide: APP_GUARD, useClass: AuthGuard },
       ],

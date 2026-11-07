@@ -24,6 +24,8 @@ export interface MailConfig {
   from: string;
   user: string | null;
   password: string | null;
+  /** 사내 메일 서버가 사설 CA를 쓰면 그 CA(PEM). 시스템 신뢰 목록에 더한다. 인증서 검증은 끄지 않는다(TD-08). */
+  ca: string | null;
 }
 
 export interface AppConfig {
@@ -80,8 +82,12 @@ export interface AppConfig {
   savedSearchLimit: number;
   /** 알림 규칙 개수 상한(WQ-33의 `N`, 평가 비용 측정 전 미정). 꺼진 규칙도 센다. 시제품 값이다. */
   alertRuleLimit: number;
-  /** 규칙마다 수신 주소 상한(Q12-12 합의 10개). */
+  /** 규칙마다 수신 주소 상한(Q12-12 합의 10개). 운영 수신 주소도 같은 상한이다(UI-14). */
   alertRecipientLimit: number;
+  /** 설치 전체 메일 발송 속도 상한(분당, TD-19의 `N`, 미정). 테스트 메일·알림 메일·운영 메일을 함께 센다. 시제품 값이다. */
+  mailRatePerMinute: number;
+  /** 메일 서버와 주고받을 때 한 단계의 대기 상한(초). 본문을 보낸 뒤에는 두 배를 기다린다. 시제품 값이다. */
+  mailTimeoutSeconds: number;
   /** 요청 본문 상한. */
   bodyLimit: string;
 }
@@ -110,6 +116,8 @@ export const DEFAULTS: Omit<AppConfig, 'db'> = {
   savedSearchLimit: 100,
   alertRuleLimit: 50,
   alertRecipientLimit: 10,
+  mailRatePerMinute: 30,
+  mailTimeoutSeconds: 30,
   bodyLimit: '1mb',
 };
 
@@ -166,6 +174,7 @@ export function loadMailConfig(env: NodeJS.ProcessEnv): MailConfig | null {
     from,
     user: env.LOGDOCK_MAIL_USER || null,
     password: env.LOGDOCK_MAIL_PASSWORD_FILE ? readSecretFile(env.LOGDOCK_MAIL_PASSWORD_FILE) : null,
+    ca: env.LOGDOCK_MAIL_CA_FILE ? readFileSync(env.LOGDOCK_MAIL_CA_FILE, 'utf8') : null,
   };
 }
 

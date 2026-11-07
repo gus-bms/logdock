@@ -3,7 +3,7 @@
 - 담당: Claude Code 2026-11-06
 - 우선순위: 2
 - 선행: api-contract-draft
-- 다음 할 일: 메일(`GET /api/v1/mail`, 테스트 발송, 운영 수신 주소, 규칙의 테스트 메일)을 만든 뒤 감사 조회·배너·설정값·조건 값 목록을 만든다. ClickHouse를 쓰는 경로는 중앙 서버 시험 DB(2026-11-07 합의)로 시험한다
+- 다음 할 일: 감사 조회(`POST /api/v1/audit/search`)·배너(`/api/v1/notices`)·화면용 설정값(`/api/v1/settings`)·조건 값 목록(`/api/v1/sources`)을 만든다. ClickHouse를 쓰는 경로는 중앙 서버 시험 DB(2026-11-07 합의)로 시험한다
 - 막힌 이유: 없음
 - 풀리는 조건: 없음
 - 마지막 갱신: 2026-11-07
@@ -49,3 +49,4 @@
 - 2026-11-07 저장 검색(`GET·POST /api/v1/saved-searches`, `GET·PATCH·DELETE .../{id}`)을 만들었다. 검색·알림 규칙이 같이 쓸 조건·시간 검사를 `src/search/condition.ts`로 두었고, 모르는 조건 칸은 거절한다. 개수 상한은 같은 계정의 만들기를 advisory lock으로 줄 세워 지킨다. 목록에 조건이 가리키는 대상의 지금 이름·상태와 보관 대상 참조 여부를 준다. 경로 정수 ID 검사를 `common/validate.ts`로 옮겼다. 세부는 계약 4.3절 `저장 검색 구현`에 적었다. API 시험 7건을 더해 105건이 3번 반복 통과했고 빌드도 통과했다.
 - 2026-11-07 사용자가 수신 서버 시제품을 새 세션에서 병행하게 했고(결정 1의 B안), ClickHouse 시험은 중앙 서버의 시험 전용 DB에서 하기로 했다(결정 2의 B안, [결정 기록](../../decisions.md), AGENTS.md DB 규칙의 두 번째 예외). 시험 계정 접속 정보는 커밋하지 않는 `.env`에 두었다.
 - 2026-11-07 알림 규칙과 사건(`GET·POST /api/v1/alert-rules`, `GET·PATCH·DELETE .../{id}`, `.../{id}/recipients/confirm`, `.../{id}/incidents`, `GET /api/v1/incidents/{ref}`, `.../ack-final-failures`)을 만들었다. 5.4절 상태 전이(조건 수정·끔·삭제 때 사건 닫기와 보내지 않은 메일 취소)를 규칙 변경과 한 트랜잭션에서 하고, 감사를 쓸 수 없으면 보류한다. 메일 서버 설정(`LOGDOCK_MAIL_*`, 비밀번호는 파일 경로)을 더해 메일 설정이 없으면 규칙을 켤 수 없게 했다. 조건 대상 풀이는 저장 검색과 함께 쓰도록 `src/search/references.ts`로 옮겼다. 세부는 계약 4.3절 `알림 규칙·사건 구현`에 적었다. API 시험 12건을 더해 117건이 3번 반복 통과했고 빌드와 DB 시험도 통과했다. 평가 작업과 메일 발송은 아직 없어 사건·메일 작업은 시험에서 DB에 직접 넣어 흉내 냈다.
+- 2026-11-07 메일(`GET /api/v1/mail`, `POST /api/v1/mail/test`, `POST /api/v1/alert-rules/test-mail`, `GET·PUT /api/v1/mail/ops-recipients`, `.../confirm`)을 만들었다. SMTP 제출은 본문 뒤 무응답(전송 여부 불명)을 다른 실패와 가르려고 라이브러리 없이 `src/mail/smtp.ts`에 필요한 명령만 썼다. TLS·STARTTLS는 인증서를 검증하고 평문으로 내려가지 않는다. 테스트 메일은 설치 전체 발송 속도 상한 안에서 바로 보내고 5.5절 사유 코드와 연결·주소 문제 구분을 돌려준다. 시험은 루프백 가짜 SMTP 서버(`test-support/fake-smtp.ts`, 시험용 인증서는 openssl로 만들고 지움)로 했다. 세부는 계약 4.3절 `메일 구현`에 적었다. API 시험 14건을 더해 131건이 3번 반복 통과했고 빌드도 통과했다. 실제 메일 서버로 보내 보지는 않았다.

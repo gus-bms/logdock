@@ -11,7 +11,7 @@ import { type Api, Client, type EphemeralPostgres, type Reply, startApi, startPo
 
 const NAME = 'admin';
 const PASSWORD = 'correct horse battery staple';
-const MAIL: MailConfig = { host: 'smtp.example.test', port: 465, security: 'tls', from: 'logdock@example.test', user: null, password: null };
+const MAIL: MailConfig = { host: 'smtp.example.test', port: 465, security: 'tls', from: 'logdock@example.test', user: null, password: null, ca: null };
 const RULE = {
   name: '결제 오류 급증',
   enabled: true,

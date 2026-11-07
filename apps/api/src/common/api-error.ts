@@ -39,6 +39,11 @@ export const errors = {
     new ApiError(409, 'invalid_state', 'not allowed in the current state', { current }),
   /** 개수 상한에 닿아 더 만들지 않았다. 화면이 상한을 보이도록 상한 값을 준다(4.4절, Q11-03, WQ-33). */
   limitReached: (limit: number) => new ApiError(409, 'limit_reached', 'the count limit has been reached', { limit }),
+  /** 요청이 너무 잦다. 메일은 설치 전체 발송 속도 상한(TD-19)에 걸린 경우다. */
+  rateLimited: (retryAfterSeconds: number) =>
+    new ApiError(429, 'rate_limited', 'too many requests', { retry_after_seconds: retryAfterSeconds }, true, {
+      'Retry-After': String(retryAfterSeconds),
+    }),
   /** 메일 서버 설정이 없어 알림 규칙을 켤 수 없다(TD-08). 끈 채로 만들거나 고치는 것은 된다. */
   mailNotConfigured: () => new ApiError(409, 'mail_not_configured', 'mail server is not configured; alert rules cannot be enabled'),
   /** 유효 키가 이미 둘이다(Q10-07, WQ-65). */
