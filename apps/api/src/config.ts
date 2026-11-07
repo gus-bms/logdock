@@ -1,6 +1,8 @@
 // 조회·관리 API 설정. 한도와 시간 값은 측정·Q15 협의 전의 시제품 값이며 코드에 박지 않고 여기서만 정한다.
 import { readFileSync } from 'node:fs';
 
+import type { ClickHouseConfig } from './clickhouse/clickhouse.js';
+
 export interface DatabaseConfig {
   /** 호스트 이름 또는 유닉스 소켓 폴더(/로 시작). */
   host: string;
@@ -130,6 +132,51 @@ export interface AppConfig {
   alertEvalStaleSeconds: number;
   /** 요청 본문 상한. */
   bodyLimit: string;
+  /** ClickHouse 로그 저장소(3.2절, 8.1절). 조회용 계정은 설정 프로필에서 쿼리 기록을 끈다(SD-35). */
+  clickhouse: ClickHouseConfig;
+  /** 검색 실행(4.2절, SD-29·SD-31). M5·Q15 전의 시제품 값이다. */
+  searchRun: {
+    /** 실행 기준을 서버에 두는 시간. 지나면 `410 run_expired`다. */
+    keepMinutes: number;
+    /** 설치 전체·세션마다 동시에 도는 검색 요청 수. 넘으면 `429 search_busy`다. */
+    maxConcurrent: number;
+    maxPerSession: number;
+    /** 요청 하나의 실행 예산. 넘으면 끝낸 구간까지만 돌려준다. */
+    budgetMs: number;
+    /** 최신 구간부터 나눠 실행할 때 첫 조각의 길이. 다음 조각은 두 배씩 늘린다. */
+    firstSliceMinutes: number;
+    pageSizeDefault: number;
+    pageSizeMax: number;
+    /** 목록 본문 요약 글자 수(SD-34). */
+    bodySummaryChars: number;
+    /** 시간별 발생량의 목표 구간 수. 간격은 이 수를 넘지 않는 가장 작은 단위로 고른다. */
+    histogramBuckets: number;
+    /** 서버에 둘 실행 기준 수. 넘으면 오래된 것부터 버린다. */
+    maxRuns: number;
+    /** 질의마다 거는 스레드·메모리 상한. null이면 ClickHouse 계정 설정 프로필을 따른다. */
+    maxThreads: number | null;
+    maxMemoryBytes: number | null;
+    /** 검색 가능 시각이 이보다 오래 갱신되지 않으면 수집 문제 요약에 `검색 가능 미확인`을 올린다. */
+    watermarkStaleSeconds: number;
+    /** 주변 로그 방향마다 처음·더 불러오는 건수와 상한, 기준 시각 앞뒤 최대 시간 폭(WQ-27). */
+    nearbyPageDefault: number;
+    nearbyPageMax: number;
+    nearbyWindowMinutes: number;
+    /** 필드 이름 후보는 최근 이 시간 수신분의 경로에서 많이 나온 순서로 이 개수까지 준다(SD-25). */
+    suggestHours: number;
+    suggestLimit: number;
+  };
+  /** 알림 평가(5.4절, Q12-02, TD-12·TD-19). 검색과 따로 둔 예산으로 돈다. 시제품 값이다. */
+  alertEval: {
+    /** 새 평가 창이 생겼는지 보는 주기. */
+    pollSeconds: number;
+    /** 평가 회차 간격(설치 공통 1분, Q12-02). 창 끝은 수신 시각을 이 간격으로 내린 값이다. */
+    intervalSeconds: number;
+    /** 한 회차(모든 규칙)의 실행 예산. 넘으면 남은 규칙은 미평가로 남는다. */
+    budgetMs: number;
+    maxThreads: number | null;
+    maxMemoryBytes: number | null;
+  };
 }
 
 export const DEFAULTS: Omit<AppConfig, 'db'> = {
@@ -181,6 +228,28 @@ export const DEFAULTS: Omit<AppConfig, 'db'> = {
   logRetentionMonths: 6,
   alertEvalStaleSeconds: 10 * 60,
   bodyLimit: '1mb',
+  clickhouse: { url: 'http://127.0.0.1:8123', database: 'logdock', table: 'logs', user: 'logdock_api', password: null },
+  searchRun: {
+    keepMinutes: 30,
+    maxConcurrent: 8,
+    maxPerSession: 4,
+    budgetMs: 10_000,
+    firstSliceMinutes: 60,
+    pageSizeDefault: 100,
+    pageSizeMax: 500,
+    bodySummaryChars: 300,
+    histogramBuckets: 200,
+    maxRuns: 500,
+    maxThreads: null,
+    maxMemoryBytes: null,
+    watermarkStaleSeconds: 120,
+    nearbyPageDefault: 50,
+    nearbyPageMax: 200,
+    nearbyWindowMinutes: 60,
+    suggestHours: 24,
+    suggestLimit: 50,
+  },
+  alertEval: { pollSeconds: 5, intervalSeconds: 60, budgetMs: 45_000, maxThreads: null, maxMemoryBytes: null },
 };
 
 function intEnv(env: NodeJS.ProcessEnv, name: string, fallback: number): number {
@@ -271,6 +340,31 @@ export function loadMailConfig(env: NodeJS.ProcessEnv): MailConfig | null {
   };
 }
 
+/** ClickHouse 접속 설정. 주소는 http(s)이고 사용자 정보·쿼리가 없어야 한다. 비밀번호는 파일 경로로 받는다(8.1절). */
+export function loadClickHouseConfig(env: NodeJS.ProcessEnv): ClickHouseConfig {
+  const url = env.LOGDOCK_CLICKHOUSE_URL || DEFAULTS.clickhouse.url;
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    throw new Error('LOGDOCK_CLICKHOUSE_URL must be an http(s) URL');
+  }
+  if (!['http:', 'https:'].includes(u.protocol) || u.username || u.password || u.search || u.hash) {
+    throw new Error('LOGDOCK_CLICKHOUSE_URL must be an http(s) URL without user info, query or fragment');
+  }
+  return {
+    url,
+    database: env.LOGDOCK_CLICKHOUSE_DATABASE || DEFAULTS.clickhouse.database,
+    table: DEFAULTS.clickhouse.table,
+    user: env.LOGDOCK_CLICKHOUSE_USER || DEFAULTS.clickhouse.user,
+    password: env.LOGDOCK_CLICKHOUSE_PASSWORD_FILE ? readSecretFile(env.LOGDOCK_CLICKHOUSE_PASSWORD_FILE) : null,
+  };
+}
+
+function optionalIntEnv(env: NodeJS.ProcessEnv, name: string): number | null {
+  return env[name] ? intEnv(env, name, 0) : null;
+}
+
 /** 환경 변수에서 설정을 읽는다. 비밀번호는 PGPASSFILE 같은 파일로 두는 편이 낫지만 개발용으로 받는다. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   return {
@@ -280,6 +374,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     publicBaseUrl: env.LOGDOCK_PUBLIC_BASE_URL ? checkPublicBaseUrl(env.LOGDOCK_PUBLIC_BASE_URL) : null,
     displayTimezone: env.LOGDOCK_DISPLAY_TIMEZONE ? checkTimezone(env.LOGDOCK_DISPLAY_TIMEZONE) : DEFAULTS.displayTimezone,
     logRetentionMonths: intEnv(env, 'LOGDOCK_LOG_RETENTION_MONTHS', DEFAULTS.logRetentionMonths),
+    clickhouse: loadClickHouseConfig(env),
+    searchRun: {
+      ...DEFAULTS.searchRun,
+      budgetMs: intEnv(env, 'LOGDOCK_SEARCH_BUDGET_MS', DEFAULTS.searchRun.budgetMs),
+      maxConcurrent: intEnv(env, 'LOGDOCK_SEARCH_MAX_CONCURRENT', DEFAULTS.searchRun.maxConcurrent),
+      maxPerSession: intEnv(env, 'LOGDOCK_SEARCH_MAX_PER_SESSION', DEFAULTS.searchRun.maxPerSession),
+      maxThreads: optionalIntEnv(env, 'LOGDOCK_SEARCH_MAX_THREADS'),
+      maxMemoryBytes: optionalIntEnv(env, 'LOGDOCK_SEARCH_MAX_MEMORY_BYTES'),
+    },
+    alertEval: {
+      ...DEFAULTS.alertEval,
+      budgetMs: intEnv(env, 'LOGDOCK_ALERT_EVAL_BUDGET_MS', DEFAULTS.alertEval.budgetMs),
+      maxThreads: optionalIntEnv(env, 'LOGDOCK_ALERT_EVAL_MAX_THREADS'),
+      maxMemoryBytes: optionalIntEnv(env, 'LOGDOCK_ALERT_EVAL_MAX_MEMORY_BYTES'),
+    },
     db: {
       host: env.LOGDOCK_DB_HOST ?? '/tmp',
       port: intEnv(env, 'LOGDOCK_DB_PORT', 5432),

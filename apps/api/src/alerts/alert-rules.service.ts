@@ -10,7 +10,6 @@ import { errors } from '../common/api-error.js';
 import { claimIdempotency, completeIdempotency } from '../common/idempotency.js';
 import type { AppConfig } from '../config.js';
 import type { FieldProblem } from '../connections/connection-input.js';
-import { CONNECTION_ROWS, observationParams } from '../connections/connection-views.service.js';
 import { decodeConnectionId, encodeConnectionId } from '../connections/public-id.js';
 import { Database, lockCount, type Queryable, utc } from '../db/database.js';
 import { checkConditionReferences, type Condition } from '../search/condition.js';
@@ -18,10 +17,9 @@ import { loadReferences, type ReferenceMaps, resolveReferences, sourcesOf } from
 import { APP_CONFIG } from '../tokens.js';
 import { type CheckedRule, checkRuleFields, type CreateRuleBody, hasNoFilter, sameJson, type UpdateRuleBody } from './alert-input.js';
 import { type DeliverySummary, listRuleIncidents } from './incidents.service.js';
+import { UNOBSERVED, loadTargets } from './targets.js';
 
 /** 관측되지 않는 대상으로 보는 관측 상태(5.4절 관측 판단). `연결 대기`는 판단에서 빼고, `관측됨·무로그`·`복구 중`은 관측된다. */
-const UNOBSERVED = ['stale', 'send_error', 'read_paused', 'disk_unavailable', 'needs_check'];
-
 interface RuleRow {
   id: number;
   name: string;
@@ -419,39 +417,7 @@ export class AlertRulesService {
 
   /** 규칙의 출처 조건에 맞는 보관되지 않은 연결과, 그 가운데 관측되지 않는 연결(5.4절 감시 품질의 대상). */
   private async targets(c: Queryable, cond: Condition) {
-    const s = sourcesOf(cond);
-    const values: unknown[] = observationParams(this.config);
-    const where = [`management_state <> 'archived'`];
-    const add = (sql: (p: string) => string, v: unknown) => {
-      values.push(v);
-      where.push(sql(`$${values.length}`));
-    };
-    if (s.service_ids.length) add((p) => `service_id = ANY(${p}::int[])`, s.service_ids);
-    if (s.server_ids.length) {
-      const orNull = s.server_ids.includes(null) ? ' OR server_id IS NULL' : '';
-      add((p) => `(server_id = ANY(${p}::int[])${orNull})`, s.server_ids.filter((x) => x !== null));
-    }
-    if (s.environments.length) {
-      const orNull = s.environments.includes(null) ? ' OR environment IS NULL' : '';
-      add((p) => `(environment = ANY(${p}::text[])${orNull})`, s.environments.filter((x) => x !== null));
-    }
-    if (s.connection_ids.length) add((p) => `id = ANY(${p}::int[])`, s.connection_ids.map((x) => decodeConnectionId(x)).filter((x) => x !== null));
-    const rows = (
-      await c.query<{
-        id: number;
-        service_name: string;
-        display_name: string | null;
-        target_type: string;
-        target_path: string | null;
-        journald_kind: string | null;
-        journald_name: string | null;
-        observation: string[];
-      }>(
-        `SELECT id, service_name, display_name, target_type, target_path, journald_kind, journald_name, observation
-           FROM (${CONNECTION_ROWS}) x WHERE ${where.join(' AND ')} ORDER BY lower(service_name), id`,
-        values,
-      )
-    ).rows;
+    const rows = await loadTargets(c, cond, this.config);
     const unobserved = rows.filter((r) => r.observation.some((o) => UNOBSERVED.includes(o)));
     return {
       total: rows.length,

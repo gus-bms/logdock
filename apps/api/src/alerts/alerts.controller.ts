@@ -7,6 +7,8 @@ import { idParam, parse } from '../common/validate.js';
 import { ConfirmRecipientBody, CreateRuleBody, UpdateRuleBody } from './alert-input.js';
 import { AlertRulesService } from './alert-rules.service.js';
 import { incidentRefParam, IncidentsService } from './incidents.service.js';
+import { AlertPreviewService, PreviewBody } from './alert-preview.js';
+import { InvestigationService } from './investigation.js';
 
 const Flag = z.enum(['true', 'false']);
 const Page = {
@@ -27,6 +29,8 @@ export class AlertsController {
   constructor(
     private readonly rules: AlertRulesService,
     private readonly incidents: IncidentsService,
+    private readonly previews: AlertPreviewService,
+    private readonly investigation: InvestigationService,
   ) {}
 
   @Get('alert-rules')
@@ -39,6 +43,13 @@ export class AlertsController {
       limit: p.limit ?? 50,
       cursor: p.cursor,
     });
+  }
+
+  /** 건수 미리보기(TD-05). 가장 최근 평가 창의 건수다. */
+  @Post('alert-rules/preview')
+  @HttpCode(200)
+  async preview(@Body() body: unknown, @Req() req: ApiRequest) {
+    return this.previews.preview(req.session!, parse(PreviewBody, body));
   }
 
   @Get('alert-rules/:id')
@@ -80,6 +91,12 @@ export class AlertsController {
     const n = idParam(id);
     const p = parse(PageParams, query);
     return this.incidents.listForRule(req.session!.accountId, n, { limit: p.limit ?? 50, cursor: p.cursor });
+  }
+
+  /** 알림 조사 모드(Q12 5절, UI-02). 경로의 값은 메일 링크와 같은 사건 공개 참조다. */
+  @Get('incidents/:ref/investigation')
+  async investigate(@Param('ref') ref: string, @Req() req: ApiRequest) {
+    return this.investigation.investigate(req.session!, incidentRefParam(ref));
   }
 
   @Get('incidents/:ref')

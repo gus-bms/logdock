@@ -334,6 +334,11 @@ SETTINGS ttl_only_drop_parts = 1;
 - 필드는 ClickHouse `JSON` 타입이 타입 보존(SD-20·SD-21)을 만족하는 후보다. 타입별 `Map` 열과 비용을 측정해 정한다. `JSON` 타입은 25.3부터 운영용이라 고정한 26.8 LTS에서 쓸 수 있다([D17 근거 R45](../research/d17-tech-evidence-2026-11-03.md#8-버전-고정)).
 - 본문 부분 일치는 스캔이 기본이다(Q08-01). n-gram 색인을 붙일지, 대소문자·NFC 비교(SD-17)를 미리 계산한 열을 둘지는 측정으로 정한다. n-gram 색인 후보에는 26.2부터 정식 기능인 text 색인의 `ngrams` 토크나이저가 들어간다. 실험 옵션은 쓰지 않는다(R46). 본문의 앞부분만 색인해 뒤를 놓치는 방식은 쓰지 않는다(SD-14).
 - 주변 로그는 선택한 로그의 검색 기준 시각 앞뒤 구간에서 같은 흐름을 찾아 세대·순번으로 정렬한다. 시각이 크게 어긋난 흐름에서 느리면 순번 정렬 projection을 측정한다. projection을 붙이면 구간 삭제(3.3절)의 경량 삭제가 기본으로 막히므로 `lightweight_mutation_projection_mode`를 함께 정한다(R47).
+- **저장 형태 구현(2026-11-07):** 위 DDL은 `db/clickhouse/0001_logs.sql`에 한 벌 두고(`GRANULARITY N`은 시제품 값 4), 조회 API와 수신 서버의 시험이 같은 파일로 표를 만든다. 수신 서버 시험은 자기 사본이 이 파일과 같은지 비교한다. 조회 API가 기대하는 저장 형태는 아래와 같고 수신 서버가 맞췄다.
+  - `time_flags` 비트: 1은 `시각 의심`, 2는 `시간대 추정`이다.
+  - `field_paths`: 값이 null인 키, 객체를 담은 중간 키(`{"http":{"status":500}}`이면 `http`와 `http.status`), 배열 키 자체를 점으로 이어 담는다(원소 경로는 넣지 않음). 키 안에 점이 있으면(`{"a.b":1}`) `{"a":{"b":1}}`과 같은 경로가 된다. ClickHouse `JSON` 타입도 같게 펼친다.
+  - `fields`에 넣을 때 날짜·시각 추론을 끈다(`input_format_try_infer_dates=0`, `input_format_try_infer_datetimes=0`). 문자열이 날짜 형으로 바뀌면 값 일치(SD-20)에서 빠지기 때문이다.
+  - ClickHouse 26.8은 JSON 출력에서 64비트 정수를 따옴표 없이 내므로(`output_format_json_quote_64bit_integers=0`), 조회 API는 질의마다 이 설정을 1로 보내 순번·필드 값이 2^53 위에서 깎이지 않게 한다.
 
 ### 3.3 보관·삭제·검색 가능 시점
 
@@ -537,6 +542,15 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
 - 필드 값은 타입을 함께 돌려준다. 2^53을 넘는 정수와 시각은 문자열로 보내 브라우저에서 정밀도가 줄지 않게 한다(SD-07, SD-21, IT-18).
 - 주변 로그는 방향마다 상한 `N`건이고 처음 보여 주는 건수와 더 불러오는 단위도 `N`이다(WQ-27). 거부·경계 기록과 수동 삭제 구간, 수집하지 않은 구간을 흐름 안 자리에 함께 돌려준다(2.3절, UI-04 상태 5). 최대 시간 폭도 `N`이다. 방향마다 더 갈 수 없는 이유를 `stream_start`(흐름의 처음), `order_unknown`(회전 순서 미확인), `retention`(보존 만료), `limit`(조회 한도), `unobserved`(관측 불가)로 돌려준다(UI-04 그릴 상태).
 - 알림 조사 모드는 사건의 당시 조건과 수신 시각 평가 구간을 고정해 검색한다. 당시 건수와 지금 건수, 사유별 해당 여부를 함께 돌려준다(WQ-13, WQ-14). 규칙이 그 뒤 바뀌었거나 지워졌으면 `rule_status`(`same`·`changed`·`deleted`)로 알리고, 서비스·서버는 지금 이름으로 돌려준다. 사건 경로의 `{id}`는 메일 링크와 같은 불투명 값(`public_ref`)이다. 사건이 없거나 알림 이력 보관 기간이 지났으면 `404 not_found`이고 화면은 `알림 이력 보관 기간이 지났습니다`를 보인다(UI-02 알림 조사 모드, Q12-14).
+- **검색과 조사 구현(2026-11-07):** 위 표의 경로를 모두 만들었다. 중앙 서버 시험 전용 DB에서 합성 로그로 확인했다(`search.live.spec`, 22건). 수치는 M5·Q15 전의 시제품 설정값이다.
+  - **실행 기준:** API 프로세스 메모리에 30분 두고 세션에 묶는다. 없거나 지났거나 다른 세션의 것이면 같은 `410 run_expired`다. 같은 `run_id`로 같은 요청이 다시 오면 정한 기준으로 다시 돌리고, 다른 요청이면 앞 실행을 멈추고 바꾼다. 검색 가능 시각은 `ingest_watermark`이고, 없으면 지금을 쓰며 `collection_issues.searchable_unknown`을 켠다. 조회 가능 시작은 보관 기간(PostgreSQL 달 계산)과 조기 삭제 끝 중 늦은 쪽이다.
+  - **조각과 예산:** 요청 하나의 예산은 10초다. 최신 1시간부터 두 배씩 늘린 조각으로 읽고(오래된순이면 앞에서부터), 질의마다 남은 예산을 `max_execution_time`으로 건다. 넘으면 끝낸 조각까지 `partial`로 주고 그 경계에서 이어 읽는 커서를 준다. 끝낸 조각이 하나도 없으면 `504 search_timeout`이다. 동시 실행은 설치 전체 8개, 세션마다 4개이고 넘으면 `429 search_busy`(Retry-After 2초)다.
+  - **세 값 판정(SD-20~SD-22):** 필드 조건은 해석 실패면 판정 불가, 해석하지 않는 형식(`none`)이면 불일치다. 항목이 없을 때는 정상 해석했고 생략한 필드가 없을 때만 `없음`으로 단정하고, 일부만 해석했거나 필드를 일부 생략했으면 판정 불가다. `값 다름`은 값이 있는 로그만 참이다(항목이 없으면 불일치이고, 그런 로그는 `항목 없음`으로 찾는다). 숫자로 쓴 입력(0으로 시작하지 않는 십진수)은 숫자 형과 같은 글자의 문자열에 함께 일치하고, 정수는 정수 형끼리 비교해 2^53 위에서도 정확하다. 여러 조건은 ClickHouse `and`의 세 값 논리로 묶는다.
+  - **발생량:** 구간 수가 200을 넘지 않는 가장 작은 간격(10초~1일)을 고르고 표시 시간대로 자른다. 하루 간격도 그 시간대의 자정이다. 예산을 넘으면 끝낸 구간만 건수를 주고 나머지는 `null`이다. 분포는 같은 조각에서 판정 불가 건수도 센다.
+  - **취소:** 도는 요청을 끊고 `KILL QUERY ... SYNC`로 서버 질의를 멈춘다. 멈출 질의가 없으면 멈춘 것이다(`server_stopped`).
+  - **상세·주변 로그:** 상세는 필드를 경로·타입(`number`·`string`·`boolean`·`null`·`array`)·값으로 주고, 2^53을 넘는 정수는 문자열로 준다. stack trace는 시제품 필드 이름 목록(`stack`, `err.stack`, `exception.stacktrace` 등)이나 여러 줄 본문의 둘째 줄부터에서 뽑는다. 보관·조기 삭제·차단 구간에 걸리면 `410 event_unavailable`과 가능한 사유이고, 사유를 댈 수 없으면 `404`다. 주변 로그는 방향마다 처음 50건(최대 200건), 기준 시각 앞뒤 60분이다. 같은 흐름은 같은 연결·흐름 ID를 세대·순번으로 잇고 거부·경계 기록을 자리에 넣는다. 시제품은 순서가 확인된 회전 경계를 아직 따라가지 않고 `order_unknown`으로 멈춘다.
+  - **필드 이름 후보:** 최근 24시간 수신분에서 최대 50개다. 입력한 글자는 대소문자 없이 부분 일치로 거른다.
+  - **알림 조사 모드:** 당시 조건과 수신 시각 창으로 지금 건수를 다시 센다. 사유는 보존 만료(창 시작이 보관 기간 밖), 조기 삭제(창과 겹치는 기록), 수동 삭제(발화 뒤 대상 연결에 생긴 차단 구간), 판정 불가, 일부 구간만 평가, 늦은 반영(늘 `unknown`)이다.
 
 ### 4.3 관리
 
@@ -583,7 +597,7 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
   - 대소문자까지 같은 이름이면 바꾸지 않고 감사도 남기지 않는다. `version_conflict`는 `params.current`에 지금 값을 주고, 바뀐 항목은 화면이 가진 값과 비교해 보인다. 경로의 ID가 양의 정수가 아니면 `404 not_found`다.
   - 감사에는 대상 ID와 바뀐 항목 이름(`changed_fields`)만 남긴다.
   - 서비스 보관·재활성과 보관 전 영향은 하위 수집 연결과 키 상태를 함께 바꾸므로 수집 연결과 같이 만들었다(아래 `보관·재활성 구현`).
-- **수집 연결 사전 검사 구현(2026-11-07):** 구간 로그 삭제는 ClickHouse 연동 때 한다.
+- **수집 연결 사전 검사 구현(2026-11-07):** 구간 로그 삭제는 아래 `로그 저장소를 쓰는 관리 경로 구현`에 있다.
   - 본문은 등록과 같다: `service`(기존 `{id, version}` 또는 새 `{name}`), `server_display_name`·`environment`(선택, 비우면 `null`), `target`(`type`·`path` 또는 `kind`·`name`), `format`(`type`·`event_start`·`log_timezone`·`max_event_bytes`), `extraction_rule`(지금은 비워 둠).
   - 통과하면 `200`과 저장할 형태로 맞춘 값(`valid: true`, 새 서비스 여부, unit 이름의 `.service` 붙임, 기본 이벤트 크기)을 주고 아무것도 만들지 않는다. `max_event_bytes`를 주지 않으면 1MiB, 최대 64MiB다(D03의 `N`이 정해지기 전의 시제품 설정값, 64MiB는 에이전트가 받는 상한).
   - 입력 오류는 모든 칸을 한 번에 `422 validation_failed`로 준다. 사유: 수집 대상 `required`·`path_not_absolute`·`wildcard_not_allowed`·`control_characters`·`path_not_clean`·`wildcard_in_folder`·`wildcard_not_supported`·`pattern_without_wildcard`·`pattern_invalid`·`path_not_for_journald`·`name_invalid`·`kind_invalid`·`only_for_journald`·`type_invalid`, 형식 `required`·`only_for_multiline`·`pattern_invalid`(오류가 난 부분 `expr`)·`type_invalid`, 서비스 `required`·`id_or_name`·`not_found`, 이름 칸 `too_small`·`too_big`·`control_characters`, `timezone_invalid`, 이벤트 크기 `too_small`·`too_big`, 추출 규칙 `not_supported`.
@@ -661,6 +675,10 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
   - 나머지 종류(`audit_unavailable`·`audit_gap`·`disk_warning`·`early_deletion`·`storage_unmeasurable`)는 그 일을 아는 쪽이 `notices`에 쓴 행을 그대로 보인다. `POST /api/v1/notices/{id}/ack`는 `지나간 일`(`audit_gap`·`early_deletion`)만 내리고, `계속` 종류는 `409 invalid_state`(지금 종류)다. 배너 확인은 감사 대상이 아니다.
   - `GET /api/v1/sources`는 서비스(상태 포함), 연결이 있는 서버, 환경 값, 서비스별로 묶은 수집 대상(서버 표시명·대상·관리 상태)을 준다. 보관된 서비스·연결도 넣는다. 서버나 환경이 없는 연결이 있으면 그 목록에 `미입력`(`null`)을 넣는다.
   - `POST /api/v1/audit/search`는 기간(`from` 이상 `to` 미만, 오프셋을 담은 RFC 3339)·동작 코드 목록·결과·대상으로 거르고, 최신순으로 `limit`(기본 50, 최대 200)과 `cursor`로 나눠 준다. 항목에는 계정 이름을 함께 준다. 응답에는 조회 가능 시작(남아 있는 가장 오래된 행의 시각), 최근 정리 기록 20건(조기 정리 표시 포함), 고른 기간에 걸친 공백 구간 50건이 함께 온다. 감사 이력을 읽지 못하면 `503 audit_unavailable`이다.
+- **로그 저장소를 쓰는 관리 경로 구현(2026-11-07):**
+  - `POST /api/v1/connections/{id}/deletions`는 본문 `from`·`to`(오프셋을 담은 RFC 3339, 검색 기준 시각 구간)로 `deletion_blocks`에 `requested` 행을 만들고 201로 준다. 최근 재확인과 `Idempotency-Key`가 필요하다. 감사 `connection.delete_range`(단계 `requested`)를 같은 트랜잭션에 쓰고, 쓸 수 없으면 보류한다. 확정·실패와 실제 ClickHouse 삭제는 수신 서버가 한다(3.3절).
+  - `POST /api/v1/alert-rules/preview`는 본문 `condition`·`window_minutes`·`threshold`(선택)로 평가와 같은 창(검색 가능 시각을 1분 단위로 내린 끝)의 일치 건수·판정 불가 건수·발화 여부·감시 품질을 준다. 부분 건수가 임계 미만이면 발화 여부는 `null`이다(TD-13).
+  - `GET /api/v1/storage`는 `storage_metrics`의 마지막 측정, 조회 가능 시작, 최근 보관 기간의 조기 삭제 20건, 떠 있는 `disk_warning`·`storage_unmeasurable`을 준다. 저장 공간을 재서 `storage_metrics`를 쓰고 상한을 넘을 때 오래된 일 파티션을 지우는 작업은 아직 없다(ClickHouse 시스템 표 읽기와 파티션 삭제 권한이 필요하다).
 - 상태 전이와 각 동작의 허용 조건(보관된 연결에서 쓸 수 있는 동작, 재활성 뒤 상태 등)은 5절에서 정한다.
 
 ### 4.4 운영 표시 계산
@@ -866,6 +884,12 @@ stateDiagram-v2
 - **평가 주기와 재시작:** 모든 규칙을 설치 공통 1분마다 평가한다(Q12-02 설계값). 회차가 주기 안에 끝나지 않으면 다음 회차를 `건너뜀`으로 남긴다. 중앙을 다시 시작하면 놓친 회차를 다시 평가하지 않고 지금 창부터 평가한다(TD-12, F-07·F-08). 회차 진행은 단조 시계로 하고 창 경계는 수신 시각(UTC)으로 정해, 중앙 시계가 조정돼도 이미 평가한 창을 다시 세지 않는다(F-22).
 - **유일성:** 같은 규칙 버전의 같은 평가 회차에서 사건은 하나만 생기고, 메일 작업은 사건과 수신자 조합으로 하나다(Q12 5절 사건 기록, 3.4절).
 - **평가 실패와 부분 결과:** 평가가 실패한 회차는 `alert_evaluations`에 미평가로 남기고 해소 계산에 넣지 않는다. 일부만 끝났지만 그 건수가 이미 임계 이상이면 발화하고 사건에 `일부 구간만 평가`를 표시한다(TD-13). 평가 실패나 수집 끊김이 10분 이어지면 운영 메일 1통을 보낸다(Q12-06).
+- **평가 구현(2026-11-07):** `logdock-worker`가 5초마다 새 창이 생겼는지 보고 켜진 규칙을 모두 평가한다(`src/worker/alert-evaluator.ts`). 수치는 시제품 설정값이다.
+  - 창 끝은 검색 가능 시각을 1분 단위로 내린 값이다. 같은 규칙의 같은 창은 한 번만 평가한다(`alert_evaluations` 기본 키). 밀린 창은 규칙마다 최대 60개까지 `skipped`로 남긴다. worker를 다시 시작하면 지금 창부터 평가한다.
+  - 건수는 검색과 같은 세 값 판정으로 일치 확정 건만 센다. 창을 최신 조각부터 세고, 회차 예산(45초) 안에 다 세지 못한 부분 건수가 임계 미만이면 미평가(`budget`)다. 질의가 실패하면 미평가(`eval_failed`)다.
+  - 결과를 쓸 때 규칙 행을 잠그고, 평가하는 사이 조건 버전·창·임계가 바뀌었거나 꺼졌으면 결과를 버린다. 상태 전이·사건·메일 작업은 한 트랜잭션이다. 메일 작업은 받는 사람마다 하나이고, 수신처 고정이면 그 주소 하나다.
+  - 해소 대기 연속 횟수 × 평가 간격이 해소 대기 시간(비우면 시간 구간)에 닿으면 사건을 `resolved`로 닫는다. `감시 불가`인 회차는 해소 계산을 멈춘다.
+  - 회차가 실패하거나 검색 가능 시각이 오래 멈추면 `alert_eval_failed` 운영 일을 열고, 성공한 회차에서 닫는다. 10분 유예 뒤 묶어 보내는 것은 운영 메일 확인이 한다.
 
 ### 5.5 메일 작업
 
@@ -1080,6 +1104,9 @@ stateDiagram-v2
 - TLS는 두 서버가 이미 관리 중인 인증서로 직접 종료하는 것을 기본안으로 둔다. 앞단 프록시가 종료하면 프록시와 서버 사이 구간의 보호를 설치 때 정한다(Q10-02, Q16-04/E01, T04).
 - 바꾼 설정은 중앙을 다시 시작해 적용한다(Q12-08). 보관 기간을 줄이면 이미 저장된 로그에도 적용한다(Q13-02). 웹은 읽기만 한다(UI-13, UI-14, 4.3절 `GET /api/v1/settings`).
 - 시작할 때 설정을 검사하고 틀리면 시작하지 않는다. 메일 설정이 없으면 시작은 하되 알림 규칙을 켤 수 없다(TD-08). 구현(2026-11-07): 조회·관리 API는 수신 서버 주소 `LOGDOCK_INGEST_URL`(HTTPS, 사용자 정보·쿼리 없음)이 없으면 시작하지 않는다. 연결 설정 파일의 `ingest_url`에 쓴다. 메일 서버는 `LOGDOCK_MAIL_HOST`·`LOGDOCK_MAIL_PORT`(기본 465, STARTTLS면 587)·`LOGDOCK_MAIL_SECURITY`(`tls` 기본, `starttls`, 명시할 때만 `plain_relay`)·`LOGDOCK_MAIL_FROM`·`LOGDOCK_MAIL_USER`·`LOGDOCK_MAIL_PASSWORD_FILE`(비밀번호 파일 경로)·`LOGDOCK_MAIL_CA_FILE`(사설 CA, 선택)로 받는다. 호스트가 없으면 메일 설정 없음이다. 표시 시간대는 `LOGDOCK_DISPLAY_TIMEZONE`(IANA 이름, 틀리면 시작하지 않음), 로그 보관 기간은 `LOGDOCK_LOG_RETENTION_MONTHS`로 받는다. 메일 링크의 기준 주소는 `LOGDOCK_PUBLIC_BASE_URL`(HTTPS, 경로 없음), 수신처 고정은 `LOGDOCK_MAIL_REDIRECT_TO`다. 백그라운드 작업 프로세스(`logdock-worker`, `node dist/worker.js`)도 API와 같은 설정을 읽는다.
+  - ClickHouse는 `LOGDOCK_CLICKHOUSE_URL`(기본 `http://127.0.0.1:8123`, 사용자 정보·쿼리 없음), `LOGDOCK_CLICKHOUSE_DATABASE`(기본 `logdock`), `LOGDOCK_CLICKHOUSE_USER`(기본 `logdock_api`), `LOGDOCK_CLICKHOUSE_PASSWORD_FILE`(비밀번호 파일 경로)로 받는다.
+  - 검색 한도는 `LOGDOCK_SEARCH_BUDGET_MS`(기본 10000), `LOGDOCK_SEARCH_MAX_CONCURRENT`(8), `LOGDOCK_SEARCH_MAX_PER_SESSION`(4)이다. 알림 평가 예산은 `LOGDOCK_ALERT_EVAL_BUDGET_MS`(45000)이다.
+  - 질의 자원 상한은 검색 `LOGDOCK_SEARCH_MAX_THREADS`·`LOGDOCK_SEARCH_MAX_MEMORY_BYTES`, 평가 `LOGDOCK_ALERT_EVAL_MAX_THREADS`·`LOGDOCK_ALERT_EVAL_MAX_MEMORY_BYTES`다. 없으면 ClickHouse 계정 설정 프로필을 따른다. 모두 M5·Q15 전의 시제품 값이다.
 
 ### 8.2 중앙 로컬 명령
 

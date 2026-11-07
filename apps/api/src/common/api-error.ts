@@ -60,6 +60,22 @@ export const errors = {
   /** 같은 서버의 같은 대상이 이미 보관되지 않은 연결로 등록돼 있다(Q07-06). 그 연결의 외부 ID를 준다. */
   duplicateConnection: (connectionId: string) =>
     new ApiError(409, 'duplicate_connection', 'the same server already collects this target', { connection_id: connectionId }),
+  /** 검색 조건 오류. 조건 경로와 이유를 준다(CM-03 상태 5). */
+  conditionInvalid: (fields: { path: string; reason: string }[]) =>
+    new ApiError(422, 'condition_invalid', 'invalid search condition', { fields }),
+  /** 검색 실행 기준이 만료됐거나 없다. 화면은 다시 검색을 안내한다(CM-04 `만료·접근 제한`). */
+  runExpired: () => new ApiError(410, 'run_expired', 'search run expired or unknown'),
+  /** 동시 검색 수 상한(4.2절 동시 실행). */
+  searchBusy: (retryAfterSeconds: number) =>
+    new ApiError(429, 'search_busy', 'too many searches running', { retry_after_seconds: retryAfterSeconds }, true, {
+      'Retry-After': String(retryAfterSeconds),
+    }),
+  /** 로그 저장소를 쓸 수 없다. 엔진 내부 문장은 담지 않는다. */
+  storageUnavailable: () => new ApiError(503, 'storage_unavailable', 'log storage unavailable', {}, true),
+  /** 실행 예산 안에 끝낸 구간이 없다. 끝낸 구간이 있으면 부분 결과(200)로 돌려준다. */
+  searchTimeout: () => new ApiError(504, 'search_timeout', 'search timed out before any range completed', { completed_range: null }, true),
+  /** 이벤트를 가져올 수 없다. 가능한 사유를 준다(UI-03 상태 7). */
+  eventUnavailable: (reasons: string[]) => new ApiError(410, 'event_unavailable', 'event is not available', { reasons }),
   /** 감사 이력을 읽을 수 없다. 화면은 목록 자리에 장애를 보인다(UI-15, WQ-90). */
   auditUnavailable: () => new ApiError(503, 'audit_unavailable', 'audit history cannot be read', {}, true),
   internal: () => new ApiError(500, 'internal', 'internal error', {}, true),
