@@ -1,0 +1,13 @@
+# 파일명 규칙 연결 예시. 값은 합성 값이다.
+# 폴더는 고정 경로이고 파일 이름 부분에만 *와 ?를 쓴다. 하위 폴더는 따로 등록한다(Q02-06).
+connection_id = "c_example2"
+config_version = 1
+ingest_url = "https://logdock.example.com:8443/ingest/v1"
+
+[target]
+type = "file_pattern"
+path = "/var/log/example-app/app-*.log"
+
+[format]
+type = "json"
+max_event_bytes = 1048576

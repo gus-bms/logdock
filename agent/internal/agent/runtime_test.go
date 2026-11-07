@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -220,5 +221,87 @@ func TestInstanceIDIsKeptAcrossRestarts(t *testing.T) {
 	}
 	if a.InstanceID() != b.InstanceID() || !instanceIDPattern.MatchString(a.InstanceID()) {
 		t.Fatalf("instance ids %q and %q", a.InstanceID(), b.InstanceID())
+	}
+}
+
+// usePattern은 setup이 만든 연결을 logs 폴더의 파일명 규칙 연결로 바꾸고 그 폴더를 돌려준다.
+func usePattern(t *testing.T, cfg config.Agent) string {
+	t.Helper()
+	logs := filepath.Join(filepath.Dir(cfg.ConnectionsDir), "logs")
+	if err := os.Mkdir(logs, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(cfg.ConnectionsDir, connID+".toml")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := strings.Replace(string(b), `type = "file"`, `type = "file_pattern"`, 1)
+	i := strings.Index(s, "path = ")
+	j := strings.Index(s[i:], "\n")
+	s = s[:i] + fmt.Sprintf("path = %q", filepath.Join(logs, "app-*.log")) + s[i+j:]
+	mustWrite(t, path, s, 0o644)
+	return logs
+}
+
+func openLog(t *testing.T, path string) *os.File {
+	t.Helper()
+	w, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { w.Close() })
+	return w
+}
+
+func TestPatternConnectionDeliversEveryFileOnceAcrossRestarts(t *testing.T) {
+	cfg, srv, _ := setup(t)
+	logs := usePattern(t, cfg)
+	a := openLog(t, filepath.Join(logs, "app-1.log"))
+	writeLines(t, a, "before", 2) // 연결 전 줄은 D02로 읽지 않는다
+	stop := start(t, cfg)
+	waitFor(t, "the initial boundary", func() bool { return len(srv.Records(connID)) >= 1 })
+	want := writeLines(t, a, "a", 3)
+	b := openLog(t, filepath.Join(logs, "app-2.log")) // 연결 뒤 생긴 파일은 처음부터 읽는다
+	want = append(want, writeLines(t, b, "b", 3)...)
+	waitFor(t, "lines from both files", func() bool { return len(bodies(srv)) == len(want) })
+	stop()
+
+	want = append(want, writeLines(t, a, "a-down", 2)...) // 꺼져 있던 사이 쓰였다
+	want = append(want, writeLines(t, b, "b-down", 2)...)
+	stop = start(t, cfg)
+	defer stop()
+	waitFor(t, "lines written while stopped", func() bool { return len(bodies(srv)) >= len(want) })
+	got := bodies(srv)
+	slices.Sort(got)
+	slices.Sort(want)
+	if !slices.Equal(got, want) {
+		t.Fatalf("stored %q\nwant   %q", got, want)
+	}
+	for _, s := range srv.Records(connID) {
+		if s.Record.Body != nil && strings.HasPrefix(*s.Record.Body, "b") && filepath.Base(s.Record.Stream.Path) != "app-2.log" {
+			t.Fatalf("record %q has path %q", *s.Record.Body, s.Record.Stream.Path)
+		}
+	}
+}
+
+func TestTargetInsideStateDirIsRefused(t *testing.T) {
+	cfg, _, _ := setup(t)
+	path := filepath.Join(cfg.ConnectionsDir, connID+".toml")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(b)
+	i := strings.Index(s, "path = ")
+	j := strings.Index(s[i:], "\n")
+	s = s[:i] + fmt.Sprintf("path = %q", filepath.Join(cfg.StateDir, "queue", "seg.dat")) + s[i+j:]
+	mustWrite(t, path, s, 0o644)
+	c, err := config.LoadConnection(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := c.CheckAgainst(cfg); err == nil || !strings.Contains(err.Error(), "state_dir") {
+		t.Fatalf("got %v, want refusal", err)
 	}
 }

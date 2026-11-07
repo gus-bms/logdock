@@ -26,6 +26,8 @@ const (
 	segMagic    = "LDQ1" // 세그먼트 형식 1
 	stateFile   = "state.json"
 	stateFormat = 1
+	snapFile    = "positions.json" // 읽기 위치 스냅샷(Options.Snapshots)
+	snapFormat  = 1
 	frameHeader = 16       // 길이 4 + CRC 4 + 순번 8
 	maxPayload  = 64 << 20 // 깨진 길이 값으로 큰 메모리를 잡지 않게 하는 상한
 )
@@ -46,6 +48,10 @@ var castagnoli = crc32.MakeTable(crc32.Castagnoli)
 type Options struct {
 	SegmentBytes int64 // 세그먼트 하나의 크기. 넘으면 다음 기록부터 새 세그먼트에 쓴다
 	LimitBytes   int64 // 대기 한도. 넘으면 Full이 참이 되어 부르는 쪽이 읽기를 멈춘다(D01)
+	// Snapshots는 읽는 쪽이 파일별 읽기 위치를 스냅샷으로 따로 확정한다는 뜻이다(SaveSnapshot,
+	// 파일명 규칙). 그러면 스냅샷에 든 순번 뒤의 기록은 수신 확인돼도 지우지 않는다. 재시작 때
+	// 스냅샷 뒤 기록을 다시 읽어야 파일마다 마지막으로 확정된 위치를 되살릴 수 있기 때문이다.
+	Snapshots bool
 }
 
 func (o *Options) setDefaults() {
@@ -71,6 +77,13 @@ type stateData struct {
 	Generation uint16 `json:"generation,omitempty"`
 }
 
+// snapData는 읽기 위치 스냅샷 파일이다. Data는 읽는 쪽이 정한 형식이고 대기는 해석하지 않는다.
+type snapData struct {
+	Format  int             `json:"format"`
+	Through uint64          `json:"through"` // 이 순번까지의 기록을 반영한 위치다
+	Data    json.RawMessage `json:"data"`
+}
+
 type segment struct {
 	path    string
 	first   uint64
@@ -92,6 +105,8 @@ type Queue struct {
 	cur   *os.File   // 마지막 세그먼트. 이어 쓰기용
 	used  int64
 	cut   int64 // 열 때 잘라 낸 바이트
+	// snapped는 마지막으로 확정한 스냅샷의 순번이다(Options.Snapshots). 이 뒤 기록은 지우지 않는다.
+	snapped uint64
 }
 
 // Open은 dir의 대기를 연다. 없으면 만든다.
@@ -120,6 +135,17 @@ func Open(dir string, opt Options) (*Queue, error) {
 			return nil, fmt.Errorf("acked %d but last record %d: %w", q.acked, last, ErrCorrupt)
 		}
 		q.next = max(q.next, last+1)
+	}
+	if opt.Snapshots {
+		through, _, ok, err := q.Snapshot()
+		if err != nil {
+			return nil, err
+		}
+		if ok && through >= q.next {
+			// 스냅샷은 대기에 확정한 기록까지만 반영하므로 이럴 수 없다. 이미 확정된 기록이 사라졌다.
+			return nil, fmt.Errorf("snapshot through %d but last record %d: %w", through, q.next-1, ErrCorrupt)
+		}
+		q.snapped = through
 	}
 	return q, nil
 }
@@ -151,18 +177,22 @@ func readState(dir string) (stateData, error) {
 	return st, nil
 }
 
-// writeState는 상태 파일을 원자적으로 바꾼다. 임시 파일에 쓰고 디스크에 확정한 뒤 이름을
-// 바꾸므로, 도중에 멈춰도 옛 상태나 새 상태 둘 중 하나만 남는다.
 func writeState(dir string, st stateData) error {
 	b, err := json.Marshal(st)
 	if err != nil {
 		return err
 	}
-	tmp := filepath.Join(dir, stateFile+".tmp")
+	return writeAtomic(dir, stateFile, b)
+}
+
+// writeAtomic은 파일을 원자적으로 바꾼다. 임시 파일에 쓰고 디스크에 확정한 뒤 이름을
+// 바꾸므로, 도중에 멈춰도 옛 내용이나 새 내용 둘 중 하나만 남는다.
+func writeAtomic(dir, name string, b []byte) error {
+	tmp := filepath.Join(dir, name+".tmp")
 	if err := writeFileSync(tmp, b); err != nil {
 		return err
 	}
-	if err := os.Rename(tmp, filepath.Join(dir, stateFile)); err != nil {
+	if err := os.Rename(tmp, filepath.Join(dir, name)); err != nil {
 		return err
 	}
 	return syncDir(dir)
@@ -503,11 +533,22 @@ func (q *Queue) Ack(through uint64) error {
 		return err
 	}
 	q.acked = through
-	keep := q.segs[:0]
+	return q.removeDone()
+}
+
+// removeDone은 지워도 되는 세그먼트를 지운다. 잠금을 쥔 채 부른다. 수신 확인된 기록만 지우고,
+// 스냅샷을 쓰는 대기면 스냅샷에 든 기록까지만 지운다. 마지막 세그먼트는 남긴다.
+func (q *Queue) removeDone() error {
+	through := q.acked
+	if q.opt.Snapshots {
+		through = min(through, q.snapped)
+	}
+	keep := make([]*segment, 0, len(q.segs))
 	removed := false
 	for i, s := range q.segs {
 		if i < len(q.segs)-1 && s.last <= through {
 			if err := os.Remove(s.path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				q.segs = append(keep, q.segs[i:]...) // 지우지 못한 세그먼트부터는 그대로 둔다
 				return err
 			}
 			q.used -= s.size
@@ -521,6 +562,48 @@ func (q *Queue) Ack(through uint64) error {
 		return syncDir(q.dir)
 	}
 	return nil
+}
+
+// SaveSnapshot은 through 순번까지의 기록을 반영한 읽기 위치(data, JSON)를 디스크에 확정한다.
+// 그 뒤로 through까지의 기록은 수신 확인되면 지울 수 있다. 재시작하면 Snapshot으로 읽고
+// through 뒤 기록을 Read로 다시 읽어 위치를 되살린다.
+func (q *Queue) SaveSnapshot(through uint64, data []byte) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if !q.opt.Snapshots {
+		return errors.New("queue: snapshots are not enabled")
+	}
+	if through >= q.next || through < q.snapped {
+		return fmt.Errorf("queue: snapshot through %d, last record %d, last snapshot %d", through, q.next-1, q.snapped)
+	}
+	b, err := json.Marshal(snapData{Format: snapFormat, Through: through, Data: data})
+	if err != nil {
+		return err
+	}
+	if err := writeAtomic(q.dir, snapFile, b); err != nil {
+		return err
+	}
+	q.snapped = through
+	return q.removeDone()
+}
+
+// Snapshot은 마지막으로 확정한 읽기 위치 스냅샷이다. 없으면 ok가 false다.
+func (q *Queue) Snapshot() (through uint64, data []byte, ok bool, err error) {
+	b, err := os.ReadFile(filepath.Join(q.dir, snapFile))
+	if errors.Is(err, fs.ErrNotExist) {
+		return 0, nil, false, nil
+	}
+	if err != nil {
+		return 0, nil, false, err
+	}
+	var s snapData
+	if err := json.Unmarshal(b, &s); err != nil {
+		return 0, nil, false, fmt.Errorf("%s: %w", snapFile, ErrCorrupt)
+	}
+	if s.Format > snapFormat {
+		return 0, nil, false, fmt.Errorf("%s format %d: %w", snapFile, s.Format, ErrUnsupportedFormat)
+	}
+	return s.Through, s.Data, true, nil
 }
 
 // Last는 가장 최근에 확정한 기록이다. 재시작 위치를 되살리는 데 쓴다.
@@ -598,6 +681,22 @@ func (q *Queue) Used() int64 {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	return q.used
+}
+
+// Unacked는 수신 확인되지 않은 기록이 든 세그먼트의 바이트다. 재시작 위치 때문에 남겨 둔
+// 세그먼트가 모두 수신 확인됐으면 세지 않는다. 읽기를 멈추고 다시 시작하는 판단(D01)에 쓴다.
+// Used로 판단하면, 한 번에 쓴 기록이 한도의 대부분을 차지한 세그먼트가 수신 확인된 뒤에도
+// 마지막 세그먼트로 남아 읽기가 다시 시작되지 않는다.
+func (q *Queue) Unacked() int64 {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	n := q.used
+	for _, s := range q.segs {
+		if s.last >= s.first && s.last <= q.acked {
+			n -= s.size
+		}
+	}
+	return n
 }
 
 // Limit은 대기 한도다.

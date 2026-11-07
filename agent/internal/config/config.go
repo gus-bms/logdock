@@ -45,7 +45,21 @@ type Connection struct {
 type Target struct {
 	Type string // file | file_pattern | journald
 	Path string
+	// journald: 대상 종류(container | unit)와 이름. unit 이름에 종류 접미사가 없으면 .service를 붙인다.
+	Kind string
+	Name string
 }
+
+var (
+	// containerName은 받는 컨테이너 이름이다. 영문자·숫자로 시작하고 영문자·숫자·_ . -만 쓴다.
+	// 와일드카드와 빈 이름을 막아 호스트 전체를 고르지 못하게 한다(계약 2.8절).
+	containerName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`)
+	// unitName은 받는 unit 이름이다. 영문자·숫자와 : - _ . \ @만 쓴다(와일드카드 불가).
+	unitName = regexp.MustCompile(`^[a-zA-Z0-9:_.\\@-]+$`)
+	// unitSuffixes는 systemd unit 종류 접미사다. 없으면 .service로 본다.
+	unitSuffixes = []string{".service", ".socket", ".device", ".mount", ".automount", ".swap", ".target",
+		".path", ".timer", ".slice", ".scope"}
+)
 
 // Format은 이벤트를 나누는 방식이다. 시각·레벨·필드 해석은 수신 서버가 한다(D17-03).
 type Format struct {
@@ -127,6 +141,8 @@ func LoadConnection(path string) (Connection, error) {
 	t := newReader(path, doc, "target")
 	c.Target.Type = t.str("type", true)
 	c.Target.Path = t.path("path", false)
+	c.Target.Kind = t.str("kind", false)
+	c.Target.Name = t.str("name", false)
 
 	f := newReader(path, doc, "format")
 	c.Format.Type = f.str("type", true)
@@ -172,15 +188,38 @@ func (c *Connection) validate(start string) []error {
 	if u, err := url.Parse(c.IngestURL); c.IngestURL != "" && (err != nil || u.Scheme != "https" || u.Host == "") {
 		bad("ingest_url must be an https URL (Q10-02)")
 	}
+	if c.Target.Type != "journald" && (c.Target.Kind != "" || c.Target.Name != "") {
+		bad("target.kind and target.name are only for journald")
+	}
 	switch c.Target.Type {
 	case "file":
 		if c.Target.Path == "" || strings.ContainsAny(c.Target.Path, "*?[") {
 			bad("target.path must be one absolute file path")
 		}
 	case "file_pattern":
-		bad("target.type file_pattern is not supported by this prototype yet")
+		if msg := checkPattern(c.Target.Path); msg != "" {
+			bad("target.path %s", msg)
+		}
 	case "journald":
-		bad("target.type journald is not supported by this prototype yet")
+		if c.Target.Path != "" {
+			bad("target.path is not used for journald; use target.kind and target.name")
+		}
+		switch c.Target.Kind {
+		case "container":
+			if !containerName.MatchString(c.Target.Name) {
+				bad("target.name %q must be one container name (letters, digits, _ . -)", c.Target.Name)
+			}
+		case "unit":
+			if !unitName.MatchString(c.Target.Name) {
+				bad("target.name %q must be one systemd unit name (no wildcards)", c.Target.Name)
+				break
+			}
+			if !hasUnitSuffix(c.Target.Name) {
+				c.Target.Name += ".service"
+			}
+		default:
+			bad("target.kind %q must be container or unit", c.Target.Kind)
+		}
 	case "":
 	default:
 		bad("target.type %q must be file, file_pattern or journald", c.Target.Type)
@@ -212,6 +251,53 @@ func (c *Connection) validate(start string) []error {
 		}
 	}
 	return errs
+}
+
+// CheckAgainst는 연결이 에이전트 전체 설정과 부딪히는지 본다. 수집 대상 폴더가 상태 폴더이거나
+// 그 아래면 에이전트가 자기 대기를 로그로 다시 읽으므로 막는다(수집 명세 Q02-06 자체 재수집 방지).
+func (c Connection) CheckAgainst(a Agent) error {
+	if c.Target.Path == "" || a.StateDir == "" {
+		return nil
+	}
+	rel, err := filepath.Rel(a.StateDir, filepath.Dir(c.Target.Path))
+	if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("%s: target.path must not be inside state_dir; the agent would read its own queue", c.File)
+	}
+	return nil
+}
+
+// checkPattern은 파일명 규칙을 검사한다(계약 2.8절 file_pattern, Q02-06). 폴더는 고정 경로이고
+// 이름 부분에만 *와 ?를 쓴다. [ ]와 \는 받지 않는다. 문자 묶음과 escape까지 열면 규칙을 읽고
+// 검사하기 어려워지고, 요구된 예(app-*.log)는 *와 ?로 충분하기 때문이다.
+func checkPattern(p string) string {
+	switch {
+	case p == "":
+		return "is required"
+	case filepath.Clean(p) != p:
+		return "must be a clean absolute path (no .., // or trailing /)"
+	}
+	dir, name := filepath.Dir(p), filepath.Base(p)
+	switch {
+	case strings.ContainsAny(dir, `*?[]\`):
+		return "may use * and ? only in the file name, not in the folder (Q02-06)"
+	case strings.ContainsAny(name, `[]\`):
+		return "may use only * and ? as wildcards"
+	case !strings.ContainsAny(name, "*?"):
+		return "has no * or ?; use target.type file for one file"
+	}
+	if _, err := filepath.Match(name, ""); err != nil {
+		return err.Error()
+	}
+	return ""
+}
+
+func hasUnitSuffix(name string) bool {
+	for _, s := range unitSuffixes {
+		if strings.HasSuffix(name, s) && len(name) > len(s) {
+			return true
+		}
+	}
+	return false
 }
 
 // CheckKeyFile은 키 파일이 있고 실행 계정만 읽을 수 있는지 본다(SC-03). 키 내용은 오류에 넣지 않는다.

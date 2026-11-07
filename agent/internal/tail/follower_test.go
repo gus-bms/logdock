@@ -25,19 +25,30 @@ type recorder struct {
 	data   map[FileID]*bytes.Buffer
 	next   map[FileID]int64
 	bounds []Chunk
+	ends   []FileID
 }
 
 func newRecorder(t *testing.T) *recorder {
 	return &recorder{t: t, data: map[FileID]*bytes.Buffer{}, next: map[FileID]int64{}}
 }
 
-func (r *recorder) poll(f *Follower) {
+// poller는 Follower와 Watcher다.
+type poller interface {
+	Poll() ([]Chunk, error)
+}
+
+func (r *recorder) poll(f poller) {
 	r.t.Helper()
 	chunks, err := f.Poll()
 	if err != nil {
 		r.t.Fatalf("Poll: %v", err)
 	}
 	for _, c := range chunks {
+		if c.End {
+			r.ends = append(r.ends, c.File)
+			delete(r.next, c.File)
+			continue
+		}
 		if c.Boundary != "" {
 			r.bounds = append(r.bounds, c)
 			r.next[c.File] = c.Offset

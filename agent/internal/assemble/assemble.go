@@ -151,8 +151,9 @@ func (a *Assembler) Push(c tail.Chunk) []Record {
 		out = a.flush(out)
 		a.file, a.pos = c.File, c.Offset
 		a.skipToLine, a.waitStart = false, false
-		if c.Boundary == tail.InitialTail {
-			// D02: 연결 당시 쓰던 줄의 나머지는 버리고, 여러 줄이면 첫 시작 줄을 기다린다.
+		if c.Boundary == tail.InitialTail || c.Boundary == tail.NewFileTail {
+			// D02: 파일 끝에서 시작하면 그때 쓰던 줄의 나머지는 버리고, 여러 줄이면 첫 시작 줄을
+			// 기다린다. 최초 연결과 언제 생겼는지 모르는 파일이 그렇다.
 			a.skipToLine = !c.AtLineStart
 			a.waitStart = a.opt.Format == Multiline
 		}
@@ -179,6 +180,12 @@ func (a *Assembler) Push(c tail.Chunk) []Record {
 		}
 	}
 	return out
+}
+
+// End는 파일을 다 읽었을 때 줄바꿈 없이 남은 줄과 조립 중인 이벤트를 끝낸다(tail.Chunk.End).
+// 같은 파일의 바이트는 더 오지 않는다.
+func (a *Assembler) End() []Record {
+	return a.flush(nil)
 }
 
 // Tick은 여러 줄 이벤트가 MaxWait 동안 이어지지 않았으면 끝낸다. 주기적으로 부른다.

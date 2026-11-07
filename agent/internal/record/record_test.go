@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gus-bms/logdock/agent/internal/assemble"
+	"github.com/gus-bms/logdock/agent/internal/journal"
 	"github.com/gus-bms/logdock/agent/internal/tail"
 )
 
@@ -95,5 +96,72 @@ func TestWireDoesNotCarryLocalFields(t *testing.T) {
 	}
 	if strings.Contains(string(b), "checkpoint") || strings.Contains(string(b), "config_version") {
 		t.Fatalf("wire %s must not carry the local restart position", b)
+	}
+}
+
+// 파일 위치 0도 보낸다. journald 칸을 더하며 omitempty가 붙었어도 파일 흐름에서는 빠지면 안 된다.
+func TestFileStreamKeepsOffsetZero(t *testing.T) {
+	s, _ := encode(t, assemble.Record{Kind: assemble.Event, File: fid, Offset: 0, End: 1, Body: []byte("x")})
+	b, err := json.Marshal(s.Wire)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"offset":0`) || strings.Contains(string(b), "cursor") {
+		t.Fatalf("wire %s", b)
+	}
+}
+
+func TestJournalRecordRoundTrip(t *testing.T) {
+	prio := 3
+	after := journal.Position{Cursor: "s=a;i=9", Ident: "b/9/1/ff", Skip: []string{"b/8/1/aa"}, DropKeys: []string{"p:x"}, WaitStart: true}
+	b, err := EncodeJournal(journal.Record{Kind: assemble.Event, Body: []byte("boom"),
+		Meta:  journal.Meta{Cursor: "s=a;i=7", RealtimeUS: 1_762_400_000_000_001, SourceRealtimeUS: 1_762_400_000_000_000, Priority: prio, ContainerID: "cid"},
+		After: after}, 4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := Decode(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := s.Checkpoint.JournalPosition(); got.Cursor != after.Cursor || got.Ident != after.Ident ||
+		len(got.Skip) != 1 || len(got.DropKeys) != 1 || !got.WaitStart {
+		t.Fatalf("position %+v", got)
+	}
+	w, err := json.Marshal(s.Wire)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"type":"journald"`, `"cursor":"s=a;i=7"`, `"realtime_us":1762400000000001`,
+		`"source_realtime_us":1762400000000000`, `"priority":3`, `"container_id":"cid"`} {
+		if !strings.Contains(string(w), want) {
+			t.Errorf("wire %s lacks %s", w, want)
+		}
+	}
+	if strings.Contains(string(w), "file_id") || strings.Contains(string(w), "offset") {
+		t.Fatalf("journald stream must not carry file fields: %s", w)
+	}
+}
+
+// 컨테이너 대상의 속도 제한 경계는 Docker 데몬 unit 전체의 수라 이 대상의 몫은 모른다.
+func TestJournalDropBoundary(t *testing.T) {
+	for _, tc := range []struct {
+		share   bool
+		n       int64
+		unknown bool
+	}{{false, 120, false}, {true, 120, true}, {false, -1, true}} {
+		b, err := EncodeJournal(journal.Record{Kind: assemble.Boundary, Meta: journal.Meta{Priority: -1},
+			Boundary: journal.BoundaryInfo{Kind: journal.BoundarySourceDropped, Unit: "order.service", Dropped: tc.n, ShareUnknown: tc.share}}, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s, _ := Decode(b)
+		if s.Boundary.SkippedUnknown != tc.unknown || s.Boundary.Unit != "order.service" ||
+			(tc.n >= 0) != (s.Boundary.DroppedEntries != nil) {
+			t.Fatalf("%+v: got %+v", tc, s.Boundary)
+		}
+		if s.Stream.Priority != nil {
+			t.Fatal("unknown priority must not be sent")
+		}
 	}
 }

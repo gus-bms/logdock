@@ -1,0 +1,17 @@
+# journald 연결 예시. 값은 합성 값이다.
+# 컨테이너는 Docker journald 드라이버가 남긴 컨테이너 이름(container), systemd 서비스는 unit
+# 이름(unit)으로 고른다. unit 이름에 .service 같은 종류 접미사가 없으면 .service를 붙인다.
+# 에이전트 실행 계정은 시스템 journal을 읽을 수 있어야 한다(systemd-journal 그룹).
+connection_id = "c_example3"
+config_version = 1
+ingest_url = "https://logdock.example.com:8443/ingest/v1"
+
+[target]
+type = "journald"
+kind = "container"
+name = "example-api"
+
+[format]
+type = "multiline"
+event_start = '^\d{4}-\d{2}-\d{2}[ T]'
+max_event_bytes = 1048576

@@ -208,6 +208,34 @@ func TestAckDeletesFinishedSegmentsButKeepsTheLast(t *testing.T) {
 	}
 }
 
+// 한 번에 쓴 기록들이 한 세그먼트에 들어가면, 모두 수신 확인돼도 그 세그먼트는 재시작 위치 때문에
+// 남는다. 읽기 재개 판단은 이 바이트를 세지 않아야 한다(D01, 멈춘 채 다시 시작하지 않는 문제).
+func TestUnackedIgnoresAckedSegmentKeptForRestart(t *testing.T) {
+	q := mustOpen(t, t.TempDir(), Options{SegmentBytes: 1})
+	if _, err := q.Append([][]byte{[]byte("a"), []byte("b"), []byte("c")}); err != nil {
+		t.Fatal(err)
+	}
+	if q.Unacked() != q.Used() || q.Used() == 0 {
+		t.Fatalf("before ack: unacked %d used %d", q.Unacked(), q.Used())
+	}
+	if err := q.Ack(2); err != nil {
+		t.Fatal(err)
+	}
+	if q.Unacked() != q.Used() {
+		t.Fatalf("partly acked segment must still count: unacked %d used %d", q.Unacked(), q.Used())
+	}
+	if err := q.Ack(3); err != nil {
+		t.Fatal(err)
+	}
+	if q.Used() == 0 || q.Unacked() != 0 {
+		t.Fatalf("after full ack: unacked %d used %d", q.Unacked(), q.Used())
+	}
+	mustAppend(t, q, "d")
+	if q.Unacked() == 0 || q.Unacked() >= q.Used() {
+		t.Fatalf("new record: unacked %d used %d", q.Unacked(), q.Used())
+	}
+}
+
 func TestUnknownFormatIsLeftAlone(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, stateFile), []byte(`{"format":99,"acked_through":5}`), 0o600); err != nil {
@@ -250,5 +278,57 @@ func TestReadLimits(t *testing.T) {
 		if err != nil || len(es) != c.want {
 			t.Fatalf("Read(maxBytes %d, maxCount %d) = %d entries, err %v; want %d", c.maxBytes, c.maxCount, len(es), err, c.want)
 		}
+	}
+}
+
+func TestSnapshotKeepsLaterRecordsUntilTheNextSnapshot(t *testing.T) {
+	dir := t.TempDir()
+	opt := Options{SegmentBytes: 1, Snapshots: true}
+	q := mustOpen(t, dir, opt)
+	for _, s := range []string{"a", "b", "c", "d"} {
+		mustAppend(t, q, s)
+	}
+	if err := q.Ack(4); err != nil {
+		t.Fatal(err)
+	}
+	// 스냅샷이 없으면 재시작 때 기록을 처음부터 다시 읽어야 하므로 수신 확인돼도 지우지 않는다.
+	if n := len(segments(t, dir)); n != 4 {
+		t.Fatalf("%d segments, want all 4 kept before any snapshot", n)
+	}
+	if err := q.SaveSnapshot(2, []byte(`{"files":2}`)); err != nil {
+		t.Fatal(err)
+	}
+	if n := len(segments(t, dir)); n != 2 {
+		t.Fatalf("%d segments, want 2 (records after the snapshot)", n)
+	}
+	q.Close()
+
+	q = mustOpen(t, dir, opt)
+	through, data, ok, err := q.Snapshot()
+	if err != nil || !ok || through != 2 || string(data) != `{"files":2}` {
+		t.Fatalf("snapshot %d %q %v %v", through, data, ok, err)
+	}
+	if got := readAll(t, q, 3); !equal(got, []string{"c", "d"}) {
+		t.Fatalf("records after snapshot %v", got)
+	}
+	mustAppend(t, q, "e")
+	if err := q.Ack(5); err != nil {
+		t.Fatal(err)
+	}
+	if n := len(segments(t, dir)); n != 3 {
+		t.Fatalf("%d segments, want 3 kept after reopening", n)
+	}
+	if err := q.SaveSnapshot(1, nil); err == nil {
+		t.Fatal("snapshot going backwards was accepted")
+	}
+	if err := q.SaveSnapshot(6, nil); err == nil {
+		t.Fatal("snapshot beyond the last record was accepted")
+	}
+}
+
+func TestSnapshotRequiresTheOption(t *testing.T) {
+	q := mustOpen(t, t.TempDir(), Options{})
+	if err := q.SaveSnapshot(0, []byte(`{}`)); err == nil {
+		t.Fatal("snapshot accepted without Options.Snapshots")
 	}
 }

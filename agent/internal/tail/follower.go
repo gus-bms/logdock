@@ -26,6 +26,7 @@ type BoundaryKind string
 const (
 	InitialTail    BoundaryKind = "initial_tail"     // 최초 연결: 이미 있던 파일의 끝에서 시작
 	NewFileHead    BoundaryKind = "new_file_head"    // 연결 뒤 생긴 파일: 처음부터
+	NewFileTail    BoundaryKind = "new_file_tail"    // 언제 생겼는지 모르는 파일: 발견한 때의 끝에서 시작
 	Rotated        BoundaryKind = "rotated"          // 경로가 다음 파일을 가리키게 됨
 	Truncated      BoundaryKind = "truncated"        // 같은 파일이 잘렸거나(copytruncate) 처음부터 다시 쓰임
 	IdentityReused BoundaryKind = "identity_reused"  // 장치·inode는 같지만 다른 파일: 새 파일로 본다
@@ -63,8 +64,14 @@ type Chunk struct {
 	Boundary       BoundaryKind
 	PrevFile       FileID // Rotated: 다 읽고 넘어온 앞 파일
 	OrderConfirmed bool   // Rotated: 앞 파일이 이 경로를 떠나는 것을 직접 봐서 순서를 안다
-	AtLineStart    bool   // InitialTail: 시작 위치 바로 앞이 줄바꿈이거나 파일 처음이다
-	SkippedBytes   int64  // GoneBeforeRead·Truncated·IdentityReused: 잃은 바이트 수. 모르면 Unknown
+	AtLineStart    bool   // InitialTail·NewFileTail: 시작 위치 바로 앞이 줄바꿈이거나 파일 처음이다
+	// SkippedBytes는 GoneBeforeRead·Truncated·IdentityReused에서 잃은 바이트 수, NewFileTail에서
+	// 읽지 않고 건너뛴 앞부분 크기다. 모르면 Unknown
+	SkippedBytes int64
+
+	// End는 이 파일을 다 읽고 놓았다는 뜻이다(Watcher만 낸다). 이 파일의 Chunk는 더 오지 않으므로
+	// 받는 쪽은 줄바꿈 없이 남은 줄과 조립 중인 이벤트를 끝낸다.
+	End bool
 }
 
 // Options의 기본값은 시제품용이다. 제품 수치는 측정(M7) 뒤 정한다.
@@ -84,6 +91,19 @@ type Options struct {
 	// FingerprintBytes는 제자리에서 다시 쓰인 파일을 알아보려고 기억하는 파일 앞부분 크기다.
 	// 크기만 보면 잘린 뒤 빨리 커진 파일을 놓친다.
 	FingerprintBytes int
+
+	// 아래 넷은 파일명 규칙(Watcher)에만 쓴다.
+
+	// ScanInterval은 폴더를 다시 훑어 새 파일과 바뀐 이름을 찾는 주기다.
+	ScanInterval time.Duration
+	// IdleClose는 다 읽은 파일이 이만큼 조용하면 닫아 두는 시간이다. 열린 파일 수를 묶는다.
+	// 닫아 둔 파일은 폴더를 훑다가 크기나 수정 시각이 바뀐 것이 보이면 다시 연다.
+	IdleClose time.Duration
+	// MaxOpen은 동시에 열어 두는 파일 수다. 넘으면 나머지 파일은 자리가 날 때까지 기다린다.
+	MaxOpen int
+	// MaxFiles는 따라가는 파일 수다. 넘는 파일은 따라가지 않고 한도에 닿았다고 알린다.
+	MaxFiles int
+
 	// Now는 지금 시각을 돌려준다. 시험에서 바꿔 끼운다.
 	Now func() time.Time
 }
@@ -103,6 +123,18 @@ func (o *Options) setDefaults() {
 	}
 	if o.FingerprintBytes <= 0 {
 		o.FingerprintBytes = 256
+	}
+	if o.ScanInterval <= 0 {
+		o.ScanInterval = time.Second
+	}
+	if o.IdleClose <= 0 {
+		o.IdleClose = time.Minute
+	}
+	if o.MaxOpen <= 0 {
+		o.MaxOpen = 32
+	}
+	if o.MaxFiles <= 0 {
+		o.MaxFiles = 1024
 	}
 	if o.Now == nil {
 		o.Now = time.Now
@@ -391,34 +423,46 @@ func (t *Follower) adoptPath(out *[]Chunk) (bool, error) {
 
 // checkRewrite는 cur가 잘렸거나(copytruncate) 처음부터 다시 쓰였는지 본다.
 func (t *Follower) checkRewrite(out *[]Chunk) error {
-	c := t.cur
-	fi, err := c.f.Stat()
-	if err != nil {
-		return err
+	rewritten, err := t.cur.checkRewrite(t.opt.FingerprintBytes)
+	if rewritten {
+		// 잘리기 직전에 쓰였지만 아직 읽지 못한 바이트는 잃었다. 얼마인지는 모른다.
+		*out = append(*out, Chunk{File: t.cur.id, Offset: 0, Boundary: Truncated, SkippedBytes: Unknown})
 	}
-	size := fi.Size()
-	if size == c.lastSize {
-		return nil
-	}
-	rewritten := size < c.offset
-	if !rewritten {
-		if rewritten, err = c.headChanged(size, t.opt.FingerprintBytes); err != nil {
-			return err
-		}
-	}
-	c.lastSize = size
-	if !rewritten {
-		return nil
-	}
-	// 잘리기 직전에 쓰였지만 아직 읽지 못한 바이트는 잃었다. 얼마인지는 모른다.
-	*out = append(*out, Chunk{File: c.id, Offset: 0, Boundary: Truncated, SkippedBytes: Unknown})
-	c.offset = 0
-	return c.loadHead(size, t.opt.FingerprintBytes)
+	return err
 }
 
 // drain은 cur에서 budget 바이트까지 읽는다.
 func (t *Follower) drain(out *[]Chunk, budget int) (int, error) {
-	c := t.cur
+	return t.cur.drain(out, budget, t.opt.Now)
+}
+
+// checkRewrite는 파일이 잘렸거나 처음부터 다시 쓰였는지 본다. 그렇다면 처음부터 다시 읽도록
+// 읽은 위치를 0으로 돌리고 rewritten을 참으로 돌려준다.
+func (c *tracked) checkRewrite(fingerprint int) (rewritten bool, err error) {
+	fi, err := c.f.Stat()
+	if err != nil {
+		return false, err
+	}
+	size := fi.Size()
+	if size == c.lastSize {
+		return false, nil
+	}
+	rewritten = size < c.offset
+	if !rewritten {
+		if rewritten, err = c.headChanged(size, fingerprint); err != nil {
+			return false, err
+		}
+	}
+	c.lastSize = size
+	if !rewritten {
+		return false, nil
+	}
+	c.offset = 0
+	return true, c.loadHead(size, fingerprint)
+}
+
+// drain은 budget 바이트까지 읽어 Chunk로 붙인다.
+func (c *tracked) drain(out *[]Chunk, budget int, now func() time.Time) (int, error) {
 	read := 0
 	for read < budget {
 		buf := make([]byte, min(budget-read, readBlock))
@@ -427,7 +471,7 @@ func (t *Follower) drain(out *[]Chunk, budget int) (int, error) {
 			*out = append(*out, Chunk{File: c.id, Offset: c.offset, Data: buf[:n]})
 			c.offset += int64(n)
 			read += n
-			c.lastDataAt = t.opt.Now()
+			c.lastDataAt = now()
 		}
 		if errors.Is(err, io.EOF) || n == 0 {
 			return read, nil
@@ -595,12 +639,17 @@ func (t *Follower) findByID(dir string, p Position) (*tracked, error) {
 
 // track은 연 파일의 읽기 상태를 만든다.
 func (t *Follower) track(f *os.File, fi os.FileInfo, offset int64) (*tracked, error) {
+	return newTracked(f, fi, offset, t.opt.FingerprintBytes)
+}
+
+// newTracked는 연 파일의 읽기 상태를 만들고 앞부분을 기억한다.
+func newTracked(f *os.File, fi os.FileInfo, offset int64, fingerprint int) (*tracked, error) {
 	id, ok := fileIDOf(fi)
 	if !ok {
 		return nil, errNoFileID
 	}
 	c := &tracked{f: f, id: id, offset: offset, lastSize: fi.Size()}
-	if err := c.loadHead(fi.Size(), t.opt.FingerprintBytes); err != nil {
+	if err := c.loadHead(fi.Size(), fingerprint); err != nil {
 		return nil, err
 	}
 	return c, nil

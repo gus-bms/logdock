@@ -194,12 +194,15 @@ type report struct {
 	DiagWriteError bool `json:"diag_write_error"`
 }
 
+// loss는 누락 구간 하나다. 파일은 파일 칸을, journald는 unit과 버린 수를 쓴다.
 type loss struct {
 	Kind           string    `json:"kind"`
-	FileID         string    `json:"file_id"`
-	Offset         int64     `json:"offset"`
+	FileID         string    `json:"file_id,omitempty"`
+	Offset         *int64    `json:"offset,omitempty"`
 	SkippedBytes   *int64    `json:"skipped_bytes,omitempty"`
 	SkippedUnknown bool      `json:"skipped_unknown,omitempty"`
+	Unit           string    `json:"unit,omitempty"`
+	DroppedEntries *int64    `json:"dropped_entries,omitempty"`
 	ObservedAt     time.Time `json:"observed_at"`
 }
 
@@ -226,7 +229,17 @@ func (r *Reporter) build(s Snapshot, now time.Time) report {
 
 	b.Loss = []loss{}
 	for _, l := range s.Read.Loss {
-		e := loss{Kind: l.Kind, FileID: l.FileID, Offset: l.Offset, ObservedAt: utc(l.ObservedAt)}
+		if l.Journal {
+			e := loss{Kind: l.Kind, Unit: l.Unit, ObservedAt: utc(l.ObservedAt), SkippedUnknown: l.ShareUnknown || l.Dropped < 0}
+			if l.Dropped >= 0 {
+				n := l.Dropped
+				e.DroppedEntries = &n
+			}
+			b.Loss = append(b.Loss, e)
+			continue
+		}
+		off := l.Offset
+		e := loss{Kind: l.Kind, FileID: l.FileID, Offset: &off, ObservedAt: utc(l.ObservedAt)}
 		if l.SkippedBytes == tail.Unknown {
 			e.SkippedUnknown = true
 		} else {

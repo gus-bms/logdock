@@ -18,6 +18,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"sort"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/gus-bms/logdock/agent/internal/agent"
 	"github.com/gus-bms/logdock/agent/internal/config"
+	"github.com/gus-bms/logdock/agent/internal/journal"
 )
 
 const version = "0.1.0-prototype"
@@ -109,18 +111,43 @@ func check(cfgPath string, out io.Writer) int {
 	}
 	for _, c := range conns {
 		var problems, warnings []string
+		if err := c.CheckAgainst(cfg); err != nil {
+			problems = append(problems, err.Error())
+		}
 		if err := config.CheckKeyFile(c.KeyPath); err != nil {
 			problems = append(problems, err.Error())
 		}
 		if _, err := c.HTTPClient(); err != nil {
 			problems = append(problems, err.Error())
 		}
-		switch err := checkReadable(c.Target.Path); {
-		case errors.Is(err, fs.ErrNotExist):
-			// 연결한 뒤 생기는 파일은 처음부터 읽는다(D02). 막지 않고 알리기만 한다.
-			warnings = append(warnings, "target file does not exist yet; it will be read from its start once created")
-		case err != nil:
-			problems = append(problems, "target: "+err.Error())
+		target := c.Target.Path
+		switch c.Target.Type {
+		case "journald":
+			target = c.Target.Kind + " " + c.Target.Name
+			problems, warnings = checkJournal(problems, warnings)
+		case "file_pattern":
+			n, compressed, err := matchCount(c.Target.Path)
+			switch {
+			case errors.Is(err, fs.ErrNotExist):
+				warnings = append(warnings, "target folder does not exist yet; files created in it later will be read from their start")
+			case err != nil:
+				problems = append(problems, "target: "+err.Error())
+			case n == 0:
+				warnings = append(warnings, "no file matches yet; files created later will be read from their start")
+			}
+			if compressed > 0 {
+				// 압축 파일을 글로 읽으면 깨진 본문만 쌓인다. 규칙을 좁히라고 알린다.
+				warnings = append(warnings, fmt.Sprintf("%d matching files look compressed (.gz and the like) and would be read as text; narrow the pattern", compressed))
+			}
+			target = fmt.Sprintf("%s, %d files match", c.Target.Path, n)
+		default:
+			switch err := checkReadable(c.Target.Path); {
+			case errors.Is(err, fs.ErrNotExist):
+				// 연결한 뒤 생기는 파일은 처음부터 읽는다(D02). 막지 않고 알리기만 한다.
+				warnings = append(warnings, "target file does not exist yet; it will be read from its start once created")
+			case err != nil:
+				problems = append(problems, "target: "+err.Error())
+			}
 		}
 		switch {
 		case len(problems) > 0:
@@ -129,7 +156,7 @@ func check(cfgPath string, out io.Writer) int {
 		case len(warnings) > 0:
 			fmt.Fprintf(out, "WARN %s: %s\n", c.ID, strings.Join(warnings, "; "))
 		default:
-			fmt.Fprintf(out, "OK   %s: %s (%s, config version %d)\n", c.ID, c.Target.Path, c.Format.Type, c.ConfigVersion)
+			fmt.Fprintf(out, "OK   %s: %s (%s, config version %d)\n", c.ID, target, c.Format.Type, c.ConfigVersion)
 		}
 	}
 	if len(conns) == 0 && len(errs) == 0 {
@@ -139,6 +166,53 @@ func check(cfgPath string, out io.Writer) int {
 		return 1
 	}
 	return 0
+}
+
+// journalDirs와 journalctlPath는 시험이 바꾼다.
+var (
+	journalDirs    = journal.DefaultDirs
+	journalctlPath = "journalctl"
+)
+
+// checkJournal은 journald 연결의 읽기 조건을 본다. journalctl은 권한이 없어도 실패하지 않고 빈
+// 결과를 내므로 journal 파일을 직접 열어 본다. 메모리에만 보관하는 journal은 막지 않고 알린다.
+func checkJournal(problems, warnings []string) ([]string, []string) {
+	if _, err := exec.LookPath(journalctlPath); err != nil {
+		problems = append(problems, "journalctl not found in PATH")
+	}
+	persistent, err := journal.CheckAccess(journalDirs)
+	switch {
+	case errors.Is(err, fs.ErrPermission):
+		problems = append(problems, "cannot read the system journal; add the agent account to the systemd-journal group")
+	case err != nil:
+		problems = append(problems, "no system journal file found under "+strings.Join(journalDirs, " or "))
+	case !persistent:
+		warnings = append(warnings, "the journal is kept in memory only (Storage=volatile); entries not yet read are lost at reboot")
+	}
+	return problems, warnings
+}
+
+// matchCount는 파일명 규칙에 지금 맞는 일반 파일 수와, 그 가운데 압축 파일로 보이는 수다.
+// 에이전트처럼 하위 폴더와 심볼릭 링크는 세지 않는다.
+func matchCount(pattern string) (n, compressed int, err error) {
+	entries, err := os.ReadDir(filepath.Dir(pattern))
+	if err != nil {
+		return 0, 0, err
+	}
+	for _, e := range entries {
+		if !e.Type().IsRegular() {
+			continue
+		}
+		if ok, _ := filepath.Match(filepath.Base(pattern), e.Name()); !ok {
+			continue
+		}
+		n++
+		switch strings.ToLower(filepath.Ext(e.Name())) {
+		case ".gz", ".bz2", ".xz", ".zst", ".lz4", ".zip":
+			compressed++
+		}
+	}
+	return n, compressed, nil
 }
 
 func checkReadable(path string) error {

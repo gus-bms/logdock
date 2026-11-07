@@ -24,6 +24,7 @@ import (
 	"github.com/gus-bms/logdock/agent/internal/assemble"
 	"github.com/gus-bms/logdock/agent/internal/collect"
 	"github.com/gus-bms/logdock/agent/internal/config"
+	"github.com/gus-bms/logdock/agent/internal/journal"
 	"github.com/gus-bms/logdock/agent/internal/queue"
 	"github.com/gus-bms/logdock/agent/internal/record"
 	"github.com/gus-bms/logdock/agent/internal/ship"
@@ -83,12 +84,20 @@ func (rt *Runtime) Run(ctx context.Context) error {
 	return nil
 }
 
+// source는 연결 하나의 읽기 흐름이다. 파일 하나는 collect.Reader, 파일명 규칙은
+// collect.PatternReader다.
+type source interface {
+	Step() collect.Status
+	Status() collect.Status
+	Close() error
+}
+
 // worker는 연결 하나다.
 type worker struct {
 	rt      *Runtime
 	c       config.Connection
 	q       *queue.Queue
-	reader  *collect.Reader
+	reader  source
 	sender  *ship.Sender
 	rep     *status.Reporter
 	applied time.Time
@@ -100,6 +109,9 @@ type worker struct {
 }
 
 func (rt *Runtime) newWorker(c config.Connection) (*worker, error) {
+	if err := c.CheckAgainst(rt.cfg); err != nil {
+		return nil, err
+	}
 	if err := config.CheckKeyFile(c.KeyPath); err != nil {
 		return nil, err
 	}
@@ -107,15 +119,28 @@ func (rt *Runtime) newWorker(c config.Connection) (*worker, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 세대마다 대기 폴더를 둔다. Q06 다시 수집으로 새 세대를 열 때 q-0002를 더한다(6단계).
-	q, err := queue.Open(filepath.Join(rt.cfg.StateDir, "queue", c.ID, "q-0001"), queue.Options{LimitBytes: rt.cfg.QueueLimitBytes})
+	// 파일명 규칙은 파일별 읽기 위치를 스냅샷으로 따로 확정하므로 대기가 스냅샷 뒤 기록을 남긴다.
+	pattern := c.Target.Type == "file_pattern"
+	// 세대마다 대기 폴더를 둔다. Q06 다시 수집으로 새 세대를 열 때 q-0002를 더한다(다음 단계).
+	q, err := queue.Open(filepath.Join(rt.cfg.StateDir, "queue", c.ID, "q-0001"),
+		queue.Options{LimitBytes: rt.cfg.QueueLimitBytes, Snapshots: pattern})
 	if err != nil {
 		return nil, fmt.Errorf("queue: %w", err)
 	}
-	reader, err := collect.NewReader(q, collect.Options{
+	opt := collect.Options{
 		Path: c.Target.Path, ConfigVersion: c.ConfigVersion,
 		Assemble: assemble.Options{Format: assemble.Format(c.Format.Type), StartPattern: c.Format.EventStart, MaxEventBytes: c.Format.MaxEventBytes},
-	})
+	}
+	var reader source
+	switch c.Target.Type {
+	case "file_pattern":
+		reader, err = collect.NewPatternReader(q, opt)
+	case "journald":
+		opt.Journal = collect.JournalOptions{Target: journal.Target{Kind: c.Target.Kind, Name: c.Target.Name}}
+		reader, err = collect.NewJournalReader(q, opt)
+	default:
+		reader, err = collect.NewReader(q, opt)
+	}
 	if err != nil {
 		q.Close()
 		return nil, fmt.Errorf("restart position: %w", err)

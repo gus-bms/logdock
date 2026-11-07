@@ -111,7 +111,7 @@ Q07-02 사용자 취지 확인: 서비스 이름은 표시용 별칭이다. 중�
 
 ### journald 입력 Q02-02
 
-2026-11-01 일반 파일과 함께 초기 입력으로 채택했다. 아래는 기존 정책을 journal 입력에 맞추기 위한 설계/검증 과제다. 특정 collector·journal API/명령·필드명·설정 UI/문법·자원 수치·지원 버전을 확정하지 않는다.
+2026-11-01 일반 파일과 함께 초기 입력으로 채택했다. 아래는 기존 정책을 journal 입력에 맞추기 위한 설계/검증 과제다. 특정 collector·journal API/명령·필드명·설정 UI/문법·자원 수치·지원 버전을 확정하지 않는다. 2026-11-06 에이전트 시제품의 설계는 이 절 끝의 `시제품 설계`에 적었고, 사용자 합의가 아닌 설계이며 실제 journal에서 실행하기 전이다.
 
 - 등록/대상: 서비스·수집 등록 후 키 발급과 중앙 등록정보 기반 분류를 유지한다. journal의 컨테이너/실행 서비스 등 허용 대상 지정과 실제 읽기 범위 검증을 설계한다. 본문에 적힌 서비스명을 전송 권한/등록 근거로 삼거나 호스트 전체 journal을 자동 수집하지 않는다. 파일 경로 입력 합의를 journal 선택 규칙으로 임의 치환하지 않고 등록·제공 설정·로컬 검사 표현을 구체화한다.
 - 시작/경계: 최초 연결 후 신규 로그부터 수집하고 연결 당시 쓰던 이벤트를 제외하는 D02의 의도를 유지한다. journal 최초 경계·불완전/분할 레코드·여러 줄 조립·뒤늦게 기록된 이벤트를 어떻게 판별할지 검증한다. journal 끝 위치나 본문 시각만으로 앱 작성 시작 시각을 입증했다고 가정하지 않는다. 경계 판별 불가 시 보류와 지원 제한/추가 협의 필요를 표시하며 기존 제외 원칙을 조용히 완화하지 않는다.
@@ -121,6 +121,20 @@ Q07-02 사용자 취지 확인: 서비스 이름은 표시용 별칭이다. 중�
 - 검증 계획: AT-01/02 형식·분할/크기·조립, AT-04 최초 경계/쓰던 이벤트, AT-06 권한/대상 범위, AT-08/09 중복 등록/컨테이너·설정 변경, AT-11/13 포화/권한/상태 기록 실패, AT-14 진행 위치 유실·원본 기록 삭제·복원/보류, AT-15 동일 이벤트 재전송, AT-18 중단/업데이트와 OT-02/03/10을 journal 입력에도 구체화한다. 모두 미실행이며 미정 계약을 통과로 보고하지 않는다.
 
 공식 근거(2026-11-01 확인): [Docker journald driver](https://docs.docker.com/engine/logging/drivers/journald/)는 journal 전달·조회와 컨테이너/부분 메시지 정보를 설명한다. [systemd journal 위치 탐색](https://www.freedesktop.org/software/systemd/man/latest/sd_journal_seek_head.html)은 끝 위치와 cursor 탐색을 구분하고 cursor가 없으면 가까운 항목으로 이동할 수 있음을 명시한다. 이 근거는 구현 후보 검토에 쓰며 실제 설치 환경 지원/복원 검증 완료를 뜻하지 않는다.
+
+**시제품 설계(2026-11-06, 에이전트 시제품 7단계).** 사용자 합의가 아닌 설계다. 가짜 journal과 export 형식 합성 데이터로 macOS에서 시험했고, 실제 journalctl·journald·Docker에서는 돌리지 않았다.
+
+- 읽기: 연결마다 `journalctl --system --output=export --follow --no-tail`을 하위 프로세스로 읽는다. systemd 라이브러리를 붙이면 cgo가 필요해 Linux용 교차 빌드가 어려워지고, journal 파일을 직접 읽으면 내부 파일 형식을 따라가야 한다. export 형식은 systemd가 백업·전송용으로 공개한 형식이며 바이너리 값도 길이와 함께 온다. JSON 출력은 4096바이트를 넘는 필드를 `null`로 바꾸므로 쓰지 않는다.
+- 대상: 컨테이너는 `CONTAINER_NAME`, unit은 `_SYSTEMD_UNIT`으로 고른다([계약 2.8절](api-contract-v0.1.md#28-에이전트-설정-파일)). `journalctl -u`는 systemd가 그 unit에 대해 남긴 메시지와 코어 덤프까지 더하므로 쓰지 않는다. journald 속도 제한 알림은 같은 프로세스에서 또는 조건(`+`)으로 함께 받는다.
+- 최초 경계(D02): 처음 연결할 때 대상과 알림 가운데 journal의 마지막 항목을 확인하고 그 뒤부터 읽는다. 그 항목이 나뉜 메시지의 앞 조각이면 그 줄의 나머지 조각은 버리고, 여러 줄 형식이면 첫 시작 줄을 기다린다.
+- 위치와 재개: 기록마다 재시작 위치(그 항목까지 모두 처리한 커서와 그 항목의 식별값)를 함께 대기에 확정한다. systemd 문서는 같은 항목을 여러 커서 문자열이 가리킬 수 있어 문자열 비교가 안 되고, 저장한 항목이 없으면 시각상 가까운 다음 항목으로 옮겨 간다고 한다. 그래서 다시 읽을 때 `--after-cursor` 대신 `--cursor`로 그 항목부터 받아 부팅 ID·두 시각·필드 내용 요약이 같은지 확인하고, 다르거나 없으면 그 사이를 건너뛰지 않고 복구 보류(`recovery_hold`)로 둔다. 대기가 가득 차면(D01) journalctl을 끝내고 자리가 나면 같은 확인을 거쳐 다시 띄운다. 멈춘 채 붙잡아 두면 journald가 지운 파일을 계속 열어 디스크를 돌려주지 못하기 때문이다.
+- 나뉜 메시지: Docker 드라이버는 16KiB를 넘는 줄을 조각으로 나눈다. 2020년 변경(PR #41407, 20.10 이정표. 처음 들어간 릴리스는 확인하지 못함) 뒤 판은 조각마다 `CONTAINER_PARTIAL_ID`·`ORDINAL`·`LAST`를, 그 전 판은 마지막이 아닌 조각에만 `CONTAINER_PARTIAL_MESSAGE=true`를 단다. systemd 서비스의 표준 출력은 `LineMax`(기본 48K)에서 나뉘고 `_LINE_BREAK=line-max`가 붙는다. 조각을 이어 한 줄로 만들고, D03 상한을 넘으면 거부 기록 하나만 내고 나머지 조각은 버린다. stdout과 stderr의 조각 사이에 다른 줄이 끼면 그 줄을 먼저 내되, 재시작 위치는 앞 조각 앞에 두고 먼저 낸 항목을 기억해(256개까지) 다시 읽을 때 건너뛴다. 마지막 조각이 5초 안에 오지 않으면 받은 조각만 `incomplete` 표시로 낸다. Docker는 줄바꿈 없이 끝난 출력을 마지막 표시 없이 보내기 때문이다.
+- 여러 줄 형식: 한 연결의 항목을 journal 순서대로 한 흐름으로 묶는다. stdout과 stderr를 따로 묶지 않는다.
+- 속도 제한: journald는 보낸 프로세스의 unit마다 한도를 세고, 버린 뒤 그 unit의 다음 메시지가 올 때 버린 수(`N_DROPPED`)를 알림으로 남긴다(systemd 소스, v252와 현재 판이 같다). unit 대상은 이 알림을 원본 소실 경계(`source_dropped`)로 낸다. 컨테이너 로그는 Docker 데몬이 대신 보내므로 그 서버의 컨테이너가 데몬 unit 하나의 한도를 함께 쓰고, 알림의 수에서 이 컨테이너의 몫은 모른다.
+- 권한과 보관: journalctl은 권한이 없어도 실패하지 않고 볼 수 있는 항목만 보여 준다. 그래서 시작 전에 시스템 journal 파일을 직접 열어 확인한다(시스템 journal은 root와 `systemd-journal`·`adm`·`wheel` 그룹이 읽는다). `check`는 `/var/log/journal`에 파일이 없고 `/run/log/journal`에만 있으면 메모리 보관이라 재부팅 때 읽지 않은 항목을 잃는다고 알린다.
+- 남은 것: 실제 journal에서의 실행(중앙 서버가 준비되면, 2026-11-06 합의), 연결마다 journalctl 프로세스 하나를 두는 비용(M7), 따라 읽는 동안 journal 파일이 지워질 때의 동작, 조각 ID가 없는 예전 Docker 형식에서 시작 경계 바로 뒤 조각의 판정, 컨테이너별 기록 번호(`CONTAINER_LOG_ORDINAL`)로 이 컨테이너의 버려진 수를 세는 것, Q06 다시 수집 절차.
+
+공식 근거(2026-11-06 확인): [journalctl(1)](https://www.freedesktop.org/software/systemd/man/latest/journalctl.html)(출력 형식, `--cursor`·`--after-cursor`·`--no-tail`, 조건 문법, 읽기 권한 그룹), [Journal Export Formats](https://systemd.io/JOURNAL_EXPORT_FORMATS/), [sd_journal_get_cursor(3)](https://www.freedesktop.org/software/systemd/man/latest/sd_journal_get_cursor.html)(커서 문자열 비교 불가), [systemd.journal-fields(7)](https://www.freedesktop.org/software/systemd/man/latest/systemd.journal-fields.html)(`_LINE_BREAK`·`_STREAM_ID`), [journald.conf(5)](https://www.freedesktop.org/software/systemd/man/latest/journald.conf.html)(`LineMax`, 속도 제한), [systemd 알림 목록](https://github.com/systemd/systemd/blob/main/catalog/systemd.catalog.in)과 [journald 소스](https://github.com/systemd/systemd/blob/main/src/journal/journald-manager.c)(버린 수 알림), [Moby journald 드라이버 소스](https://github.com/moby/moby/blob/master/daemon/logger/journald/journald.go)와 [PR #41407](https://github.com/moby/moby/pull/41407)(조각 필드, 20.10 이정표). 실행 검증이 아니다.
 
 ### 파일 탐색 범위 Q02-06
 

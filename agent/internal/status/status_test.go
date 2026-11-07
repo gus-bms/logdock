@@ -47,6 +47,30 @@ func TestUnknownValuesAreSentAsNull(t *testing.T) {
 	}
 }
 
+// journald 누락은 파일 위치 대신 unit과 버린 수를 보낸다. 파일 누락은 위치 0도 보낸다.
+func TestJournalLossCarriesUnitAndCount(t *testing.T) {
+	r := New(Options{ConnectionID: "c_test1"})
+	snap := Snapshot{Read: collect.Status{State: collect.Running, Loss: []collect.Loss{
+		{Kind: "source_dropped", Journal: true, Unit: "order.service", Dropped: 4210},
+		{Kind: "source_dropped", Journal: true, Unit: "docker.service", Dropped: 50, ShareUnknown: true},
+		{Kind: "truncated", FileID: "f_1_2", Offset: 0, SkippedBytes: 7},
+	}}}
+	b, err := json.Marshal(r.build(snap, time.Now()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	js := string(b)
+	for _, want := range []string{
+		`{"kind":"source_dropped","unit":"order.service","dropped_entries":4210,`,
+		`{"kind":"source_dropped","skipped_unknown":true,"unit":"docker.service","dropped_entries":50,`,
+		`{"kind":"truncated","file_id":"f_1_2","offset":0,"skipped_bytes":7,`,
+	} {
+		if !strings.Contains(js, want) {
+			t.Errorf("report %s does not contain %s", js, want)
+		}
+	}
+}
+
 func TestStoppingIsReportedAsOperatorStop(t *testing.T) {
 	r := New(Options{ConnectionID: "c_test1"})
 	rep := r.build(Snapshot{Read: collect.Status{State: collect.Running}, Stopping: true}, time.Now())
