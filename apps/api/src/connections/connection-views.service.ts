@@ -39,7 +39,7 @@ export interface ListQuery {
  * 연결마다 관측 상태와 조치 필요를 한 번 계산하는 SQL(4.4절, 메뉴와 목록이 같이 쓴다). 보관된 연결은 `중단/보관`이고 세지 않는다.
  * 키 교체 중(유효 키 2개)은 정상 진행이라 세지 않는다. 인증 오류는 키가 무효·폐기된 전송 보류다.
  */
-const ROWS = `
+export const CONNECTION_ROWS = `
   WITH rows AS (
     SELECT c.id, c.service_id, s.name AS service_name, s.state AS service_state, c.server_id, v.display_name,
            c.environment, c.target_type, c.target_path, c.journald_kind, c.journald_name, c.management_state,
@@ -64,6 +64,11 @@ const ROWS = `
         OR (management_state = 'pending' AND updated_at < now() - make_interval(secs => $2))
       )) AS needs_action
     FROM rows`;
+
+/** CONNECTION_ROWS의 $1·$2(보고 끊김 판정·연결 대기 판정 기준 초)다. */
+export function observationParams(config: AppConfig): unknown[] {
+  return [config.observation.staleSeconds, config.observation.pendingSeconds];
+}
 
 interface Row {
   id: number;
@@ -131,7 +136,7 @@ export class ConnectionViewsService {
   ) {}
 
   private params(): unknown[] {
-    return [this.config.observation.staleSeconds, this.config.observation.pendingSeconds];
+    return observationParams(this.config);
   }
 
   /** 서비스 이름순(대소문자 무시), 같으면 서비스 ID·연결 ID 순이다. 불투명한 cursor로 나눠 받는다(4.1절 목록 나누기). */
@@ -152,7 +157,7 @@ export class ConnectionViewsService {
     }
     values.push(q.limit + 1);
     const r = await this.db.query<Row>(
-      `SELECT * FROM (${ROWS}) x WHERE ${where.join(' AND ')}
+      `SELECT * FROM (${CONNECTION_ROWS}) x WHERE ${where.join(' AND ')}
         ORDER BY lower(service_name), service_id, id LIMIT $${values.length}`,
       values,
     );
@@ -162,7 +167,7 @@ export class ConnectionViewsService {
 
   /** 메뉴(CM-01)와 목록(UI-10)이 같이 쓰는 조치 필요 수. 보관된 연결은 세지 않는다. */
   async summary() {
-    const r = await this.db.query<{ n: number }>(`SELECT count(*)::int AS n FROM (${ROWS}) x WHERE needs_action`, this.params());
+    const r = await this.db.query<{ n: number }>(`SELECT count(*)::int AS n FROM (${CONNECTION_ROWS}) x WHERE needs_action`, this.params());
     return { needs_action: r.rows[0].n };
   }
 
@@ -171,7 +176,7 @@ export class ConnectionViewsService {
     const id = decodeConnectionId(publicId);
     if (id === null) throw errors.notFound();
     const values = [...this.params(), id];
-    const row = (await this.db.query<Row>(`SELECT * FROM (${ROWS}) x WHERE id = $3`, values)).rows[0];
+    const row = (await this.db.query<Row>(`SELECT * FROM (${CONNECTION_ROWS}) x WHERE id = $3`, values)).rows[0];
     if (!row) throw errors.notFound();
     const extra = (
       await this.db.query<{

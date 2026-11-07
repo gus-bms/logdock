@@ -9,7 +9,6 @@ import { errors } from '../common/api-error.js';
 import { claimIdempotency, completeIdempotency } from '../common/idempotency.js';
 import type { AppConfig } from '../config.js';
 import type { FieldProblem } from '../connections/connection-input.js';
-import { decodeConnectionId, encodeConnectionId } from '../connections/public-id.js';
 import { Database, lockCount, type Queryable, utc } from '../db/database.js';
 import {
   checkCondition,
@@ -22,6 +21,7 @@ import {
   type TimeRange,
   TimeSchema,
 } from '../search/condition.js';
+import { loadReferences, type ReferenceMaps, resolveReferences, type ResolvedReferences } from '../search/references.js';
 import { APP_CONFIG } from '../tokens.js';
 
 export const CreateBody = z.object({ name: z.string(), condition: ConditionSchema, time: TimeSchema });
@@ -53,36 +53,18 @@ interface Row {
 const COLUMNS = `id, name, lower(name) AS sort_name, condition, time_mode, time_range, time_basis,
                  ${utc('created_at')} AS created_at, ${utc('updated_at')} AS updated_at, version`;
 
-interface ConnectionRef {
-  id: string;
-  server_display_name: string | null;
-  target: { type: string; path: string | null; kind: string | null; name: string | null };
-  management_state: string;
-}
-
-interface References {
-  services: Map<number, { id: number; name: string; state: string }>;
-  servers: Map<number, { id: number; display_name: string }>;
-  connections: Map<number, ConnectionRef>;
-}
-
 export interface SavedSearchView {
   id: number;
   name: string;
   condition: Condition;
   time: TimeRange;
   /** 조건이 가리키는 서비스·서버·수집 연결의 지금 이름과 상태. 화면이 조건 요약을 만든다(UI-05). */
-  references: { services: { id: number; name: string; state: string }[]; servers: { id: number; display_name: string }[]; connections: ConnectionRef[] };
+  references: ResolvedReferences;
   /** 보관된 서비스·연결을 출처로 쓴다. 화면은 실행 전에 경고한다(Q11 설계 기본값, UI-05). */
   references_archived: boolean;
   created_at: string;
   updated_at: string;
   version: number;
-}
-
-function sourcesOf(cond: Condition): Condition['sources'] {
-  const s = cond.sources ?? ({} as Partial<Condition['sources']>);
-  return { service_ids: s.service_ids ?? [], server_ids: s.server_ids ?? [], environments: s.environments ?? [], connection_ids: s.connection_ids ?? [] };
 }
 
 function timeOf(r: Row): TimeRange {
@@ -95,70 +77,13 @@ function rangeOf(t: TimeRange): Record<string, string> {
   return t.mode === 'relative' ? { last: t.last } : { from: t.from, to: t.to };
 }
 
-/** 한 번에 보이는 행들이 가리키는 대상을 모아 세 번의 질의로 읽는다. */
-async function loadReferences(c: Queryable, rows: Row[]): Promise<References> {
-  const services = new Set<number>();
-  const servers = new Set<number>();
-  const connections = new Set<number>();
-  for (const r of rows) {
-    const s = sourcesOf(r.condition);
-    s.service_ids.forEach((id) => services.add(id));
-    s.server_ids.forEach((id) => id !== null && servers.add(id));
-    s.connection_ids.forEach((pid) => {
-      const id = decodeConnectionId(pid);
-      if (id !== null) connections.add(id);
-    });
-  }
-  const refs: References = { services: new Map(), servers: new Map(), connections: new Map() };
-  if (services.size) {
-    const r = await c.query<{ id: number; name: string; state: string }>('SELECT id, name, state FROM services WHERE id = ANY($1)', [[...services]]);
-    r.rows.forEach((x) => refs.services.set(x.id, x));
-  }
-  if (servers.size) {
-    const r = await c.query<{ id: number; display_name: string }>('SELECT id, display_name FROM servers WHERE id = ANY($1)', [[...servers]]);
-    r.rows.forEach((x) => refs.servers.set(x.id, x));
-  }
-  if (connections.size) {
-    const r = await c.query<{
-      id: number;
-      display_name: string | null;
-      target_type: string;
-      target_path: string | null;
-      journald_kind: string | null;
-      journald_name: string | null;
-      management_state: string;
-    }>(
-      `SELECT c.id, s.display_name, c.target_type, c.target_path, c.journald_kind, c.journald_name, c.management_state
-         FROM connections c LEFT JOIN servers s ON s.id = c.server_id WHERE c.id = ANY($1)`,
-      [[...connections]],
-    );
-    r.rows.forEach((x) =>
-      refs.connections.set(x.id, {
-        id: encodeConnectionId(x.id),
-        server_display_name: x.display_name,
-        target: { type: x.target_type, path: x.target_path, kind: x.journald_kind, name: x.journald_name },
-        management_state: x.management_state,
-      }),
-    );
-  }
-  return refs;
-}
-
-function view(r: Row, refs: References): SavedSearchView {
-  const s = sourcesOf(r.condition);
-  const services = s.service_ids.flatMap((id) => refs.services.get(id) ?? []);
-  const servers = s.server_ids.flatMap((id) => (id === null ? [] : (refs.servers.get(id) ?? [])));
-  const connections = s.connection_ids.flatMap((pid) => {
-    const id = decodeConnectionId(pid);
-    return id === null ? [] : (refs.connections.get(id) ?? []);
-  });
+function view(r: Row, refs: ReferenceMaps): SavedSearchView {
   return {
     id: r.id,
     name: r.name,
     condition: r.condition,
     time: timeOf(r),
-    references: { services, servers, connections },
-    references_archived: services.some((x) => x.state === 'archived') || connections.some((x) => x.management_state === 'archived'),
+    ...resolveReferences(r.condition, refs),
     created_at: r.created_at,
     updated_at: r.updated_at,
     version: r.version,
@@ -210,7 +135,7 @@ export class SavedSearchesService {
       const r = await c.query<Row>(`SELECT ${COLUMNS} FROM saved_searches WHERE ${where} ORDER BY lower(name), id LIMIT $${values.length}`, values);
       const rows = r.rows.slice(0, q.limit);
       const total = (await c.query<{ n: number }>('SELECT count(*)::int AS n FROM saved_searches WHERE owner_account_id = $1', [accountId])).rows[0].n;
-      const refs = await loadReferences(c, rows);
+      const refs = await loadReferences(c, rows.map((x) => x.condition));
       return {
         items: rows.map((x) => view(x, refs)),
         next_cursor: r.rows.length > q.limit ? cursorOf(rows[rows.length - 1]) : null,
@@ -302,7 +227,7 @@ export class SavedSearchesService {
   }
 
   private async viewOf(c: Queryable, row: Row): Promise<SavedSearchView> {
-    return view(row, await loadReferences(c, [row]));
+    return view(row, await loadReferences(c, [row.condition]));
   }
 
   /** DB를 보지 않는 검사. 문제를 칸마다 모두 모아 `422 validation_failed`로 돌려준다. */

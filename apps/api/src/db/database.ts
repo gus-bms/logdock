@@ -66,7 +66,7 @@ export async function trySavepoint(c: Queryable, name: string, fn: () => Promise
 }
 
 /** advisory lock의 첫 키(기능 구분). 다른 기능이 쓰면 여기에 다른 값을 더한다. */
-const COUNT_LOCKS = { savedSearches: 1 } as const;
+const COUNT_LOCKS = { savedSearches: 1, alertRules: 2 } as const;
 
 /**
  * 개수 상한을 지키려고 같은 계정의 만들기 요청을 트랜잭션 끝까지 줄 세운다. 세고 넣는 사이에 다른 요청이 끼면 상한을

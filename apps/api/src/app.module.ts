@@ -1,6 +1,9 @@
 import { type DynamicModule, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 
+import { AlertRulesService } from './alerts/alert-rules.service.js';
+import { AlertsController } from './alerts/alerts.controller.js';
+import { IncidentsService } from './alerts/incidents.service.js';
 import { AuditService } from './audit/audit.service.js';
 import { AccountController } from './auth/account.controller.js';
 import { AuthController } from './auth/auth.controller.js';
@@ -36,6 +39,7 @@ export class AppModule {
         ConnectionsController,
         KeysController,
         SavedSearchesController,
+        AlertsController,
       ],
       providers: [
         { provide: APP_CONFIG, useValue: config },
@@ -51,6 +55,8 @@ export class AppModule {
         ArchiveService,
         ConnectionEditService,
         SavedSearchesService,
+        AlertRulesService,
+        IncidentsService,
         // 모든 경로를 한 검사 지점에서 확인한다(계약 4.1절). 세션 없이 부르는 경로는 @Public으로 연다.
         { provide: APP_GUARD, useClass: AuthGuard },
       ],

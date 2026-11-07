@@ -1,4 +1,5 @@
 // 조회·관리 API 설정. 한도와 시간 값은 측정·Q15 협의 전의 시제품 값이며 코드에 박지 않고 여기서만 정한다.
+import { readFileSync } from 'node:fs';
 
 export interface DatabaseConfig {
   /** 호스트 이름 또는 유닉스 소켓 폴더(/로 시작). */
@@ -11,8 +12,24 @@ export interface DatabaseConfig {
   max: number;
 }
 
+/**
+ * 메일 서버(TD-08, Q12-08·15). 표준 SMTP 제출 하나만 지원하고 TLS가 기본이다. 평문 사내 릴레이는 서버 설정에서 명시적으로
+ * 고를 때만 쓰고 화면에 경고한다. 비밀번호는 화면과 API 응답에 돌려주지 않는다(TD-20).
+ */
+export interface MailConfig {
+  host: string;
+  port: number;
+  /** `tls`는 처음부터 TLS(465), `starttls`는 587 STARTTLS, `plain_relay`는 평문 사내 릴레이다. */
+  security: 'tls' | 'starttls' | 'plain_relay';
+  from: string;
+  user: string | null;
+  password: string | null;
+}
+
 export interface AppConfig {
   db: DatabaseConfig;
+  /** 메일 서버. 없으면 API는 시작하되 알림 규칙을 켤 수 없다(`mail_not_configured`, 계약 8.1절 TD-08). */
+  mail: MailConfig | null;
   /**
    * 에이전트가 묶음을 보낼 수신 서버 주소(계약 8.1절 주소, 2.8절 설정 파일의 ingest_url). HTTPS만 받는다(Q10-02).
    * 연결 설정 파일을 만들 때 쓰며, API 서버는 이 값이 없으면 시작하지 않는다(main.ts). 로컬 명령은 쓰지 않는다.
@@ -61,12 +78,17 @@ export interface AppConfig {
   search: { maxConditions: number; maxTextLength: number; maxSourceValues: number; maxFieldPathLength: number };
   /** 저장 검색 개수 상한(WQ-33과 같은 `N`, 미정). 시제품 값이다. */
   savedSearchLimit: number;
+  /** 알림 규칙 개수 상한(WQ-33의 `N`, 평가 비용 측정 전 미정). 꺼진 규칙도 센다. 시제품 값이다. */
+  alertRuleLimit: number;
+  /** 규칙마다 수신 주소 상한(Q12-12 합의 10개). */
+  alertRecipientLimit: number;
   /** 요청 본문 상한. */
   bodyLimit: string;
 }
 
 export const DEFAULTS: Omit<AppConfig, 'db'> = {
   ingestUrl: null,
+  mail: null,
   cookieSecure: true,
   sessionIdleSeconds: 60 * 60,
   sessionAbsoluteSeconds: 24 * 60 * 60,
@@ -86,6 +108,8 @@ export const DEFAULTS: Omit<AppConfig, 'db'> = {
   observation: { staleSeconds: 3 * 60, pendingSeconds: 24 * 60 * 60 },
   search: { maxConditions: 20, maxTextLength: 1000, maxSourceValues: 100, maxFieldPathLength: 256 },
   savedSearchLimit: 100,
+  alertRuleLimit: 50,
+  alertRecipientLimit: 10,
   bodyLimit: '1mb',
 };
 
@@ -111,11 +135,46 @@ export function checkIngestUrl(raw: string): string {
   return raw;
 }
 
+/** 메일 주소 꼴. 관리 DB의 mail_address 도메인과 같다(앞뒤에 @ 없는 한 덩어리씩, 공백·제어 문자 불가). */
+export const MAIL_ADDRESS = /^[^@\s\p{Cc}]+@[^@\s\p{Cc}]+$/u;
+
+/**
+ * 비밀 값은 설정에 직접 쓰지 않고 중앙 서비스 계정만 읽는 파일의 경로로 받는다(계약 8.1절, TD-20). 끝의 줄바꿈 하나만 뗀다.
+ * 읽을 수 없으면 시작하지 않는다.
+ */
+function readSecretFile(path: string): string {
+  return readFileSync(path, 'utf8').replace(/\r?\n$/, '');
+}
+
+/**
+ * 메일 서버 설정을 읽는다. 호스트가 없으면 메일 설정 없음(null)이다. 있으면 발신 주소가 꼴에 맞아야 한다. 비밀번호는
+ * `LOGDOCK_MAIL_PASSWORD_FILE`의 파일에서 읽는다.
+ */
+export function loadMailConfig(env: NodeJS.ProcessEnv): MailConfig | null {
+  const host = env.LOGDOCK_MAIL_HOST;
+  if (!host) return null;
+  const security = env.LOGDOCK_MAIL_SECURITY || 'tls';
+  if (security !== 'tls' && security !== 'starttls' && security !== 'plain_relay') {
+    throw new Error('LOGDOCK_MAIL_SECURITY must be tls, starttls or plain_relay');
+  }
+  const from = env.LOGDOCK_MAIL_FROM ?? '';
+  if (!MAIL_ADDRESS.test(from)) throw new Error('LOGDOCK_MAIL_FROM must be a mail address');
+  return {
+    host,
+    port: intEnv(env, 'LOGDOCK_MAIL_PORT', security === 'starttls' ? 587 : 465),
+    security,
+    from,
+    user: env.LOGDOCK_MAIL_USER || null,
+    password: env.LOGDOCK_MAIL_PASSWORD_FILE ? readSecretFile(env.LOGDOCK_MAIL_PASSWORD_FILE) : null,
+  };
+}
+
 /** 환경 변수에서 설정을 읽는다. 비밀번호는 PGPASSFILE 같은 파일로 두는 편이 낫지만 개발용으로 받는다. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   return {
     ...DEFAULTS,
     ingestUrl: env.LOGDOCK_INGEST_URL ? checkIngestUrl(env.LOGDOCK_INGEST_URL) : null,
+    mail: loadMailConfig(env),
     db: {
       host: env.LOGDOCK_DB_HOST ?? '/tmp',
       port: intEnv(env, 'LOGDOCK_DB_PORT', 5432),
