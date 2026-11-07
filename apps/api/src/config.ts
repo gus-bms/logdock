@@ -84,7 +84,7 @@ export interface AppConfig {
    * 검색 조건 한도(조건 수·검색식 길이, Q15의 `N`, 미정). 저장 검색·알림 규칙·검색이 같이 쓴다. 시제품 값이다.
    * maxConditions는 본문·필드 조건의 합이고, maxSourceValues는 출처 목록마다의 값 수다.
    */
-  search: { maxConditions: number; maxTextLength: number; maxSourceValues: number; maxFieldPathLength: number };
+  search: { maxConditions: number; maxTextLength: number; maxSourceValues: number; maxFieldPathLength: number; bodyMaxRangeDays: number };
   /** 저장 검색 개수 상한(WQ-33과 같은 `N`, 미정). 시제품 값이다. */
   savedSearchLimit: number;
   /** 알림 규칙 개수 상한(WQ-33의 `N`, 평가 비용 측정 전 미정). 꺼진 규칙도 센다. 시제품 값이다. */
@@ -199,7 +199,8 @@ export const DEFAULTS: Omit<AppConfig, 'db'> = {
   // 에이전트 설정 검사가 받는 범위는 1바이트~64MiB다(agent/internal/config).
   maxEventBytes: { default: 1024 * 1024, max: 64 * 1024 * 1024 },
   observation: { staleSeconds: 3 * 60, pendingSeconds: 24 * 60 * 60 },
-  search: { maxConditions: 20, maxTextLength: 1000, maxSourceValues: 100, maxFieldPathLength: 256 },
+  // bodyMaxRangeDays는 Q15-05 합의값(2026-11-07)이고 나머지는 시제품 값이다.
+  search: { maxConditions: 20, maxTextLength: 1000, maxSourceValues: 100, maxFieldPathLength: 256, bodyMaxRangeDays: 7 },
   savedSearchLimit: 100,
   alertRuleLimit: 50,
   alertRecipientLimit: 10,

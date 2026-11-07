@@ -14,6 +14,7 @@ import {
   checkCondition,
   checkConditionReferences,
   checkStoredName,
+  checkBodyRange,
   checkTime,
   type Condition,
   ConditionSchema,
@@ -170,6 +171,8 @@ export class SavedSearchesService {
         }
         await lockCount(c, 'savedSearches', accountId);
         const time = (await this.checkStored(c, input.condition, input.time))!;
+        const range = checkBodyRange(input.condition, time, this.config.search.bodyMaxRangeDays);
+        if (range.length) throw errors.validation(range);
         const n = (await c.query<{ n: number }>('SELECT count(*)::int AS n FROM saved_searches WHERE owner_account_id = $1', [accountId])).rows[0].n;
         if (n >= this.config.savedSearchLimit) throw errors.limitReached(this.config.savedSearchLimit);
         const row = (
@@ -199,6 +202,11 @@ export class SavedSearchesService {
         const time = (await this.checkStored(c, patch.condition, patch.time)) ?? timeOf(row);
         const name = patch.name ?? row.name;
         const condition = patch.condition ?? row.condition;
+        // 조건이나 시간을 바꿀 때만 본다. 제한 전에 저장한 조건의 이름만 바꾸는 것은 막지 않는다(실행할 때 검색이 막는다).
+        if (patch.condition || patch.time) {
+          const range = checkBodyRange(condition, time, this.config.search.bodyMaxRangeDays);
+          if (range.length) throw errors.validation(range);
+        }
         // 값이 그대로면 고치지 않는다. jsonb 비교라 키 순서는 상관없다.
         const updated = (
           await c.query<Row>(

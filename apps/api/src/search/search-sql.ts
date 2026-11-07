@@ -116,8 +116,9 @@ export function buildFilter(cond: Condition, scope: Scope, p: Params, kind: 'eve
 }
 
 /**
- * 필드 조건 하나(SD-19~SD-22). 해석 실패 로그는 판정 불가, 해석하지 않는 형식(`none`)은 불일치다. 항목이 없을 때는 정상
- * 해석했고 생략한 필드가 없을 때만 `없음`으로 단정하고, 일부만 해석했거나 필드를 일부 생략했으면 판정 불가다.
+ * 필드 조건 하나(SD-19~SD-22). 해석 실패 로그는 판정 불가, 해석하지 않는 형식(`none`)은 불일치다. 항목이 없을 때는 해석했고
+ * 생략한 필드가 없으면 `없음`으로 단정하고, 필드를 일부 생략했으면 판정 불가다. `partial`은 시각·레벨 가운데 일부만 읽었다는
+ * 뜻이라(Q02-05, 수신 서버 해석) 필드는 다 읽은 것으로 본다. 필드가 잘린 것은 `fields_truncated`가 따로 알린다.
  */
 function fieldExpr(f: Condition['fields'][number], p: Params): string {
   const present = `has(field_paths, ${p.add('String', f.path)})`;
@@ -141,7 +142,7 @@ function fieldExpr(f: Condition['fields'][number], p: Params): string {
   const whenAbsent = f.op === 'not_exists' ? '1' : '0';
   return (
     `multiIf(parse_status = 'failed', NULL, parse_status = 'none', 0, ${present}, ${whenPresent}, ` +
-    `parse_status = 'ok' AND NOT fields_truncated, ${whenAbsent}, NULL)`
+    `parse_status IN ('ok', 'partial') AND NOT fields_truncated, ${whenAbsent}, NULL)`
   );
 }
 

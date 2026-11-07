@@ -64,6 +64,8 @@ export class SystemService {
         recipients_per_rule: c.alertRecipientLimit,
         ops_recipients: c.alertRecipientLimit,
       },
+      // 본문 검색어가 있을 때 한 번에 고를 수 있는 기간(Q15-05). 화면이 `7일 이하로 줄이라`는 안내에 쓴다.
+      search: { body_max_range_days: c.search.bodyMaxRangeDays },
       mail_configured: c.mail !== null,
       product_version: PRODUCT_VERSION,
     };

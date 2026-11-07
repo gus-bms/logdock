@@ -13,7 +13,7 @@ import type { SessionInfo } from '../auth/session.service.js';
 import { Database } from '../db/database.js';
 import { APP_CONFIG } from '../tokens.js';
 import { type Budget, ChRunner, type Status, type Track, stopStatus } from './ch-runner.js';
-import { type Condition, type TimeRange, checkCondition, checkConditionReferences, checkTime, normalizeTime } from './condition.js';
+import { type Condition, type TimeRange, checkBodyRange, checkCondition, checkConditionReferences, checkTime, normalizeTime } from './condition.js';
 import { bucketIntervalOf, chOf, durationUs, rfcOf, type Slice, slicesOf, usOf, usOfCh } from './run-time.js';
 import type { SearchBody } from './search-input.js';
 import { type ListRow, RowPresenter, listColumns } from './rows.js';
@@ -80,6 +80,8 @@ export class SearchService {
       if (refProblems.length) throw errors.conditionInvalid(refProblems);
       const n = await normalizeTime(c, time.time);
       if (!n.ok) throw errors.conditionInvalid(n.problems);
+      const range = checkBodyRange(condition, n.time, this.config.search.bodyMaxRangeDays);
+      if (range.length) throw errors.conditionInvalid(range);
       return n.time;
     });
 

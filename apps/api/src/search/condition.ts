@@ -8,6 +8,7 @@ import type { AppConfig } from '../config.js';
 import type { FieldProblem } from '../connections/connection-input.js';
 import { decodeConnectionId } from '../connections/public-id.js';
 import { type Queryable, utc } from '../db/database.js';
+import { durationUs, usOf } from './run-time.js';
 
 /** 정규화 레벨(3.2절 level). `UNKNOWN`은 미확인이며 `ERROR`를 골라도 들지 않는다(SD-09). */
 export const LEVELS = ['UNKNOWN', 'TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'] as const;
@@ -207,6 +208,17 @@ export function checkTime(raw: z.infer<typeof TimeSchema>, prefix = 'time'): { o
   }
   if (problems.length) return { ok: false, problems };
   return { ok: true, time: { mode: 'absolute', from: raw.from!, to: raw.to!, basis: raw.basis } };
+}
+
+/**
+ * 본문 검색어가 있으면 한 번에 고를 수 있는 기간(Q15-05, 2026-11-07 합의). 본문 검색어 없는 필드 조건·목록·발생량은 보관
+ * 기간 전체를 쓸 수 있다. 본문 제외도 본문을 훑으므로 같이 본다. 고정 범위는 UTC로 맞춘 값(normalizeTime 뒤)을 받는다.
+ * 저장한 조건에 빠진 항목이 있어도 빈 목록으로 읽는다.
+ */
+export function checkBodyRange(cond: Pick<Condition, 'body'>, time: TimeRange, maxDays: number, path = 'time'): FieldProblem[] {
+  if ((cond.body ?? []).length === 0) return [];
+  const span = time.mode === 'relative' ? durationUs(time.last) : usOf(time.to) - usOf(time.from);
+  return span > BigInt(maxDays) * 86_400_000_000n ? [{ path, reason: 'body_range_too_long' }] : [];
 }
 
 /** 고정 범위를 UTC 마이크로초 문자열로 맞추고 시작이 끝보다 앞인지 본다(시작 포함·끝 제외라 같으면 빈 범위). */

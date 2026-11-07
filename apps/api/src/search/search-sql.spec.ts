@@ -86,7 +86,7 @@ describe('검색 SQL', () => {
     const f = build({ fields: [{ path: 'http.status', op: 'not_exists' }] });
     assert.equal(
       f.tvl,
-      "multiIf(parse_status = 'failed', NULL, parse_status = 'none', 0, has(field_paths, {p4:String}), 0, parse_status = 'ok' AND NOT fields_truncated, 1, NULL)",
+      "multiIf(parse_status = 'failed', NULL, parse_status = 'none', 0, has(field_paths, {p4:String}), 0, parse_status IN ('ok', 'partial') AND NOT fields_truncated, 1, NULL)",
     );
     assert.equal(f.values.p4, 'http.status');
     const two = build({ levels: ['WARN'], fields: [{ path: 'a', op: 'exists' }] });

@@ -143,11 +143,12 @@ describe('검색(중앙 시험 DB)', () => {
     assert.equal(r.body.rows.find((x: { body: string }) => x.body === 'line 6').flags.includes('parse_failed'), true);
   });
 
-  live('값 일치는 숫자와 같은 글자의 문자열에 일치하고 해석 실패·일부 해석·필드 생략은 판정 불가다(SD-20, SD-22)', async () => {
+  live('값 일치는 숫자와 같은 글자의 문자열에 일치하고 해석 실패·필드 생략은 판정 불가다(SD-20, SD-22)', async () => {
     const r = await search(field('http.status', 'eq', 500));
     assert.equal(r.status, 200, JSON.stringify(r.body));
     assert.deepEqual(seqs(r), [2, 1]);
-    assert.equal(r.body.unknown_count, 3);
+    // 일부 해석(`partial`, 시각·레벨 일부만 읽음)은 필드를 다 읽은 것이라 항목 없음으로 판정한다.
+    assert.equal(r.body.unknown_count, 2);
     const s = await search(field('http.status', 'eq', '500'));
     assert.deepEqual(seqs(s), [2, 1]);
   });
@@ -155,10 +156,10 @@ describe('검색(중앙 시험 DB)', () => {
   live('숫자 범위는 숫자 값만 비교하고 문자열·null은 판정 불가다(SD-21)', async () => {
     const r = await search(field('http.status', 'gte', 500));
     assert.deepEqual(seqs(r), [3, 1]);
-    assert.equal(r.body.unknown_count, 6);
+    assert.equal(r.body.unknown_count, 5);
     const u = await c.call('POST', `/api/v1/search/${r.body.run_id}/unknown`, { body: {} });
     assert.equal(u.status, 200, JSON.stringify(u.body));
-    assert.deepEqual(seqs(u), [9, 8, 6, 5, 4, 2]);
+    assert.deepEqual(seqs(u), [9, 6, 5, 4, 2]);
   });
 
   live('2^53을 넘는 정수도 정확히 일치한다', async () => {
@@ -168,16 +169,16 @@ describe('검색(중앙 시험 DB)', () => {
   live('항목 존재는 null도 존재이고, 항목 없음은 정상 해석한 로그에만 참이다(Q08-02)', async () => {
     const e = await search(field('http.status', 'exists'));
     assert.deepEqual(seqs(e), [5, 4, 3, 2, 1]);
-    assert.equal(e.body.unknown_count, 3);
+    assert.equal(e.body.unknown_count, 2);
     const n = await search(field('http.status', 'not_exists'));
-    assert.deepEqual(seqs(n), [34, 33, 32, 31, 30, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10]);
+    assert.deepEqual(seqs(n), [34, 33, 32, 31, 30, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 8]);
   });
 
   live('참거짓은 Bool과 문자열에 함께 일치하고 값 다름은 값이 있는 로그만 본다', async () => {
     assert.deepEqual(seqs(await search(field('ok', 'eq', true))), [14, 13]);
     const ne = await search(field('ok', 'ne', true));
     assert.deepEqual(seqs(ne), []);
-    assert.equal(ne.body.unknown_count, 3);
+    assert.equal(ne.body.unknown_count, 2);
   });
 
   live('레벨 조건에서 미확인 로그는 판정 불가이고 미확인을 고르면 함께 든다(SD-09)', async () => {
@@ -260,7 +261,7 @@ describe('검색(중앙 시험 DB)', () => {
     assert.deepEqual(Object.fromEntries(d.body.levels.map((x: { level: string; count: number }) => [x.level, x.count])), { ERROR: 17, WARN: 7, UNKNOWN: 1, INFO: 1 });
     const g = await search(field('http.status', 'gte', 500));
     const gd = await c.call('POST', `/api/v1/search/${g.body.run_id}/distribution`, { body: {} });
-    assert.equal(gd.body.unknown_count, 6);
+    assert.equal(gd.body.unknown_count, 5);
   });
 
   live('취소·만료·다른 세션과 입력 오류', async () => {
@@ -384,7 +385,7 @@ describe('검색(중앙 시험 DB)', () => {
     assert.equal(all.body.window.basis, 'received');
     const f = await c.call('POST', '/api/v1/alert-rules/preview', { body: { condition: { fields: GTE.fields }, window_minutes: 60, threshold: 3 } });
     assert.equal(f.body.matched_count, 2);
-    assert.equal(f.body.unknown_count, 6);
+    assert.equal(f.body.unknown_count, 5);
     assert.equal(f.body.would_fire, false);
   });
 
@@ -404,7 +405,7 @@ describe('검색(중앙 시험 DB)', () => {
     assert.equal(r.status, 200, JSON.stringify(r.body));
     assert.equal(r.body.incident.rule_status, 'changed');
     assert.deepEqual(r.body.then, { matched_count: 3, unknown_count: 6, partial: false });
-    assert.deepEqual(r.body.now, { matched_count: 2, unknown_count: 6, partial: false });
+    assert.deepEqual(r.body.now, { matched_count: 2, unknown_count: 5, partial: false });
     assert.deepEqual(
       Object.fromEntries(r.body.reasons.map((x: { kind: string; applies: string }) => [x.kind, x.applies])),
       { retention: 'no', early_deletion: 'no', manual_deletion: 'no', undecided: 'yes', partial: 'no', late: 'unknown' },

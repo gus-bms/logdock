@@ -51,6 +51,7 @@ describe('설정값·배너·조건 값 목록·감사 이력', () => {
       log_retention: { months: 6 },
       session: { idle_seconds: 3600, absolute_seconds: 86400, reauth_seconds: 900 },
       limits: { saved_searches: 100, alert_rules: 50, recipients_per_rule: 10, ops_recipients: 10 },
+      search: { body_max_range_days: 7 },
       mail_configured: true,
       product_version: version,
     });
