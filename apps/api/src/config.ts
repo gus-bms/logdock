@@ -88,6 +88,12 @@ export interface AppConfig {
   mailRatePerMinute: number;
   /** 메일 서버와 주고받을 때 한 단계의 대기 상한(초). 본문을 보낸 뒤에는 두 배를 기다린다. 시제품 값이다. */
   mailTimeoutSeconds: number;
+  /** 표시 시간대(IANA 이름, SD-07). 코어에 특정 시간대를 고정하지 않고 서버 설정으로 받는다. 없으면 이 서버의 시간대를 쓴다. */
+  displayTimezone: string;
+  /** 로그 보관 기간(달, Q13 합의값 6개월). 서버 설정으로만 바꾼다(Q13-02). */
+  logRetentionMonths: number;
+  /** 켜진 규칙의 마지막 성공 평가가 이보다 오래되면 `alert_eval_stopped` 배너를 올린다(4.4절의 `N`, 미정). 시제품 값이다. */
+  alertEvalStaleSeconds: number;
   /** 요청 본문 상한. */
   bodyLimit: string;
 }
@@ -118,6 +124,9 @@ export const DEFAULTS: Omit<AppConfig, 'db'> = {
   alertRecipientLimit: 10,
   mailRatePerMinute: 30,
   mailTimeoutSeconds: 30,
+  displayTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+  logRetentionMonths: 6,
+  alertEvalStaleSeconds: 10 * 60,
   bodyLimit: '1mb',
 };
 
@@ -141,6 +150,16 @@ export function checkIngestUrl(raw: string): string {
     throw new Error('LOGDOCK_INGEST_URL must be an https URL without user info, query or fragment');
   }
   return raw;
+}
+
+/** IANA 시간대 이름인지 본다. Node의 시간대 자료로 판단하고, 틀리면 시작하지 않는다. */
+export function checkTimezone(name: string): string {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: name });
+  } catch {
+    throw new Error('LOGDOCK_DISPLAY_TIMEZONE must be an IANA time zone name');
+  }
+  return name;
 }
 
 /** 메일 주소 꼴. 관리 DB의 mail_address 도메인과 같다(앞뒤에 @ 없는 한 덩어리씩, 공백·제어 문자 불가). */
@@ -184,6 +203,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     ...DEFAULTS,
     ingestUrl: env.LOGDOCK_INGEST_URL ? checkIngestUrl(env.LOGDOCK_INGEST_URL) : null,
     mail: loadMailConfig(env),
+    displayTimezone: env.LOGDOCK_DISPLAY_TIMEZONE ? checkTimezone(env.LOGDOCK_DISPLAY_TIMEZONE) : DEFAULTS.displayTimezone,
+    logRetentionMonths: intEnv(env, 'LOGDOCK_LOG_RETENTION_MONTHS', DEFAULTS.logRetentionMonths),
     db: {
       host: env.LOGDOCK_DB_HOST ?? '/tmp',
       port: intEnv(env, 'LOGDOCK_DB_PORT', 5432),

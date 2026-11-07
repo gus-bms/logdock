@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AlertRulesService } from './alerts/alert-rules.service.js';
 import { AlertsController } from './alerts/alerts.controller.js';
 import { IncidentsService } from './alerts/incidents.service.js';
+import { AuditSearchService } from './audit/audit-search.service.js';
 import { AuditService } from './audit/audit.service.js';
 import { AccountController } from './auth/account.controller.js';
 import { AuthController } from './auth/auth.controller.js';
@@ -26,6 +27,8 @@ import { MailController } from './mail/mail.controller.js';
 import { MailService } from './mail/mail.service.js';
 import { SavedSearchesController } from './saved-searches/saved-searches.controller.js';
 import { SavedSearchesService } from './saved-searches/saved-searches.service.js';
+import { SystemController } from './system/system.controller.js';
+import { SystemService } from './system/system.service.js';
 import { APP_CONFIG } from './tokens.js';
 
 @Module({})
@@ -43,6 +46,7 @@ export class AppModule {
         SavedSearchesController,
         AlertsController,
         MailController,
+        SystemController,
       ],
       providers: [
         { provide: APP_CONFIG, useValue: config },
@@ -61,6 +65,8 @@ export class AppModule {
         AlertRulesService,
         IncidentsService,
         MailService,
+        SystemService,
+        AuditSearchService,
         // 모든 경로를 한 검사 지점에서 확인한다(계약 4.1절). 세션 없이 부르는 경로는 @Public으로 연다.
         { provide: APP_GUARD, useClass: AuthGuard },
       ],

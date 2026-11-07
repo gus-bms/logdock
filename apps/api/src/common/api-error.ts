@@ -60,5 +60,7 @@ export const errors = {
   /** 같은 서버의 같은 대상이 이미 보관되지 않은 연결로 등록돼 있다(Q07-06). 그 연결의 외부 ID를 준다. */
   duplicateConnection: (connectionId: string) =>
     new ApiError(409, 'duplicate_connection', 'the same server already collects this target', { connection_id: connectionId }),
+  /** 감사 이력을 읽을 수 없다. 화면은 목록 자리에 장애를 보인다(UI-15, WQ-90). */
+  auditUnavailable: () => new ApiError(503, 'audit_unavailable', 'audit history cannot be read', {}, true),
   internal: () => new ApiError(500, 'internal', 'internal error', {}, true),
 };

@@ -645,6 +645,16 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
   - 발송 속도 상한은 설치 전체에서 모든 종류의 메일을 마지막 시도 시각으로 센다. 넘으면 한 통도 보내지 않고 `429 rate_limited`(`Retry-After: 60`)다(TD-19).
   - SMTP 제출은 라이브러리 없이 필요한 명령만 쓴다. 본문을 보낸 뒤 응답을 못 받은 경우(전송 여부 불명, Q12-10)를 다른 실패와 가르려면 어느 단계에서 실패했는지 알아야 해서다. TLS가 기본이고 인증서 검증은 끄지 않는다. 사설 CA는 `LOGDOCK_MAIL_CA_FILE`로 시스템 신뢰 목록에 더한다. STARTTLS를 골랐는데 서버가 내놓지 않으면 평문으로 내려가지 않고 `mail_tls_failed`다. 인증은 서버가 내놓은 AUTH PLAIN이나 LOGIN이다. 주소에 ASCII 밖 글자가 있으면 서버가 SMTPUTF8을 지원해야 한다. 메시지 형식은 5.5절 메일 형식대로다. 머리 값의 제어 문자는 빼고, ASCII 밖 제목은 RFC 2047로 나눠 쓴다.
   - `GET /api/v1/mail/ops-recipients`는 주소와 `받았음` 시각, 목록 `version`, 상한(10)을 준다. `PUT`(`{"version", "addresses"}`, 0~10개)은 목록 전체를 바꾼다. `version`이 다르면 덮어쓰지 않는다. 대소문자만 다른 주소는 같은 주소로 보아 `받았음` 표시를 지키고, 뺀 주소로 아직 보내지 않은 운영 메일은 `recipient_removed`로 취소한다. 감사는 `ops_recipients.update`(`recipients`)이고 감사를 쓸 수 없으면 보류한다. `POST .../confirm`(`{"address"}`)은 처음 한 번만 남기고(`recipient_confirmed`) 목록 `version`은 올리지 않는다. 없는 주소는 `404`다. 운영 수신 주소가 없을 때의 `ops_recipients_missing` 배너는 배너 API를 만들 때 붙인다.
+- **설정값·배너·조건 값 목록·감사 이력 구현(2026-11-07):**
+  - `GET /api/v1/settings`는 표시 시간대(`LOGDOCK_DISPLAY_TIMEZONE`, IANA 이름, 없으면 서버의 시간대), 로그 보관 기간(`LOGDOCK_LOG_RETENTION_MONTHS`, 기본 6개월), 세션 규칙(비활동·최대 수명·재확인 유효 초), 개수 상한(저장 검색·알림 규칙·규칙당 수신 주소·운영 수신 주소), 메일 설정 여부, 제품 버전을 준다. 비밀 값은 없다.
+  - `GET /api/v1/notices`는 떠 있는 배너를 4.4절 표 순서로 준다. 항목은 `id`, `kind`, `raised_at`, `item_count`, 사람이 확인해 내릴 수 있는지(`acknowledgeable`)다. 네 종류는 API가 읽을 때마다 관리 DB의 지금 값으로 판단해 원인이 풀리면 저절로 내려가고, 저장된 행이 없어 `id`가 `null`이다.
+    - `mail_connection_error`: 메일 설정이 있고 마지막 발송이 연결·설정 문제(연결 실패, 이름 풀이, TLS, 인증, 발신자 거부, 일시 실패)로 실패했다. 지금은 연속 실패를 세지 않고 마지막 시도로 판단한다.
+    - `alert_eval_stopped`: 켜진 규칙의 마지막 성공 평가가 기준(시제품 10분)보다 오래됐다. 한 번도 평가하지 않은 규칙은 켠 때부터 잰다. 건수는 그런 규칙 수다.
+    - `mail_final_failures`: 확인하지 않은 알림 메일 최종 실패의 수다.
+    - `ops_recipients_missing`: 운영 수신 주소가 하나도 없다.
+  - 나머지 종류(`audit_unavailable`·`audit_gap`·`disk_warning`·`early_deletion`·`storage_unmeasurable`)는 그 일을 아는 쪽이 `notices`에 쓴 행을 그대로 보인다. `POST /api/v1/notices/{id}/ack`는 `지나간 일`(`audit_gap`·`early_deletion`)만 내리고, `계속` 종류는 `409 invalid_state`(지금 종류)다. 배너 확인은 감사 대상이 아니다.
+  - `GET /api/v1/sources`는 서비스(상태 포함), 연결이 있는 서버, 환경 값, 서비스별로 묶은 수집 대상(서버 표시명·대상·관리 상태)을 준다. 보관된 서비스·연결도 넣는다. 서버나 환경이 없는 연결이 있으면 그 목록에 `미입력`(`null`)을 넣는다.
+  - `POST /api/v1/audit/search`는 기간(`from` 이상 `to` 미만, 오프셋을 담은 RFC 3339)·동작 코드 목록·결과·대상으로 거르고, 최신순으로 `limit`(기본 50, 최대 200)과 `cursor`로 나눠 준다. 항목에는 계정 이름을 함께 준다. 응답에는 조회 가능 시작(남아 있는 가장 오래된 행의 시각), 최근 정리 기록 20건(조기 정리 표시 포함), 고른 기간에 걸친 공백 구간 50건이 함께 온다. 감사 이력을 읽지 못하면 `503 audit_unavailable`이다.
 - 상태 전이와 각 동작의 허용 조건(보관된 연결에서 쓸 수 있는 동작, 재활성 뒤 상태 등)은 5절에서 정한다.
 
 ### 4.4 운영 표시 계산
@@ -1054,7 +1064,7 @@ stateDiagram-v2
 - 비밀 값(메일·DB 비밀번호, TLS 개인 키)은 설정 파일에 직접 쓰지 않고 중앙 서비스 계정만 읽을 수 있는 파일의 경로로 받는다. 웹과 API는 비밀 값을 돌려주지 않는다(TD-20, SC-03).
 - TLS는 두 서버가 이미 관리 중인 인증서로 직접 종료하는 것을 기본안으로 둔다. 앞단 프록시가 종료하면 프록시와 서버 사이 구간의 보호를 설치 때 정한다(Q10-02, Q16-04/E01, T04).
 - 바꾼 설정은 중앙을 다시 시작해 적용한다(Q12-08). 보관 기간을 줄이면 이미 저장된 로그에도 적용한다(Q13-02). 웹은 읽기만 한다(UI-13, UI-14, 4.3절 `GET /api/v1/settings`).
-- 시작할 때 설정을 검사하고 틀리면 시작하지 않는다. 메일 설정이 없으면 시작은 하되 알림 규칙을 켤 수 없다(TD-08). 구현(2026-11-07): 조회·관리 API는 수신 서버 주소 `LOGDOCK_INGEST_URL`(HTTPS, 사용자 정보·쿼리 없음)이 없으면 시작하지 않는다. 연결 설정 파일의 `ingest_url`에 쓴다. 메일 서버는 `LOGDOCK_MAIL_HOST`·`LOGDOCK_MAIL_PORT`(기본 465, STARTTLS면 587)·`LOGDOCK_MAIL_SECURITY`(`tls` 기본, `starttls`, 명시할 때만 `plain_relay`)·`LOGDOCK_MAIL_FROM`·`LOGDOCK_MAIL_USER`·`LOGDOCK_MAIL_PASSWORD_FILE`(비밀번호 파일 경로)·`LOGDOCK_MAIL_CA_FILE`(사설 CA, 선택)로 받는다. 호스트가 없으면 메일 설정 없음이다.
+- 시작할 때 설정을 검사하고 틀리면 시작하지 않는다. 메일 설정이 없으면 시작은 하되 알림 규칙을 켤 수 없다(TD-08). 구현(2026-11-07): 조회·관리 API는 수신 서버 주소 `LOGDOCK_INGEST_URL`(HTTPS, 사용자 정보·쿼리 없음)이 없으면 시작하지 않는다. 연결 설정 파일의 `ingest_url`에 쓴다. 메일 서버는 `LOGDOCK_MAIL_HOST`·`LOGDOCK_MAIL_PORT`(기본 465, STARTTLS면 587)·`LOGDOCK_MAIL_SECURITY`(`tls` 기본, `starttls`, 명시할 때만 `plain_relay`)·`LOGDOCK_MAIL_FROM`·`LOGDOCK_MAIL_USER`·`LOGDOCK_MAIL_PASSWORD_FILE`(비밀번호 파일 경로)·`LOGDOCK_MAIL_CA_FILE`(사설 CA, 선택)로 받는다. 호스트가 없으면 메일 설정 없음이다. 표시 시간대는 `LOGDOCK_DISPLAY_TIMEZONE`(IANA 이름, 틀리면 시작하지 않음), 로그 보관 기간은 `LOGDOCK_LOG_RETENTION_MONTHS`로 받는다.
 
 ### 8.2 중앙 로컬 명령
 
