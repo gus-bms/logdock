@@ -35,7 +35,11 @@ const SECRET_RES = [
   /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
 ];
 const LOCAL_PATH_RE = /(?:\/Users\/|\/home\/)[A-Za-z0-9._-]+|[A-Za-z]:\\Users\\/;
+// 웹 주소 안의 경로(예: https://example.com/docs/home/search)는 PC 경로가 아니다. file:// 주소는 그대로 본다.
+const WEB_URL_RE = /https?:\/\/[^\s)>\]]+/gi;
 const IPV4_RE = /(?<![\d.§vV])(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?![\d.]*\d)/g;
+// 네 마디 버전 번호(예: `clickhouse/clickhouse-server:26.8.36.3`, ClickHouse `26.8.36.3`)는 IP 주소로 보지 않는다.
+const VERSION_BEFORE_RE = /(?:[A-Za-z][\w./-]*:|(?:ClickHouse|PostgreSQL|Postgres|Docker|Node(?:\.js)?|Go|버전|version)\s*`?)$/i;
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
 const SAFE_EMAIL_RE = /@(?:[a-z0-9-]+\.)*(?:example\.(?:com|org|net)|example|test|invalid|localhost)$|^git@github\.com$/i;
 
@@ -223,9 +227,12 @@ for (const doc of [...planDocs, ...skillDocs]) {
     const where = `${doc.rel}:${index + 1}`;
     const flag = (reason) => problems['공개 저장소 위험'].push(`${where} ${reason}`);
     if (SECRET_RES.some((re) => re.test(line))) flag('비밀값 형식');
-    const local = line.match(LOCAL_PATH_RE);
+    // 웹 주소를 같은 길이의 공백으로 지워 위치를 유지한 채 PC 경로만 본다.
+    const withoutUrls = line.replace(WEB_URL_RE, (u) => ' '.repeat(u.length));
+    const local = withoutUrls.match(LOCAL_PATH_RE);
     if (local) flag(`로컬 절대 경로: ${clip(line, local.index)}`);
     for (const m of line.matchAll(IPV4_RE)) {
+      if (VERSION_BEFORE_RE.test(line.slice(Math.max(0, m.index - 40), m.index))) continue;
       const octets = m.slice(1, 5).map(Number);
       const isLoopback = octets[0] === 127 || octets.every((n) => n === 0);
       const isDocRange = /^(?:192\.0\.2|198\.51\.100|203\.0\.113)\./.test(m[0]);
