@@ -38,8 +38,9 @@ const LOCAL_PATH_RE = /(?:\/Users\/|\/home\/)[A-Za-z0-9._-]+|[A-Za-z]:\\Users\\/
 // 웹 주소 안의 경로(예: https://example.com/docs/home/search)는 PC 경로가 아니다. file:// 주소는 그대로 본다.
 const WEB_URL_RE = /https?:\/\/[^\s)>\]]+/gi;
 const IPV4_RE = /(?<![\d.§vV])(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?![\d.]*\d)/g;
-// 네 마디 버전 번호(예: `clickhouse/clickhouse-server:26.8.36.3`, ClickHouse `26.8.36.3`)는 IP 주소로 보지 않는다.
-const VERSION_BEFORE_RE = /(?:[A-Za-z][\w./-]*:|(?:ClickHouse|PostgreSQL|Postgres|Docker|Node(?:\.js)?|Go|버전|version)\s*`?)$/i;
+// 네 마디 버전 번호(예: `clickhouse/clickhouse-server:26.8.36.3`, ClickHouse `26.8.36.3`, 표의 `| ClickHouse | 26.8.36.3`)는
+// IP 주소로 보지 않는다.
+const VERSION_BEFORE_RE = /(?:[A-Za-z][\w./-]*:|(?:ClickHouse|PostgreSQL|Postgres|Docker|Node(?:\.js)?|Go|버전|version)\s*(?:\|\s*)?`?)$/i;
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
 const SAFE_EMAIL_RE = /@(?:[a-z0-9-]+\.)*(?:example\.(?:com|org|net)|example|test|invalid|localhost)$|^git@github\.com$/i;
 
