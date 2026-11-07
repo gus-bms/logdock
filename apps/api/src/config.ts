@@ -49,6 +49,11 @@ export interface AppConfig {
    * 넘지 않게 한다. 둘 다 측정·Q15 전의 시제품 값이다.
    */
   maxEventBytes: { default: number; max: number };
+  /**
+   * 수집 연결 관측 표시(계약 2.7·4.4절의 `N`, 미정). 마지막 상태 보고가 staleSeconds보다 오래되면 `관측 오래됨/미확인`,
+   * `등록·연결 대기`가 pendingSeconds보다 오래 이어지면 `조치 필요`에 센다. 측정·Q15 전의 시제품 값이다.
+   */
+  observation: { staleSeconds: number; pendingSeconds: number };
   /** 요청 본문 상한. */
   bodyLimit: string;
 }
@@ -71,6 +76,7 @@ export const DEFAULTS: Omit<AppConfig, 'db'> = {
   nameMaxLength: 100,
   // 에이전트 설정 검사가 받는 범위는 1바이트~64MiB다(agent/internal/config).
   maxEventBytes: { default: 1024 * 1024, max: 64 * 1024 * 1024 },
+  observation: { staleSeconds: 3 * 60, pendingSeconds: 24 * 60 * 60 },
   bodyLimit: '1mb',
 };
 

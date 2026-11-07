@@ -1,20 +1,59 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, Res } from '@nestjs/common';
+import { z } from 'zod';
 
 import { RequireReauth } from '../auth/auth.guard.js';
 import { type ApiRequest, type ApiResponse, header } from '../common/http.js';
 import { idempotencyKey } from '../common/idempotency.js';
 import { parse } from '../common/validate.js';
 import { ConnectionBody } from './connection-input.js';
+import { ConnectionViewsService, OBSERVATION_STATES } from './connection-views.service.js';
 import { ConnectionsService } from './connections.service.js';
 import { KeysService } from './keys.service.js';
+
+const Flag = z.enum(['true', 'false']);
+const ListParams = z.object({
+  archived: Flag.optional(),
+  observation: z.enum(OBSERVATION_STATES).optional(),
+  needs_action: Flag.optional(),
+  service_id: z.coerce.number().int().positive().optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+  cursor: z.string().max(512).optional(),
+});
 
 /** 수집 연결(계약 4.3·5.1절). */
 @Controller('v1/connections')
 export class ConnectionsController {
   constructor(
     private readonly connections: ConnectionsService,
+    private readonly views: ConnectionViewsService,
     private readonly keys: KeysService,
   ) {}
+
+  /** 서비스별 연결 목록(UI-10). 기본은 보관되지 않은 연결이고 `archived=true`면 보관된 연결이다. */
+  @Get()
+  async list(@Query() query: unknown) {
+    const p = parse(ListParams, query);
+    return this.views.list({
+      archived: p.archived === 'true',
+      observation: p.observation,
+      needsAction: p.needs_action === 'true',
+      serviceId: p.service_id,
+      limit: p.limit ?? 50,
+      cursor: p.cursor,
+    });
+  }
+
+  /** 조치 필요 수(4.4절). 메뉴(CM-01)와 목록이 같은 계산을 쓴다. `/{id}`보다 먼저 둔다. */
+  @Get('summary')
+  async summary() {
+    return this.views.summary();
+  }
+
+  /** 연결 상세(UI-12, 4.3절 연결 상세 항목). */
+  @Get(':id')
+  async detail(@Param('id') id: string) {
+    return this.views.detail(id);
+  }
 
   /** 등록 전 사전 검사(중복·형식). 아무것도 만들지 않는다. 통과하면 저장할 형태로 맞춘 값을 돌려준다. */
   @Post('validate')
