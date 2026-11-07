@@ -16,7 +16,9 @@
     "dev:api": "npm run dev --workspace=@logdock/api",
     "dev:web": "npm run dev --workspace=@logdock/web",
     "build": "npm run build --workspaces",
-    "typecheck": "npm run typecheck --workspaces"
+    "typecheck": "npm run typecheck --workspaces",
+    "test:db": "node --test db/postgres/schema.test.mjs",
+    "test:api": "npm run test --workspace=@logdock/api"
   },
   "license": "Apache-2.0",
   "repository": {
