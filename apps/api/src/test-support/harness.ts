@@ -46,6 +46,8 @@ export interface Api {
 export async function startApi(pgi: EphemeralPostgres, overrides: Partial<AppConfig> = {}): Promise<Api> {
   const config: AppConfig = {
     ...DEFAULTS,
+    // 합성 주소. 시험은 설정 파일 내용만 보고 이 주소로 보내지 않는다.
+    ingestUrl: 'https://ingest.logdock.example:8443/ingest/v1',
     db: { host: pgi.host, port: pgi.port, user: pgi.user, database: pgi.database, max: 4 },
     ...overrides,
   };

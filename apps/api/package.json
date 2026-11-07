@@ -4,11 +4,12 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "dev": "nest start --watch",
-    "build": "nest build",
+    "build:wasm": "node scripts/build-rules-wasm.mjs",
+    "dev": "npm run build:wasm && nest start --watch",
+    "build": "npm run build:wasm && nest build",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "rm -rf dist-test && tsc -p tsconfig.test.json && node --test \"dist-test/**/*.spec.js\""
+    "test": "npm run build:wasm && rm -rf dist-test && tsc -p tsconfig.test.json && node --test \"dist-test/**/*.spec.js\""
   },
   "dependencies": {
     "@nestjs/common": "11.2.8",

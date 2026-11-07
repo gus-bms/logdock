@@ -14,6 +14,8 @@ export interface AuditEntry {
   /** 바뀐 항목의 이름만 남긴다. 값은 남기지 않는다(TD-17). */
   changedFields?: string[];
   reasonCode?: string;
+  /** 에이전트에 닿는 작업의 진행 단계(WQ-85). 요청 접수·중앙 확정·에이전트 관측마다 행을 남긴다. */
+  stage?: 'requested' | 'confirmed' | 'agent_observed';
 }
 
 /**
@@ -51,8 +53,8 @@ export class AuditService {
       if (r.rowCount) return;
     }
     await c.query(
-      `INSERT INTO audit_log (actor_type, account_id, action, target_type, target_ref, result, changed_fields, reason_code)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      `INSERT INTO audit_log (actor_type, account_id, action, target_type, target_ref, result, changed_fields, reason_code, stage)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         e.actorType ?? 'shared_account',
         e.accountId ?? null,
@@ -62,6 +64,7 @@ export class AuditService {
         e.result,
         e.changedFields ?? null,
         e.reasonCode ?? null,
+        e.stage ?? null,
       ],
     );
   }

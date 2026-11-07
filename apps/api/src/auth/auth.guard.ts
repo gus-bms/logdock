@@ -8,11 +8,17 @@ import { fromBase64Url, sameBytes } from './tokens.js';
 
 const PUBLIC = 'logdock:public';
 const OPTIONAL_SESSION = 'logdock:optional-session';
+const REAUTH = 'logdock:reauth';
 
 /** 세션 없이 부르는 경로(로그인, health). */
 export const Public = () => SetMetadata(PUBLIC, true);
 /** 세션이 있으면 읽고 없어도 통과하는 경로(GET /api/v1/auth/session). */
 export const OptionalSession = () => SetMetadata(OPTIONAL_SESSION, true);
+/**
+ * 최근 비밀번호 재확인이 있어야 하는 민감 작업(CM-07, Q10-05). 없거나 지났으면 403 reauth_required이고,
+ * 화면은 재확인한 뒤 같은 요청을 다시 보낸다(계약 4.1절). 입력 검사보다 먼저 막는다.
+ */
+export const RequireReauth = () => SetMetadata(REAUTH, true);
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -44,6 +50,8 @@ export class AuthGuard implements CanActivate {
       const sent = fromBase64Url(header(req, 'x-csrf-token'));
       if (!sent || !sameBytes(sent, session.csrfToken)) throw errors.csrfInvalid();
     }
+    // 재확인 유효 시각은 세션을 읽을 때 DB 시각으로 계산해 두었다(지났으면 null).
+    if (flag(REAUTH) && !session.reauthValidUntil) throw errors.reauthRequired();
     req.session = session;
     req.sessionToken = token;
     return true;

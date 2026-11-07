@@ -75,12 +75,12 @@ npm run dev:web
 
 | 명령 | 용도 |
 | --- | --- |
-| `npm run dev:api` | NestJS API 개발 서버 |
+| `npm run dev:api` | NestJS API 개발 서버. `LOGDOCK_DB_*`와 수신 서버 주소 `LOGDOCK_INGEST_URL`(https)이 있어야 시작한다 |
 | `npm run dev:web` | React·Vite 개발 서버 |
 | `npm run build` | API·웹 빌드 |
 | `npm run typecheck` | TypeScript 검사 |
 | `npm run test:db` | 관리 DB 마이그레이션의 제약 시험. 시험이 임시 폴더에 PostgreSQL 18을 띄우고 끝나면 지운다 |
-| `npm run test:api` | API 시험(인증·세션 등). 같은 방식의 임시 PostgreSQL을 쓴다 |
+| `npm run test:api` | API 시험(인증·세션 등). 같은 방식의 임시 PostgreSQL을 쓴다. 먼저 Go로 수집 규칙 검사(WebAssembly)를 빌드한다 |
 | `node apps/api/dist/cli.js admin set-password --name admin` | API를 빌드한 뒤 공용 계정과 초기 비밀번호를 만든다. `LOGDOCK_DB_*`로 접속하고 비밀번호는 터미널에서 입력한다. 분실·잠금 때는 `admin reset-password` |
 | `go -C agent test -race ./...` | 측정용 에이전트 시제품(Go 1.27) 시험 |
 

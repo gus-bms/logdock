@@ -22,7 +22,7 @@ export interface ServerView {
   version: number;
 }
 
-const SERVICE_COLUMNS = `id, name, state, ${utc('archived_at')} AS archived_at, version`;
+export const SERVICE_COLUMNS = `id, name, state, ${utc('archived_at')} AS archived_at, version`;
 const SERVER_COLUMNS = 'id, display_name, version';
 
 /**

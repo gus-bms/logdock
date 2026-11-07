@@ -11,6 +11,9 @@ import { ThrottleService } from './auth/throttle.service.js';
 import { CatalogController } from './catalog/catalog.controller.js';
 import { CatalogService } from './catalog/catalog.service.js';
 import { type AppConfig } from './config.js';
+import { ConnectionsController, KeysController } from './connections/connections.controller.js';
+import { ConnectionsService } from './connections/connections.service.js';
+import { KeysService } from './connections/keys.service.js';
 import { Database } from './db/database.js';
 import { HealthController } from './health.controller.js';
 import { APP_CONFIG } from './tokens.js';
@@ -20,7 +23,7 @@ export class AppModule {
   static forRoot(config: AppConfig): DynamicModule {
     return {
       module: AppModule,
-      controllers: [HealthController, AuthController, AccountController, CatalogController],
+      controllers: [HealthController, AuthController, AccountController, CatalogController, ConnectionsController, KeysController],
       providers: [
         { provide: APP_CONFIG, useValue: config },
         Database,
@@ -29,6 +32,8 @@ export class AppModule {
         AuditService,
         AuthService,
         CatalogService,
+        ConnectionsService,
+        KeysService,
         // 모든 경로를 한 검사 지점에서 확인한다(계약 4.1절). 세션 없이 부르는 경로는 @Public으로 연다.
         { provide: APP_GUARD, useClass: AuthGuard },
       ],
