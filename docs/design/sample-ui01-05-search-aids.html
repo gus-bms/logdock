@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LogDock 시안 — 검색 보조</title>
+<!-- 시안 표시용 글꼴. 제품은 글꼴 파일을 직접 제공하고 외부 CDN을 쓰지 않는다(design-system-v0.1.md 4절). -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="tokens-dark-preview.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* 이 시안의 배치. 화면 흐름 명세 5절 UI-01(로그인)·UI-02 알림 조사 모드·UI-04(주변 로그)·UI-05(저장 검색)와 CM-02~CM-08의 정적 시안이다.
+     와이어프레임 정리표의 기본안(WQ-06~17, WQ-24~29)과 디자인 시스템 11·12절, API 계약 4.2·4.3절을 따른다.
+     알림 조사 모드의 사건은 알림 시안의 `주문·결제 timeout` 09:41 사건과 같다. 로그·시각·이름은 합성 값이며, 정하지 않은 한도(앞뒤 건수, 시간 폭, 저장 개수, 시도 제한 대기)는 `N`으로 쓴다. */
+  :root { --demo-h: 44px; }
+  body { min-width: 1080px; }
+  .page { display: grid; gap: var(--space-3); padding: var(--space-4) var(--layout-pad-x) calc(var(--demo-h) + 48px); align-content: start; }
+  .page[hidden] { display: none; }
+  .p-note { margin: 0; font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .cell-sub { display: block; font-size: var(--text-sm); line-height: 16px; color: var(--color-text-secondary); margin-top: 2px; }
+  .signed-out .menu, .signed-out .topbar-end .avatar { visibility: hidden; }
+
+  /* UI-01 */
+  .login-wrap { display: grid; justify-items: center; padding-top: 56px; }
+  .login { width: 380px; }
+  .login .in { padding: var(--space-5); display: grid; gap: var(--space-4); }
+  .login h1 { margin: 0; font-size: var(--text-lg); }
+  .login .btn.primary { width: 100%; justify-content: center; }
+
+  /* UI-02 알림 조사 */
+  .inv { padding: var(--space-3) var(--space-4); display: grid; gap: var(--space-2); }
+  .inv-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .inv-row a { color: var(--color-text-link); font-weight: var(--font-weight-medium); text-underline-offset: 3px; }
+  .inv-row .strong { color: var(--color-text); font-weight: var(--font-weight-medium); }
+  .inv-counts { display: flex; gap: var(--space-6); flex-wrap: wrap; font-size: var(--text-sm); color: var(--color-text-secondary); font-feature-settings: var(--font-feature-numeric); }
+  .inv-counts b { color: var(--color-text); font-size: var(--text-base); font-weight: var(--font-weight-strong); }
+  .reasons { margin: var(--space-1) 0 0; }
+  .reasons td.wrap { white-space: normal; padding-top: 6px; padding-bottom: 6px; }
+  .tb { display: flex; align-items: center; gap: var(--space-2); }
+  .tb .timepick { min-width: 300px; justify-content: flex-start; }
+  .tb .timepick.locked { cursor: default; box-shadow: var(--shadow-card), inset 0 0 0 1px var(--color-info-border); }
+  .tb .querybar { flex: 1; }
+  .chip.changed { box-shadow: inset 0 0 0 1px var(--color-warning-border); }
+  .chip .tag { font-size: 11px; color: var(--color-warning-fg); padding: 0 6px 0 0; }
+  .logtable td.t2, .logtable td.t2 + td, .logtable td.t2 ~ td { height: auto; padding-top: 6px; padding-bottom: 6px; }
+  .logtable td .sub { display: block; font-size: 11.5px; color: var(--color-text-tertiary); line-height: 16px; }
+  .rename { display: flex; gap: var(--space-2); align-items: center; font-size: var(--text-sm); color: var(--color-text-secondary); padding: 0 var(--space-1); }
+
+  /* UI-04 */
+  .back { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--color-text-link); text-decoration: none; font-weight: var(--font-weight-medium); }
+  .nb-head { display: flex; align-items: center; gap: var(--space-4); }
+  .nb-head h1 { margin: 0; font-size: var(--text-xl, 20px); }
+  .nb-info { padding: var(--space-3) var(--space-4); display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px var(--space-4); font-size: var(--text-sm); align-items: center; }
+  .nb-info > .k { color: var(--color-text-tertiary); font-weight: var(--font-weight-medium); }
+  .nb-info > .v { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--color-text-secondary); }
+  .loose { text-decoration: line-through; text-decoration-color: var(--color-text-tertiary); }
+  .logtable tr.mark td { height: auto; padding: 8px var(--space-4); white-space: normal; font-size: var(--text-sm); color: var(--color-text-secondary); background: var(--color-bg-subtle); cursor: default; }
+  .logtable tr.mark.dashed td { background: var(--color-unknown-bg); border-top: 1px dashed var(--color-unknown-border); border-bottom: 1px dashed var(--color-unknown-border); }
+  .logtable tr.mark b { color: var(--color-text); font-weight: var(--font-weight-medium); margin-right: var(--space-2); }
+  .logtable tr.mark a { color: var(--color-text-link); font-weight: var(--font-weight-medium); }
+  .logtable tr.more td { height: 36px; text-align: center; background: transparent; cursor: default; }
+  .logtable tr.mark:hover td, .logtable tr.more:hover td { background: inherit; }
+  .logtable tr.sel td { background: var(--color-bg-selected); }
+  .logtable tr.sel td:first-child { box-shadow: inset 2px 0 0 var(--color-accent); }
+  .logtable .tagnew { font: var(--font-weight-medium) 11px/16px var(--font-sans); color: var(--color-info-fg); margin-left: 6px; }
+  .logtable .tagsel { font: var(--font-weight-medium) 11px/16px var(--font-sans); color: var(--color-accent-fg); margin-left: 6px; }
+
+  /* UI-05 */
+  .saved td.wrap { white-space: normal; padding-top: 7px; padding-bottom: 7px; }
+  .saved td .acts { display: flex; gap: 2px; justify-content: flex-end; }
+  .dialog.wide { width: 720px; max-width: calc(100vw - 48px); }
+  .dialog.wide .dialog-body { display: grid; gap: var(--space-4); max-height: calc(100vh - 240px); overflow: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg-row { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
+  .empty { padding: 48px var(--space-6); display: grid; justify-items: center; gap: var(--space-3); text-align: center; }
+  .empty h2 { margin: 0; font-size: var(--text-lg); }
+  .empty p { margin: 0; max-width: 520px; color: var(--color-text-secondary); }
+
+  .demo-switch { position: fixed; left: 0; right: 0; bottom: 0; height: var(--demo-h); display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+    padding: 0 var(--space-4); background: var(--color-toast-bg); color: var(--color-toast-text-secondary); font-size: var(--text-sm); box-shadow: var(--shadow-toast); z-index: var(--z-sticky); white-space: nowrap; }
+  .demo-switch .segmented { height: 30px; background: rgb(255 255 255 / 0.08); box-shadow: none; }
+  .demo-switch .segmented button { height: 26px; color: var(--color-toast-text-secondary); }
+  .demo-switch .segmented button[aria-pressed="true"] { background: rgb(255 255 255 / 0.16); color: var(--color-toast-text); box-shadow: none; }
+  .demo-switch select { height: 30px; border: 0; border-radius: var(--radius-full); padding: 0 var(--space-3); background: rgb(255 255 255 / 0.12); color: var(--color-toast-text); font-size: var(--text-sm); }
+  .toast-stack { position: fixed; right: var(--space-4); top: calc(var(--size-topbar) + var(--space-3)); display: grid; gap: var(--space-2); z-index: var(--z-toast); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7m0-7-7 7"/></symbol>
+  <symbol id="i-down" viewBox="0 0 16 16"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></symbol>
+  <symbol id="i-left" viewBox="0 0 16 16"><path d="m9.5 4.5-3.5 3.5 3.5 3.5"/></symbol>
+  <symbol id="i-up" viewBox="0 0 16 16"><path d="m4.5 9.5 3.5-3.5 3.5 3.5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></symbol>
+  <symbol id="i-save" viewBox="0 0 16 16"><path d="M4 2.5h6.5L13 5v8.5H3V3.5a1 1 0 0 1 1-1z"/><path d="M5.5 2.5v3h4v-3M5 13.5V10h6v3.5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 16 16"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3z"/><path d="M6.5 14h3"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 16 16"><path d="M5 3v10M2.5 10.5 5 13l2.5-2.5M11 13V3M8.5 5.5 11 3l2.5 2.5"/></symbol>
+</svg>
+
+<nav class="topbar" aria-label="주 메뉴">
+  <span class="brand"><span class="brand-mark" aria-hidden="true"></span>LogDock</span>
+  <div class="menu">
+    <a href="sample-ui02-log-search.html" id="m-search">로그 탐색</a>
+    <a href="#" data-go="saved" id="m-saved">저장 검색</a>
+    <a href="sample-ui06-09-alerts.html">알림</a>
+    <a href="sample-ui10-11-connections.html">수집 연결 <span class="menu-count" aria-label="조치 필요 5건">5</span></a>
+    <div class="menu-drop"><button class="menu-btn" id="sys-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="sys-menu"><span>시스템</span><svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg></button>
+      <div class="listbox" id="sys-menu" role="menu" aria-label="시스템" hidden>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=storage">저장 공간과 보존</a>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=mail">메일 상태</a>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=audit">감사 이력</a>
+      </div></div>
+    <a href="sample-ui13-16-system.html?view=account">계정</a>
+  </div>
+  <div class="topbar-end"><span class="mono tertiary">Asia/Seoul</span><button class="btn ghost sm" id="theme" title="검토용: 어두운 테마는 첫 출시 범위가 아니다">어두운 테마 보기</button><span class="avatar" title="공용 계정 ops">공용</span></div>
+</nav>
+<div id="banner-slot"></div>
+
+<main class="page" id="view-login"></main>
+<main class="page" id="view-invest" hidden></main>
+<main class="page" id="view-nearby" hidden></main>
+<main class="page" id="view-saved" hidden></main>
+
+<div class="demo-switch" role="group" aria-label="시안 상태 바꾸기">시안
+  <div class="segmented" id="demo-view">
+    <button data-v="login" aria-pressed="true">로그인 UI-01</button><button data-v="invest" aria-pressed="false">알림 조사 UI-02</button><button data-v="nearby" aria-pressed="false">주변 로그 UI-04</button><button data-v="saved" aria-pressed="false">저장 검색 UI-05</button>
+  </div>
+  <select id="demo-state" aria-label="시안 상태"></select>
+</div>
+<div class="toast-stack" id="toasts" aria-live="polite"></div>
+<div id="dialog-root"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const badge = (k, t) => `<span class="badge ${k}">${t}</span>`;
+const kv = (rows) => rows.filter(Boolean).map(([k, v]) => `<div><dt>${k}</dt><dd><span>${v}</span></dd></div>`).join('');
+const X = '<svg class="icon" style="width:12px;height:12px"><use href="#i-x"/></svg>';
+const chip = (k, op, v, rm, extra = '') => `<span class="chip${extra}"><span class="chip-key">${k}</span><span class="chip-op">${op}</span><span class="chip-val">${v}</span>${rm ? `<button aria-label="${k} ${v} 조건 지우기" data-rm="${rm}">${X}</button>` : ''}</span>`;
+const LV = { error: 'ERROR', warn: 'WARN', info: 'INFO', debug: 'DEBUG', unknown: '미확인' };
+let view = 'login', demoState = 'base', auditDown = false;
+
+function banner() {
+  $('#banner-slot').innerHTML = auditDown && view !== 'login' ? '<div class="banner danger" role="status"><strong>감사 기록 장애</strong><span>2026-11-05 10:31:00 (UTC+09:00)부터 감사 기록을 저장하지 못하고 있습니다. 로그인·검색·수집은 계속됩니다. 키 발급, 등록·설정 변경, 비밀번호 변경, 알림 규칙 변경 등은 보류되니 복구된 뒤 다시 실행하세요.</span><a href="sample-ui13-16-system.html?view=audit&amp;state=down">감사 이력 보기</a></div>' : '';
+}
+
+/* ════ UI-01 로그인 ═════════════════════════════════════════ */
+/* 로그인 전에는 상단 메뉴·전역 배너·내부 상태를 보이지 않는다. 실패 문구는 계정이 있는지와 어느 칸이 틀렸는지 드러내지 않는다(12절 login_failed) */
+let loginState = 'base', loginBack = null;
+function renderLogin() {
+  banner();
+  const st = loginState;
+  const top = { fail: `<div class="callout danger" role="alert">${badge('danger', '로그인 실패')}<div>계정 이름 또는 비밀번호가 맞지 않습니다.</div></div>`,
+    throttled: `<div class="callout danger" role="alert">${badge('danger', '잠시 막음')}<div><strong>로그인 시도가 많아 잠시 막았습니다.</strong> N분 뒤 다시 시도하세요. 남은 시간은 줄어드는 대로 고칩니다.</div></div>`,
+    expired: `<div class="callout">${badge('neutral', '세션 만료')}<div><strong>세션이 끝났습니다. 다시 로그인하세요.</strong> 같은 탭에서 다시 로그인하면 보던 화면과 검색 조건으로 돌아갑니다. 활동이 1시간 없거나 로그인한 지 24시간이 지나면 다시 로그인해야 합니다.</div></div>`,
+    mail: `<div class="callout info">${badge('info', '알림 링크')}<div><strong>알림 사건을 보려면 로그인하세요.</strong> 로그인하면 같은 사건의 알림 조사 화면이 열립니다.</div></div>` }[st] || '';
+  $('#view-login').innerHTML = `<div class="login-wrap"><section class="card login" aria-labelledby="login-t"><form class="in" id="login-form" novalidate>
+      <h1 id="login-t">로그인</h1>${top}
+      <div class="field"><label class="field-label" for="l-id">계정 이름</label><input class="input" id="l-id" autocomplete="username" value="${st === 'fail' || st === 'throttled' ? 'ops' : ''}"></div>
+      <div class="field"><label class="field-label" for="l-pw">비밀번호</label><input class="input" id="l-pw" type="password" autocomplete="current-password"></div>
+      ${st === 'throttled' ? '<button class="btn primary" type="button" disabled aria-describedby="why-login">로그인</button><span class="disabled-reason" id="why-login">시도 제한으로 N분 동안 막혔습니다</span>' : '<button class="btn primary" type="submit">로그인</button>'}
+      <p class="p-note">비밀번호를 잊었거나 계정이 잠겼으면 서버 운영자가 서버에서 직접 재설정합니다. 이메일로 복구하지 않습니다.</p>
+      ${st === 'audit' ? '<p class="p-note" style="border-top:1px solid var(--color-border);padding-top:var(--space-3)">시안 안내: 감사 기록 장애 중에도 로그인은 됩니다. 로그인 전에는 장애를 알리지 않고, 로그인한 뒤 화면 위 배너로 알립니다.</p>' : ''}
+    </form></section></div>`;
+  if (st === 'fail') $('#l-pw').focus();
+}
+function doLogin() {
+  const id = $('#l-id').value.trim(), pw = $('#l-pw').value;
+  if (!id || !pw) { loginState = 'fail'; renderLogin(); return; }
+  document.body.classList.remove('signed-out');
+  if (loginBack) { const b = loginBack; loginBack = null; go(b.view, b); toast('', '성공', '다시 로그인했습니다.', '보던 화면으로 돌아왔습니다.'); return; }
+  if (loginState === 'mail') { go('invest', { state: 'base' }); toast('', '성공', '로그인했습니다.', '알림 메일의 사건을 알림 조사 모드로 열었습니다.'); return; }
+  if (loginState === 'audit') { location.href = 'sample-ui02-log-search.html#audit-down'; return; }
+  location.href = 'sample-ui02-log-search.html';
+}
+
+/* ════ UI-02 알림 조사 모드 ═════════════════════════════════ */
+/* 사건 참조로 당시 조건과 수신 시각 평가 구간을 다시 읽어 고정 검색한다(API 4.2절). 정렬만 바꾸면 모드를 유지하고(WQ-12), 조건·범위를 고치면 벗어난다(WQ-17) */
+const INC = {
+  base: { at: '2026-11-05 09:41:00', from: '09:26:00', to: '09:41:00', day: '2026-11-05', then: 27, now: 27, ud: [3, 3] },
+  diff: { at: '2026-11-05 09:41:00', from: '09:26:00', to: '09:41:00', day: '2026-11-05', then: 27, now: 22, ud: [3, 3], reasons: { manual: '결제 · app-01 · app.log 연결의 2026-11-05 09:30:00 ~ 09:32:00 (UTC+09:00) 구간 로그를 구간 로그 삭제로 지웠습니다. 다시 전송돼도 저장하지 않으므로 현재 건수가 돌아오지 않습니다.' } },
+  early: { at: '2026-07-14 10:05:00', from: '09:50:00', to: '10:05:00', day: '2026-07-14', then: 22, now: 0, ud: [1, 0], reasons: { early: '공간이 부족해 2026-11-05 03:00:12 (UTC+09:00)에 보관 기간(6개월)이 되기 전 로그를 삭제했습니다. 평가 구간은 조회 가능 시작일 2026-07-21보다 앞섭니다.' }, start: '2026-07-21' },
+  partial: { at: '2026-11-03 14:02:00', from: '13:47:00', to: '14:02:00', day: '2026-11-03', then: 41, now: 46, ud: [1, 1], reasons: { partial: '평가가 일부 구간에서 실패했지만 끝난 구간의 건수만으로 임계(20건)를 넘어 발화했습니다. 당시 건수는 일부 구간의 건수입니다.' } },
+  changed: { at: '2026-11-05 09:41:00', from: '09:26:00', to: '09:41:00', day: '2026-11-05', then: 27, now: 27, ud: [3, 3], rule: 'changed' },
+  deleted: { at: '2026-11-05 09:41:00', from: '09:26:00', to: '09:41:00', day: '2026-11-05', then: 27, now: 27, ud: [3, 3], rule: 'deleted' },
+  renamed: { at: '2026-11-05 09:41:00', from: '09:26:00', to: '09:41:00', day: '2026-11-05', then: 27, now: 27, ud: [3, 3], renamed: true },
+  left: { at: '2026-11-05 09:41:00', from: '09:26:00', to: '09:41:00', day: '2026-11-05', left: true },
+  expired: { expired: true },
+  session: { at: '2026-11-05 09:41:00', from: '09:26:00', to: '09:41:00', day: '2026-11-05', then: 27, now: 27, ud: [3, 3], session: true },
+};
+/* 차이 사유: 기록으로 확인하는 사유는 해당 여부를, 확인할 수 없는 사유는 `미확인`을 쓴다(WQ-13·14) */
+const REASONS = [['retention', '보존 만료'], ['early', '조기 삭제'], ['manual', '수동 삭제'], ['undecided', '판정 불가'], ['partial', '일부 구간만 평가'], ['late', '늦은 반영']];
+const INV_ROWS = [
+  ['09:40:58.120', '09:40:57.981', '주문', 'app-01', '{"msg":"order payment <mark>timeout</mark>","level":50,"http":{"status":504},"order":{"id":"ORD-2201"}}'],
+  ['09:40:41.502', '09:40:41.388', '결제', 'app-02', '{"msg":"payment gateway <mark>timeout</mark>","level":50,"http":{"status":504}}'],
+  ['09:39:12.077', '09:12:04.210', '결제', 'app-02', '{"msg":"refund request <mark>timeout</mark>","level":50,"http":{"status":500}}', '늦게 도착'],
+  ['09:37:30.940', null, '결제', 'app-01', '{"msg":"capture <mark>timeout</mark>","level":50,"http":{"status":504}}', '시각 대체'],
+  ['09:35:05.333', '09:35:05.201', '주문', 'app-02', '{"msg":"order payment <mark>timeout</mark>","level":50,"http":{"status":502}}'],
+  ['09:30:20.019', '09:30:19.870', '결제', 'app-01', '{"msg":"payment gateway <mark>timeout</mark>","level":50,"http":{"status":504}}'],
+];
+const UD_ROWS = [
+  ['09:38:02.411', '09:38:02.300', '결제', 'app-02', 'payment <mark>timeout</mark> status=?? (JSON 해석 실패)'],
+  ['09:33:47.020', '09:33:46.905', '주문', 'app-01', 'order <mark>timeout</mark> after 30s — upstream=pg-gw (필드 없음)'],
+  ['09:27:15.882', '09:27:15.790', '결제', 'app-01', '{"msg":"payment <mark>timeout</mark>","http":'],
+];
+let invState = 'base', invSort = 'desc', invUd = false, invRemoved = null;
+function renderInvest() {
+  banner();
+  const d = INC[invState];
+  const v = $('#view-invest');
+  if (d.expired) {
+    v.innerHTML = `<div class="callout">${badge('neutral', '알림 조사')}<div><strong>알림 이력 보관 기간이 지났습니다.</strong> 사건의 당시 조건이 남아 있지 않아 알림 조사 모드로 열 수 없습니다. 아래에서 조건과 시간 범위를 정해 검색하세요.</div></div>
+      <div class="tb"><button class="timepick"><svg class="icon"><use href="#i-clock"/></svg><strong>최근 1시간</strong><span class="range mono">발생 시각</span><svg class="icon tertiary"><use href="#i-down"/></svg></button>
+        <div class="querybar"><svg class="icon"><use href="#i-search"/></svg><input aria-label="본문 검색 또는 조건 추가" placeholder="본문 검색 또는 조건 추가"></div><button class="btn primary">검색</button></div>
+      <section class="card"><div class="resultbar" role="status">${badge('neutral', '실행 전')}<span>조건과 시간 범위를 정한 뒤 검색을 누르세요.</span></div></section>`;
+    return;
+  }
+  const left = d.left;
+  const ruleName = d.rule === 'deleted' ? '<span class="strong">주문·결제 timeout(삭제됨)</span>' : '<a href="sample-ui06-09-alerts.html?view=detail">주문·결제 timeout</a>';
+  const reasonRows = d.reasons || d.then !== d.now ? REASONS.map(([k, n]) => {
+    let val;
+    if (k === 'undecided') val = `당시 ${d.ud[0]}건, 현재 ${d.ud[1]}건 <span class="dim">· 두 건수 모두 조건에 맞는 로그만 셉니다</span>`;
+    else if (k === 'late') val = `${badge('unknown', '미확인')} <span class="dim">평가 뒤에 집계에 반영된 로그가 있었는지 확인할 기록이 없습니다</span>`;
+    else if (d.reasons && d.reasons[k]) val = `${badge('warning', '해당')} ${d.reasons[k]}`;
+    else val = '<span class="dim">해당 없음 · 기록 없음</span>';
+    return `<tr><td style="width:150px">${n}</td><td class="wrap">${val}</td></tr>`;
+  }).join('') : '';
+  const head = left
+    ? `<section class="card"><div class="inv"><div class="inv-row">${badge('neutral', '모드 벗어남')}<span class="strong">알림 조사 모드를 벗어났습니다.</span><span>지금 조건은 사건 당시 조건이 아닙니다. 당시·현재 건수는 보이지 않습니다. 사건 조건으로 다시 보려면 사건 상세의 조사 열기를 쓰세요.</span><a href="sample-ui06-09-alerts.html?view=incident">사건 상세 보기</a></div></div></section>`
+    : `<section class="card" aria-label="알림 조사"><div class="inv">
+        <div class="inv-row">${badge('info', '알림 조사')}<span>규칙</span>${ruleName}${d.rule ? badge('info', '현재 규칙과 다름') : ''}<span aria-hidden="true">·</span><span>사건</span><a href="sample-ui06-09-alerts.html?view=incident">${d.at}</a><span>(UTC+09:00) 발화</span></div>
+        <p class="p-note">${d.rule === 'changed' ? '사건 뒤에 규칙의 조건이 바뀌었습니다(임계 20건 → 25건). 이 화면은 사건 당시 조건으로 열었습니다. ' : d.rule === 'deleted' ? '규칙이 삭제됐습니다. 사건 이력과 이 링크는 남아 있어 사건 당시 조건으로 열었습니다. ' : '사건 당시의 조건과 평가 구간으로 열었습니다. '}조건이나 범위를 고치면 알림 조사 모드를 벗어납니다. 정렬만 바꾸면 그대로입니다.</p>
+        <div class="inv-counts"><span>건수 <b>당시 ${d.then}건, 현재 ${d.session ? '미확인' : `${d.now}건`}</b></span><span>판정 불가 당시 ${d.ud[0]}건, 현재 ${d.session ? '미확인' : `${d.ud[1]}건`} · 두 건수에 넣지 않음</span>${d.start ? `<span>조회 가능 시작일 <b>${d.start}</b> (수신 시각 기준)</span>` : ''}</div>
+        ${reasonRows ? `<table class="datatable reasons" aria-label="차이 사유"><tbody>${reasonRows}</tbody></table><p class="p-note">당시 건수는 재현을 보장하지 않습니다. 결과 자체는 저장하지 않고, 위 사유 때문에 현재 건수와 다를 수 있습니다.</p>` : ''}
+      </div></section>`;
+  const chips = [
+    ['서비스', '=', d.renamed ? '주문API · 결제' : '주문 · 결제', 'svc'], ['환경', '=', '운영', 'env'],
+    ...(left ? [['서버', '=', 'app-01', 'srv', ' changed']] : []),
+    ['레벨', '=', 'ERROR', 'lv'], ['본문', '포함', 'timeout', 'body'], ['본문', '제외', 'health check', 'ex', ' exclude'], ['http.status', '≥', '500', 'fld'],
+  ].filter((c) => c[3] !== invRemoved);
+  const tb = `<div class="tb"><button class="timepick${left ? '' : ' locked'}" aria-label="시간 범위: ${left ? '' : '알림 조사, '}수신 시각 고정 범위 ${d.day} ${d.from} ~ ${d.to}"><svg class="icon"><use href="#i-clock"/></svg><strong>${left ? '수신 시각 · 고정 범위' : '알림 조사 · 수신 시각'}</strong><span class="range mono">${d.from.slice(0, 5)}–${d.to.slice(0, 5)}</span><svg class="icon tertiary"><use href="#i-down"/></svg></button>
+      <div class="querybar" role="group" aria-label="검색 조건"><svg class="icon"><use href="#i-search"/></svg>${chips.map(([k, op, val, id, extra = '']) => chip(k, op, val, id, extra)).join('')}<input aria-label="조건 추가" placeholder="조건 추가"></div>
+      <button class="btn primary">검색</button>
+      <button class="btn icon-only" aria-label="조건 저장" title="조건 저장" data-act="save-search"><svg class="icon"><use href="#i-save"/></svg></button>
+      <a class="btn icon-only" href="sample-ui06-09-alerts.html?view=edit&amp;state=from-search" aria-label="현재 조건으로 알림 규칙 만들기" title="현재 조건으로 알림 규칙 만들기"><svg class="icon"><use href="#i-bell"/></svg></a></div>
+    ${left ? '<div class="rename"><span class="quality">고침</span>서버 조건을 더해 사건 당시 조건과 달라졌습니다.</div>' : ''}
+    ${d.renamed ? '<div class="rename"><span class="quality" style="color:var(--color-info-fg);background:var(--color-info-bg)">이름 바뀜</span>사건 뒤에 서비스 `주문`의 이름이 `주문API`로 바뀌어 현재 이름으로 보여 줍니다. 찾는 서비스는 사건 당시와 같습니다.</div>' : ''}`;
+  const zero = invState === 'early';
+  const rowsData = invUd ? UD_ROWS : zero ? [] : (invState === 'diff' ? INV_ROWS.filter((r) => !(r[3] === 'app-01' && r[2] === '결제' && r[0] < '09:33')) : INV_ROWS);
+  const sorted = invSort === 'desc' ? rowsData : [...rowsData].reverse();
+  const range = `<span>적용 범위 <span class="mono">${d.day} ${d.from} ~ ${d.to}</span> (UTC+09:00) · 시작 포함·끝 제외 · 수신 시각 기준</span>`;
+  const resbar = d.session
+    ? `<div class="resultbar" role="status">${badge('warning', '만료·접근 제한')}<span><strong style="font-size:var(--text-sm)">로그인 세션이 만료됐습니다.</strong> 보이던 결과를 지웠습니다. 다시 로그인하면 이 사건의 알림 조사 화면으로 돌아옵니다.</span><span class="end"><button class="btn primary sm" data-act="relogin">다시 로그인</button></span></div>`
+    : `<div class="resultbar" role="status">${badge('success', '완료')}<span><strong>${invUd ? d.ud[1] : zero ? 0 : left ? 19 : d.now}</strong>건${invUd ? ' 판정 불가' : ''}</span><span class="sep"></span>${range}<span class="sep"></span><span><span class="mono">10:20:41</span>까지 수신된 로그 기준</span>
+        <span class="end">${invUd ? '<button class="btn sm" data-act="ud-off">원래 결과로</button>' : `<span class="tertiary">판정 불가 ${d.ud ? d.ud[1] : 2}건 제외</span><a href="#" data-act="ud-on" style="color:var(--color-text-link);font-size:var(--text-sm)">보기</a>`}
+        <button class="btn ghost sm" data-act="sort"><svg class="icon"><use href="#i-sort"/></svg>${invSort === 'desc' ? '최신순' : '오래된순'}</button></span></div>
+      ${invUd ? '<div class="notice" style="background:var(--color-bg-subtle);color:var(--color-text-secondary);box-shadow:none">조건의 필드를 판정할 수 없어 위 건수에서 뺀 로그만 보고 있습니다. 레벨·본문 조건은 맞지만 http.status를 읽지 못했습니다.</div>' : ''}
+      ${zero ? '' : `<div class="notice" style="background:var(--color-bg-subtle);color:var(--color-text-secondary);box-shadow:none">이 범위의 수집 문제 없음 · 조회 가능 시작일 ${d.start || '2026-05-05'} (수신 시각 기준)</div>`}`;
+  const table = d.session ? '' : zero
+    ? `<div class="empty"><h2>완료 0건</h2><p>평가 구간 ${d.day} ${d.from} ~ ${d.to}의 로그가 조기 삭제로 모두 지워졌습니다. 조회 가능 시작일은 ${d.start}(수신 시각 기준)입니다. 당시 건수는 사건 기록에 남아 있습니다.</p></div>`
+    : `<table class="logtable"><colgroup><col style="width:190px"><col style="width:84px"><col style="width:84px"><col style="width:84px"><col></colgroup>
+        <thead><tr><th>수신 시각 · 발생 시각 (2026년)</th><th>서비스</th><th>서버</th><th>레벨</th><th>본문</th></tr></thead>
+        <tbody>${sorted.map(([rt, ot, svc, srv, body, q]) => `<tr tabindex="0" class="lv-error" data-act="row"><td class="mono t2">${d.day.slice(5)} ${rt}<span class="sub">발생 ${ot ? (ot.slice(0, 2) === rt.slice(0, 2) && q !== '늦게 도착' ? ot : `${d.day.slice(5)} ${ot}`) : '미확인'}</span></td><td>${svc === '주문' && d.renamed ? '주문API' : svc}</td><td class="mono">${srv}</td><td><span class="lv ${invUd ? 'error' : 'error'}">ERROR</span></td><td class="body">${q ? `<span class="quality" style="margin-right:var(--space-2)">${q}</span>` : ''}${body}</td></tr>`).join('')}</tbody></table>
+      <div class="tablefoot"><button class="btn sm" data-act="more-rows">더 보기</button></div>`;
+  v.innerHTML = head + tb + `<section class="card" aria-label="검색 결과">${resbar}${table}</section>`
+    + (left ? '' : '<p class="p-note">수신 시각으로 평가한 알림이라 수신 시각 최신순으로 보이고 발생 시각을 아래 줄에 함께 씁니다. 발생 시각이 수신 시각보다 많이 이른 줄은 늦게 도착한 로그일 수 있습니다.</p>');
+}
+
+/* ════ UI-04 주변 로그 ══════════════════════════════════════ */
+/* 같은 흐름은 원본 순서(세대·순번)로, 시간순 보기는 검색 기준 시각으로 정렬한다(WQ-24). 거부·경계는 순번 자리에 끼운다(WQ-25). 방향별 상한 N건(WQ-27) */
+const R = (t, lv, body, extra = {}) => ({ t, lv, body, ...extra });
+const STREAM = [
+  R('10:14:19.870', 'info', '{"msg":"charge started","level":30,"order":{"id":"ORD-1041"}}'),
+  R('10:14:20.004', 'info', '{"msg":"charge completed","level":30,"order":{"id":"ORD-1041"}}'),
+  { mark: 'rotate' },
+  R('10:14:49.870', 'info', '{"msg":"charge started","level":30,"order":{"id":"ORD-1042"}}'),
+  R('10:14:49.871', 'debug', '{"msg":"calling gateway","level":20,"order":{"id":"ORD-1042"}}'),
+  R('10:14:50.123', 'error', '{"msg":"payment request timeout","level":50,"order":{"id":"ORD-1042"},"http":{"status":504}}', { sel: true }),
+  R('10:14:50.119', 'warn', '{"msg":"circuit half-open","level":40,"target":"gateway"}'),
+  R('10:14:50.130', 'warn', '{"msg":"retry scheduled","level":40,"order":{"id":"ORD-1042"}}'),
+  R('10:14:50.402', 'info', '{"msg":"response sent","level":30,"http":{"status":504}}'),
+  R('10:14:51.020', 'info', '{"msg":"charge started","level":30,"order":{"id":"ORD-1044"}}'),
+];
+const EARLIER = [R('10:13:52.310', 'info', '{"msg":"charge started","level":30,"order":{"id":"ORD-1040"}}', { fresh: true }), R('10:13:52.640', 'info', '{"msg":"charge completed","level":30,"order":{"id":"ORD-1040"}}', { fresh: true })];
+const TIMEORDER = [
+  R('10:14:49.870', 'info', '{"msg":"charge started","level":30,"order":{"id":"ORD-1042"}}', { tgt: 'app.log' }),
+  R('10:14:49.871', 'debug', '{"msg":"calling gateway","level":20,"order":{"id":"ORD-1042"}}', { tgt: 'app.log' }),
+  R('10:14:50.120', 'error', 'GatewayTimeoutError: upstream timed out after 30000ms (여러 줄)', { tgt: 'app-error.log' }),
+  R('10:14:50.123', 'error', '{"msg":"payment request timeout","level":50,"order":{"id":"ORD-1042"},"http":{"status":504}}', { tgt: 'app.log', sel: true }),
+  R('10:14:50.130', 'warn', '{"msg":"retry scheduled","level":40,"order":{"id":"ORD-1042"}}', { tgt: 'app.log' }),
+  R('10:14:50.402', 'info', '{"msg":"response sent","level":30,"http":{"status":504}}', { tgt: 'app.log' }),
+  R('10:14:50.950', 'unknown', 'unhandled rejection: socket hang up', { tgt: 'app-error.log', q: '시각 대체' }),
+];
+/* 흐름 안 빈 자리·끝을 알리는 줄. 종류를 색이 아니라 글자로 쓴다(UI-04 상태 5, 12절 끝난 이유) */
+const MARKS = {
+  rotate: ['정상 파일 회전 경계', '위는 회전되기 전 파일, 아래는 새 app.log입니다. 파일 순서를 확인해 이어 붙였습니다.'],
+  order_unknown: ['회전 경계 · 이어 붙이지 않음', '파일 회전 순서를 확인할 수 없어 회전되기 전 파일의 로그를 이어 붙이지 않았습니다. 시각이 가까운 로그는 같은 서비스·서버 시간순으로 볼 수 있습니다. <a href="#" data-act="to-time">같은 서비스·서버 시간순으로 보기</a>', true],
+  not_collected: ['수집하지 않은 구간', '이 연결은 2026-11-03 14:02:11 (UTC+09:00)부터 새 로그를 읽었습니다. 그 앞의 로그는 수집하지 않았습니다.', true],
+  rejected: ['거부됨', '이 자리에서 이벤트 2건이 크기 상한(N)을 넘어 거부됐습니다. 본문은 중앙에 없습니다. 관측 시각 2026-11-05 10:14:49.320 (UTC+09:00) · <a href="sample-ui12-connection-detail.html">수집 연결 보기</a>'],
+  retention: ['보존 만료', '이 앞의 로그는 보관 기간(6개월)이 지나 삭제됐습니다. 조회 가능 시작일 2026-05-05 (수신 시각 기준)', true],
+  manual: ['수동 삭제', '2026-11-05 10:01:00 ~ 10:03:00 (UTC+09:00) 구간의 로그는 구간 로그 삭제로 지웠습니다. · <a href="sample-ui13-16-system.html?view=audit">감사 이력 보기</a>'],
+  limit: ['조회 한도', '실행 예산을 넘어 이 방향을 끝까지 불러오지 못했습니다. 이어서 불러올 수 있습니다. <button class="btn sm" data-act="more-after">이어서 불러오기</button>'],
+  unobserved: ['관측 불가', '이 뒤의 로그는 지금 관측할 수 없습니다. 이 연결은 관측 오래됨/미확인이고 마지막 보고는 2026-11-05 10:20:13 (UTC+09:00)입니다. 에이전트에 아직 보내지 않은 로그가 남아 있을 수 있습니다. · <a href="sample-ui12-connection-detail.html?state=stale">수집 연결 보기</a>', true],
+  range_before: ['범위 한도', '선택한 로그 앞으로 최대 N건까지 보여 줍니다. 더 불러오지 않습니다.'],
+  range_after: ['범위 한도', '선택한 로그에서 최대 시간 폭(N)을 넘는 로그는 불러오지 않습니다.'],
+};
+const GAPS = [
+  { mark: 'not_collected' }, R('10:02:11.540', 'info', '{"msg":"server listening","level":30,"port":8080}'),
+  R('10:14:49.102', 'info', '{"msg":"settlement batch started","level":30}'), { mark: 'rejected' }, R('10:14:49.870', 'info', '{"msg":"charge started","level":30,"order":{"id":"ORD-1042"}}'),
+  R('10:00:58.410', 'info', '{"msg":"charge started","level":30,"order":{"id":"ORD-1019"}}'), { mark: 'manual' }, R('10:03:00.122', 'info', '{"msg":"charge completed","level":30,"order":{"id":"ORD-1021"}}'),
+  R('10:14:50.123', 'error', '{"msg":"payment request timeout","level":50,"order":{"id":"ORD-1042"},"http":{"status":504}}', { sel: true }),
+  R('10:14:51.020', 'info', '{"msg":"charge started","level":30,"order":{"id":"ORD-1044"}}'), { mark: 'limit' },
+  R('10:20:12.884', 'info', '{"msg":"charge completed","level":30,"order":{"id":"ORD-1106"}}'), { mark: 'unobserved' },
+];
+let nbState = 'base', nbMode = 'stream', nbLoaded = false, nbAfterLoaded = false;
+function nbRows() {
+  if (nbMode === 'time') return TIMEORDER;
+  if (nbState === 'gaps') return GAPS;
+  if (nbState === 'order') return [{ mark: 'order_unknown' }, R('10:14:21.118', 'info', '{"msg":"health ok","level":30}'), ...STREAM.slice(3)];
+  if (nbState === 'limit') return [{ mark: 'range_before' }, R('10:11:03.402', 'info', '{"msg":"charge started","level":30}'), ...STREAM.slice(3), R('10:16:58.770', 'info', '{"msg":"charge completed","level":30}'), { mark: 'range_after' }];
+  return [...(nbLoaded ? EARLIER : []), ...STREAM];
+}
+function renderNearby() {
+  banner();
+  const time = nbMode === 'time';
+  const rows = nbRows();
+  const cols = time ? 4 : 3;
+  const beforeBtn = nbState === 'limit' ? '<button class="btn sm" disabled aria-describedby="why-before">↑ 앞쪽 더 불러오기</button> <span class="disabled-reason" id="why-before">범위 한도(앞으로 N건)에 닿음</span>'
+    : nbState === 'order' && !time ? '<button class="btn sm" disabled aria-describedby="why-order">↑ 앞쪽 더 불러오기</button> <span class="disabled-reason" id="why-order">회전 경계에서 멈춤</span>'
+    : nbState === 'gaps' && !time ? '<span class="dim" style="font-size:var(--text-sm)">흐름의 처음입니다</span>' : '<button class="btn sm" data-act="more-before">↑ 앞쪽 더 불러오기</button>';
+  const afterBtn = nbState === 'limit' ? '<button class="btn sm" disabled aria-describedby="why-after">↓ 뒤쪽 더 불러오기</button> <span class="disabled-reason" id="why-after">범위 한도(최대 시간 폭 N)에 닿음</span>'
+    : nbState === 'gaps' && !time ? '<span class="dim" style="font-size:var(--text-sm)">관측 불가에서 멈춤</span>' : '<button class="btn sm" data-act="more-after">↓ 뒤쪽 더 불러오기</button>';
+  const tr = (r) => {
+    if (r.mark) { const [title, text, dashed] = MARKS[r.mark]; return `<tr class="mark${dashed ? ' dashed' : ''}"><td colspan="${cols}"><b>${title}</b>${text}</td></tr>`; }
+    return `<tr tabindex="0" class="lv-${r.lv}${r.sel ? ' sel' : ''}" data-act="row"${r.sel ? ' aria-current="true"' : ''}><td class="mono">11-05 ${r.t}${r.sel ? '<span class="tagsel">선택한 로그</span>' : ''}${r.fresh ? '<span class="tagnew">새로 불러옴</span>' : ''}</td>${time ? `<td class="mono">${r.tgt}</td>` : ''}<td><span class="lv ${r.lv}">${LV[r.lv]}</span></td><td class="body">${r.q ? `<span class="quality" style="margin-right:var(--space-2)">${r.q}</span>` : ''}${esc(r.body)}</td></tr>`;
+  };
+  $('#view-nearby').innerHTML = `<a class="back" href="sample-ui02-log-search.html"><svg class="icon"><use href="#i-left"/></svg>원래 검색으로 돌아가기</a>
+    <div class="nb-head"><h1 style="margin:0;font-size:var(--text-lg)">주변 로그</h1>
+      <div class="segmented" role="group" aria-label="보기"><button data-mode="stream" aria-pressed="${!time}">같은 로그 흐름(원본 순서)</button><button data-mode="time" aria-pressed="${time}">같은 서비스·서버 시간순</button></div></div>
+    ${time ? `<div class="callout info">${badge('info', '시간상 근접 이벤트')}<div><strong>같은 서비스·서버의 여러 파일 로그를 기준 시각 순서로 섞어 보여 줍니다.</strong> 원본에서 바로 앞뒤에 있던 줄이라는 뜻이 아닙니다. 다른 서버·다른 서비스의 로그는 넣지 않습니다.</div></div>` : ''}
+    <section class="card"><div class="nb-info">
+      <span class="k">선택한 로그</span><span class="v"><span class="mono">2026-11-05 10:14:50.123</span> · 결제 · <span class="mono">app-01</span> · <span class="lv error">ERROR</span></span>
+      <span class="k">${time ? '같은 서비스·서버' : '같은 흐름'}</span><span class="v">${time ? '결제 · <span class="mono">app-01</span> · 수집 대상 app.log, app-error.log' : '결제 · <span class="mono">app-01</span> · app.log · 원본 순서'}</span>
+      <span class="k">풀어 준 조건</span><span class="v">${chip('레벨', '=', 'ERROR 또는 WARN', null, ' loose')}${chip('본문', '포함', 'timeout', null)}${chip('http.status', '≥', '500', null)}<span class="dim">시간 2026-11-05 09:15:03 ~ 10:15:03 (발생 시각)</span>${time ? '<span class="dim">· 같은 흐름 → 같은 서비스·서버</span>' : ''}</span>
+      <span class="k">유지되는 조건</span><span class="v">원래 검색(돌아가면 그대로) · 선택한 로그 · ${time ? '같은 서비스·서버' : '같은 흐름'}</span>
+      <span class="k">범위</span><span class="v">선택한 로그 앞뒤 최대 N건 · 최대 시간 폭 N</span>
+    </div></section>
+    <section class="card" aria-label="주변 로그 목록">
+      <table class="logtable"><colgroup><col style="width:240px">${time ? '<col style="width:120px">' : ''}<col style="width:84px"><col></colgroup>
+        <thead><tr><th>기준 시각 (UTC+09:00)</th>${time ? '<th>수집 대상</th>' : ''}<th>레벨</th><th>본문</th></tr></thead>
+        <tbody><tr class="more"><td colspan="${cols}">${beforeBtn}</td></tr>${rows.map(tr).join('')}${nbAfterLoaded ? tr(R('10:14:52.311', 'info', '{"msg":"charge completed","level":30,"order":{"id":"ORD-1044"}}', { fresh: true })) : ''}<tr class="more"><td colspan="${cols}">${afterBtn}</td></tr></tbody></table></section>
+    <p class="p-note">${time ? '시간순 보기는 검색 기준 시각으로 정렬합니다. 시각 대체 로그는 기준 시각, 곧 관측 시각 자리에 놓입니다.' : '원본 순서라 10:14:50.119처럼 시각이 앞뒤로 엇갈릴 수 있습니다. 파일 순서를 확인할 수 있을 때만 회전 경계를 넘어 이어 붙입니다.'} 행을 누르면 이벤트 상세 패널이 이 화면 위에 열립니다(로그 탐색 시안의 패널과 같음).</p>`;
+}
+
+/* ════ UI-05 저장 검색 ══════════════════════════════════════ */
+const SAVED0 = () => [
+  { id: 's1', name: '주문 장애 시간대', cond: '(서비스 주문) 그리고 (레벨 ERROR 또는 FATAL)', time: 'abs', basis: '발생 시각', range: '2026-11-05 09:00:00 ~ 10:00:00', mod: '2026-11-05 10:05:48' },
+  { id: 's2', name: '주문·결제 timeout 조사', cond: '(서비스 주문 또는 결제) 그리고 (환경 운영) 그리고 (레벨 ERROR) 그리고 (본문에 "timeout" 포함) 그리고 (본문에 "health check" 제외) 그리고 (http.status 500 이상)', time: 'rel', basis: '발생 시각', range: '최근 1시간', mod: '2026-11-05 09:40:12' },
+  { id: 's3', name: '결제 늦게 들어온 로그', cond: '(서비스 결제) 그리고 (서버 app-02)', time: 'rel', basis: '수신 시각', range: '최근 30분', mod: '2026-11-04 17:22:03' },
+  { id: 's4', name: '배송 지난 오류', cond: '(서비스 배송 <span class="badge neutral" style="height:16px;font-size:11px;padding:0 4px">보관됨</span>) 그리고 (레벨 ERROR)', time: 'abs', basis: '발생 시각', range: '2026-10-28 00:00:00 ~ 2026-10-29 00:00:00', mod: '2026-10-29 11:02:40', archived: true },
+];
+let SAVED = SAVED0(), savedState = 'base';
+function timeCell(s) {
+  return s.time === 'rel' ? `상대 · ${s.basis} · ${s.range}<span class="cell-sub">열 때마다 다시 계산합니다</span>` : `고정 · ${s.basis}<span class="cell-sub mono" style="font-family:var(--font-mono);font-size:12px">${s.range}</span>`;
+}
+function renderSaved() {
+  banner();
+  const limit = savedState === 'limit';
+  const v = $('#view-saved');
+  const head = `<div class="page-head"><div><h1>저장 검색</h1><div class="meta"><span>공용 목록 · ${limit ? 'N' : SAVED.length}개 저장 · 최대 N개</span><span aria-hidden="true">·</span><span>최근 수정순 · 시각은 UTC+09:00</span></div></div></div>`;
+  if (savedState === 'empty' || !SAVED.length) {
+    v.innerHTML = head + `<section class="card empty"><h2>저장한 검색이 없습니다</h2><p>로그 탐색에서 조건과 시간 범위를 고른 뒤 <strong>조건 저장</strong>을 누르면 이 목록에 추가됩니다. 같은 계정을 쓰는 사람 모두가 이 목록을 함께 씁니다.</p><a class="btn primary" style="text-decoration:none" href="sample-ui02-log-search.html">로그 탐색 열기</a></section>`;
+    return;
+  }
+  v.innerHTML = head
+    + (limit ? `<div class="callout warning">${badge('warning', '상한 도달')}<div><strong>저장 검색 수가 상한(N개)에 닿아 로그 탐색에서 새 조건을 저장할 수 없습니다.</strong> 쓰지 않는 저장 검색을 지우면 다시 저장할 수 있습니다. 실행·수정·삭제는 그대로 쓸 수 있고, 오래 쓰지 않은 저장 검색도 자동으로 지우지 않습니다.</div></div>` : '')
+    + `<div class="callout">${badge('neutral', '공용 목록')}<div>같은 계정으로 로그인한 모든 사람이 이 목록을 함께 보고 고칩니다. 저장 검색은 조건을 복사해 둔 것이라, 여기서 고쳐도 이 조건으로 만든 알림 규칙은 바뀌지 않고 알림 규칙을 고쳐도 저장 검색은 바뀌지 않습니다.</div></div>
+    <section class="card section-card"><table class="datatable saved"><colgroup><col style="width:180px"><col><col style="width:230px"><col style="width:150px"><col style="width:130px"><col style="width:170px"></colgroup>
+      <thead><tr><th scope="col">이름</th><th scope="col">조건 요약</th><th scope="col">시간 방식</th><th scope="col">최근 수정</th><th scope="col">실행 전 경고</th><th scope="col"><span class="sr-only">동작</span></th></tr></thead>
+      <tbody>${SAVED.map((s) => `<tr><td class="wrap"><strong style="font-weight:var(--font-weight-medium)">${esc(s.name)}</strong></td><td class="wrap">${s.cond}</td><td class="wrap">${timeCell(s)}</td><td class="mono" style="font-size:12.5px">${s.mod}</td><td>${s.archived ? badge('warning', '보관된 연결 참조') : '<span class="dim">없음</span>'}</td>
+        <td><span class="acts"><button class="btn sm" data-run="${s.id}">실행</button><button class="btn ghost sm" data-edit="${s.id}">수정</button><button class="btn ghost sm" data-del="${s.id}">삭제</button></span></td></tr>`).join('')}</tbody></table>
+      <p class="p-note" style="padding:var(--space-3) var(--space-4)">새 저장 검색은 <a href="sample-ui02-log-search.html">로그 탐색</a>에서 조건을 고른 뒤 <strong>조건 저장</strong>으로 추가합니다. 저장 검색에서 연 조건을 다시 저장해도 항상 새 항목이 되고, 원래 항목은 여기서 고칩니다. 고정 범위는 시작 포함·끝 제외입니다.</p></section>`;
+}
+function openRun(s) {
+  if (!s.archived) { location.href = 'sample-ui02-log-search.html'; return; }
+  openDialog({ title: `실행 전 확인: ${esc(s.name)}`, action: '그대로 실행', target: [['보관된 대상', '서비스 배송 <span class="badge neutral">보관됨</span> · 연결 1개']],
+    impacts: ['이 저장 검색의 조건은 보관된 서비스를 참조합니다.', '보관된 연결은 새 로그를 받지 않습니다. 과거 로그는 보관 기간(6개월) 안에 남아 있는 것만 찾습니다.'],
+    onOk: () => { location.href = 'sample-ui02-log-search.html'; } });
+}
+let editing = null, editTime = 'rel', editBasis = '발생 시각', editChips = [];
+/* CM-03 요약 형식: 같은 항목의 `=` 값은 `또는`으로 묶고, 항목끼리는 `그리고` */
+function condSummary(list) {
+  const groups = [], seen = {};
+  list.forEach(([k, op, v2]) => {
+    if (op === '=') { if (seen[k]) seen[k].push(v2); else { seen[k] = [v2]; groups.push(() => `(${k} ${seen[k].join(' 또는 ')})`); } }
+    else groups.push(() => (op === '포함' || op === '제외' ? `(본문에 "${esc(v2)}" ${op})` : `(${k} ${v2} ${op === '≥' ? '이상' : op})`));
+  });
+  return groups.map((f) => f()).join(' 그리고 ') || '조건 없음. 시간 범위 안의 모든 로그를 찾습니다.';
+}
+function openEdit(s) {
+  editing = s; editTime = s.time; editBasis = s.basis;
+  editChips = s.id === 's2' ? [['서비스', '=', '주문'], ['서비스', '=', '결제'], ['환경', '=', '운영'], ['레벨', '=', 'ERROR'], ['본문', '포함', 'timeout'], ['본문', '제외', 'health check'], ['http.status', '≥', '500']] : [['서비스', '=', s.cond.match(/서비스 ([^)\s<]+)/)?.[1] || '주문'], ['레벨', '=', 'ERROR']];
+  renderEditDialog();
+}
+function renderEditDialog(err = '') {
+  const s = editing;
+  const relNote = editTime === 'rel'
+    ? '<strong>상대 범위로 저장합니다.</strong> 열 때마다 그때 시각을 기준으로 범위를 다시 계산하므로 같은 저장 검색이라도 결과가 다를 수 있습니다. 조사한 구간을 그대로 다시 보려면 고정 범위로 저장하세요.'
+    : '<strong>고정 범위로 저장합니다.</strong> 저장한 날짜·시각 그대로 실행하지만, 보존 만료·삭제나 늦게 들어온 로그 때문에 결과는 달라질 수 있습니다.';
+  $('#dialog-root').innerHTML = `<div class="dialog-backdrop"><div class="dialog wide" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="dialog-head"><h2 id="dlg-t">저장 검색 수정</h2></div>
+    <div class="dialog-body">
+      <div class="field" style="max-width:420px"><label class="field-label" for="e-name">이름</label><input class="input" id="e-name" value="${esc(s.name)}"${err ? ' aria-invalid="true"' : ''}>${err ? `<span class="field-error">${err}</span>` : '<span class="field-hint">같은 목록 안에서 겹치지 않는 이름이어야 합니다.</span>'}</div>
+      <div class="field"><span class="field-label">시간</span>
+        <div class="seg-row"><div class="segmented" role="group" aria-label="시간 기준"><button data-basis="발생 시각" aria-pressed="${editBasis === '발생 시각'}">발생 시각</button><button data-basis="수신 시각" aria-pressed="${editBasis === '수신 시각'}">수신 시각</button></div>
+          <div class="segmented" role="group" aria-label="범위"><button data-time="rel" aria-pressed="${editTime === 'rel'}">상대 범위</button><button data-time="abs" aria-pressed="${editTime === 'abs'}">고정 범위</button></div>
+          <span class="mono" style="font-size:var(--text-sm)">${editTime === 'rel' ? '최근 1시간' : '2026-11-05 09:00:00 ~ 10:00:00'}</span><span class="tertiary" style="font-size:var(--text-sm)">UTC+09:00</span></div>
+        <div class="callout" style="margin-top:var(--space-1)">${badge(editTime === 'rel' ? 'info' : 'neutral', editTime === 'rel' ? '상대' : '고정')}<div>${relNote}</div></div></div>
+      <div class="field"><span class="field-label">조건</span><div class="chips">${editChips.map(([k, op, v2], i) => chip(k, op, v2, `e${i}`, op === '제외' ? ' exclude' : '')).join('')}<button class="btn ghost sm">+ 조건 더하기</button></div>
+        <span class="field-hint">조건 편집은 로그 탐색의 조건 편집기(CM-03)와 같습니다.</span></div>
+      <div class="summary-line" style="padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);background:var(--color-bg-page);font-size:var(--text-sm);color:var(--color-text-secondary)"><b style="color:var(--color-text);font-weight:500">조건 요약</b> · ${condSummary(editChips)}</div>
+    </div>
+    <div class="dialog-foot"><span class="field-hint" style="margin-right:auto;max-width:440px">이 저장 검색을 고쳐도 이 조건으로 만든 알림 규칙은 바뀌지 않습니다. 최근 수정 ${s.mod}</span><button class="btn" id="dlg-cancel">취소</button><button class="btn primary" id="dlg-save">저장</button></div></div></div>`;
+  $('#dlg-cancel').onclick = closeDialog;
+  $('#dlg-save').onclick = saveEdit;
+  document.addEventListener('keydown', escClose);
+}
+function saveEdit() {
+  const name = $('#e-name').value.trim();
+  if (!name) { editing.nameDraft = ''; renderEditDialog('이름을 넣으세요.'); $('#e-name').value = ''; $('#e-name').focus(); return; }
+  if (SAVED.some((x) => x !== editing && x.name.toLowerCase() === name.toLowerCase())) { renderEditDialog('같은 이름이 이미 있습니다. 다른 이름을 쓰세요.'); $('#e-name').value = name; $('#e-name').focus(); return; }
+  if (savedState === 'conflict') { openConflict(name); return; }
+  if (savedState === 'gone') {
+    closeDialog(); SAVED = SAVED.filter((x) => x !== editing); renderSaved();
+    toastAction('fail', '실패', '이 저장 검색은 이미 지워졌습니다.', '다른 사람이 지웠을 수 있습니다. 고친 내용은 새 항목으로 저장할 수 있습니다.', '새 항목으로 저장', () => { SAVED.unshift({ ...editing, id: 'n' + Date.now(), name, time: editTime, basis: editBasis, range: editTime === 'rel' ? '최근 1시간' : '2026-11-05 09:00:00 ~ 10:00:00', mod: '2026-11-05 10:42:10' }); savedState = 'base'; renderSaved(); toast('', '성공', '새 항목으로 저장했습니다.', ''); });
+    return;
+  }
+  Object.assign(editing, { name, time: editTime, basis: editBasis, range: editTime === 'rel' ? '최근 1시간' : '2026-11-05 09:00:00 ~ 10:00:00', mod: '2026-11-05 10:42:10' });
+  SAVED.sort((a, b) => (a.mod < b.mod ? 1 : -1));
+  closeDialog(); renderSaved(); toast('', '성공', '저장 검색을 고쳤습니다.', '이 조건으로 만든 알림 규칙은 바뀌지 않았습니다.');
+}
+/* 다른 사람이 먼저 고침: 바뀐 항목과 저장 시각을 보이고 덮어쓰기·다시 불러오기를 고른다(WQ-28, API force) */
+function openConflict(name) {
+  $('#dialog-root').innerHTML = `<div class="dialog-backdrop"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="dialog-head"><h2 id="dlg-t">다른 사람이 먼저 고쳤습니다</h2></div>
+    <div class="dialog-body"><p class="p-note" style="color:var(--color-text)">수정 창을 연 뒤 이 저장 검색이 바뀌었습니다. 같은 계정을 쓰는 다른 사람이 고친 것일 수 있습니다.</p>
+      <dl class="kv" style="grid-template-columns:120px 1fr">${kv([['저장 검색', esc(editing.name)], ['바뀐 항목', '조건, 시간'], ['열 때 수정본', '2026-11-05 09:40:12'], ['지금 저장된 것', '2026-11-05 10:02:31 (UTC+09:00)']])}</dl>
+      <div class="field"><span class="field-label">영향</span><ul class="impact"><li class="strong">덮어쓰면 10:02:31에 저장된 내용이 내 수정으로 바뀝니다.</li><li>최신 내용을 불러오면 지금 고친 내용은 사라집니다.</li></ul></div></div>
+    <div class="dialog-foot"><button class="btn" id="c-keep">계속 수정</button><button class="btn" id="c-reload">최신 내용 불러오기</button><button class="btn danger" id="c-force">덮어쓰고 저장</button></div></div></div>`;
+  $('#c-keep').onclick = () => renderEditDialog();
+  $('#c-reload').onclick = () => { closeDialog(); Object.assign(editing, { cond: '(서비스 주문 또는 결제) 그리고 (환경 운영) 그리고 (레벨 ERROR 또는 FATAL) 그리고 (본문에 "timeout" 포함)', time: 'rel', range: '최근 2시간', mod: '2026-11-05 10:02:31' }); renderSaved(); toast('note', '안내', '최신 내용을 불러왔습니다.', '10:02:31에 저장된 조건과 시간입니다.'); };
+  $('#c-force').onclick = () => { savedState = 'base'; Object.assign(editing, { name, time: editTime, basis: editBasis, mod: '2026-11-05 10:42:10' }); closeDialog(); renderSaved(); toast('', '성공', '덮어쓰고 저장했습니다.', '10:02:31에 저장된 내용을 내 수정으로 바꿨습니다.'); };
+  $('#c-force').focus();
+}
+
+/* ── 확인 창(CM-07, 비밀번호 없음)과 토스트(CM-08) ── */
+let opener = null;
+function closeDialog() { $('#dialog-root').innerHTML = ''; document.removeEventListener('keydown', escClose); opener && opener.isConnected && opener.focus(); }
+function escClose(e) { if (e.key === 'Escape') closeDialog(); }
+function openDialog({ title, target, impacts, action, cancel = '취소', danger, onOk }) {
+  opener = document.activeElement;
+  $('#dialog-root').innerHTML = `<div class="dialog-backdrop"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="dialog-head"><h2 id="dlg-t">${title}</h2></div>
+    <div class="dialog-body">${target ? `<dl class="kv" style="grid-template-columns:96px 1fr">${kv(target)}</dl>` : ''}
+      <div class="field"><span class="field-label">영향</span><ul class="impact">${impacts.map((i) => `<li${i.startsWith('!') ? ' class="strong"' : ''}>${i.replace(/^!/, '')}</li>`).join('')}</ul></div></div>
+    <div class="dialog-foot"><button class="btn" id="dlg-cancel">${cancel}</button><button class="btn ${danger ? 'danger' : 'primary'}" id="dlg-ok">${action}</button></div></div></div>`;
+  document.addEventListener('keydown', escClose);
+  $('#dlg-cancel').onclick = closeDialog;
+  $('.dialog-backdrop').onclick = (e) => { if (e.target.classList.contains('dialog-backdrop')) closeDialog(); };
+  $('#dlg-ok').focus();
+  $('#dlg-ok').onclick = () => { closeDialog(); onOk(); };
+}
+function toast(kind, label, title, text) {
+  const el = document.createElement('div');
+  el.className = `toast ${kind}`;
+  el.innerHTML = `<div class="toast-text"><span class="toast-kind">${label}</span><strong>${title}</strong>${text ? `<p>${text}</p>` : ''}</div><button class="btn ghost sm icon-only" aria-label="닫기"><svg class="icon"><use href="#i-x"/></svg></button>`;
+  el.querySelector('button').onclick = () => el.remove();
+  $('#toasts').prepend(el);
+  if (kind === '' || kind === 'note') setTimeout(() => el.remove(), 6000);
+  return el;
+}
+function toastAction(kind, label, title, text, actLabel, act) {
+  const el = toast(kind, label, title, `${text} <a href="#" class="t-act">${actLabel}</a>`);
+  el.querySelector('.t-act').onclick = (e) => { e.preventDefault(); el.remove(); act(); };
+}
+
+/* ════ 화면 전환과 시안 상태 ════════════════════════════════ */
+const DEMO = {
+  login: [['base', '기본'], ['fail', '로그인 실패'], ['throttled', '시도 제한으로 잠시 막힘'], ['expired', '세션 만료 안내'], ['mail', '알림 메일 링크로 들어옴'], ['audit', '감사 기록 장애 중 로그인']],
+  invest: [['base', '기본(당시와 현재 같음)'], ['diff', '당시와 현재 다름(수동 삭제)'], ['early', '조기 삭제로 0건'], ['partial', '일부 구간만 평가'], ['changed', '규칙이 바뀜'], ['deleted', '규칙이 삭제됨'], ['renamed', '서비스 이름 바뀜'], ['left', '조건을 고쳐 모드를 벗어남'], ['expired', '알림 이력 보관 기간 지남'], ['session', '조사 중 세션 만료']],
+  nearby: [['base', '같은 로그 흐름'], ['time', '같은 서비스·서버 시간순'], ['order', '회전 순서 미확인'], ['gaps', '빈 자리·끝 표시 여섯 가지'], ['limit', '범위 한도']],
+  saved: [['base', '기본'], ['empty', '빈 목록'], ['archived', '보관된 연결 참조 실행'], ['edit', '수정(상대 시간 안내)'], ['conflict', '다른 사람이 먼저 고침'], ['gone', '수정 중 다른 사람이 지움'], ['delete', '삭제 확인'], ['limit', '개수 상한 도달']],
+};
+const TITLES = { login: '로그인', invest: '로그 탐색 · 알림 조사', nearby: '주변 로그', saved: '저장 검색' };
+function syncDemo() {
+  $$('#demo-view button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === view)));
+  $('#demo-state').innerHTML = DEMO[view].map(([v, t]) => `<option value="${v}"${v === demoState ? ' selected' : ''}>${t}</option>`).join('');
+  $('#m-saved').toggleAttribute('aria-current', view === 'saved');
+  if (view === 'saved') $('#m-saved').setAttribute('aria-current', 'page');
+  $('#m-search').toggleAttribute('aria-current', view === 'invest' || view === 'nearby');
+  if (view === 'invest' || view === 'nearby') $('#m-search').setAttribute('aria-current', 'page');
+}
+function show(v) {
+  view = v;
+  Object.keys(TITLES).forEach((k) => { $('#view-' + k).hidden = k !== v; });
+  document.title = `LogDock 시안 — ${TITLES[v]}`;
+  document.body.classList.toggle('signed-out', v === 'login');
+  window.scrollTo({ top: 0 });
+}
+function render() { ({ login: renderLogin, invest: renderInvest, nearby: renderNearby, saved: renderSaved })[view](); }
+function applyDemo(s) {
+  demoState = s; closeDialog(); auditDown = false;
+  if (view === 'login') { loginState = s; loginBack = null; }
+  else if (view === 'invest') { invState = s; invSort = 'desc'; invUd = false; invRemoved = null; }
+  else if (view === 'nearby') { nbState = s === 'time' ? 'base' : s; nbMode = s === 'time' ? 'time' : 'stream'; nbLoaded = false; nbAfterLoaded = false; }
+  else { savedState = s; SAVED = SAVED0(); }
+  render(); syncDemo();
+  if (view === 'saved') {
+    if (s === 'archived') openRun(SAVED[3]);
+    if (s === 'edit' || s === 'conflict' || s === 'gone') openEdit(SAVED[1]);
+    if (s === 'delete') $('[data-del="s1"]').click();
+  }
+}
+function setView(v, state) { show(v); applyDemo(state || DEMO[v][0][0]); }
+function go(v, o = {}) {
+  closeDialog(); show(v);
+  if (v === 'invest') { invState = o.state || invState; demoState = invState; }
+  if (v === 'saved') demoState = savedState;
+  if (v === 'login') demoState = loginState;
+  render(); syncDemo();
+}
+
+/* ── 이벤트 ── */
+document.addEventListener('submit', (e) => { if (e.target.id === 'login-form') { e.preventDefault(); doLogin(); } });
+document.addEventListener('click', (e) => {
+  const t = e.target;
+  const g = t.closest('[data-go]');
+  if (g) { e.preventDefault(); go(g.dataset.go); return; }
+  const a = t.closest('[data-act]')?.dataset.act;
+  if (view === 'invest') {
+    const rm = t.closest('[data-rm]');
+    if (rm) { invRemoved = rm.dataset.rm; invState = 'left'; demoState = 'left'; renderInvest(); syncDemo(); toast('note', '안내', '알림 조사 모드를 벗어났습니다.', '조건을 고쳐 사건 당시 조건이 아닙니다. 사건 조건으로 다시 보려면 사건 상세의 조사 열기를 쓰세요.'); return; }
+    if (a === 'sort') { e.preventDefault(); invSort = invSort === 'desc' ? 'asc' : 'desc'; renderInvest(); return; }
+    if (a === 'ud-on') { e.preventDefault(); invUd = true; renderInvest(); return; }
+    if (a === 'ud-off') { invUd = false; renderInvest(); return; }
+    if (a === 'save-search') { toastAction('', '성공', '검색 조건을 새 저장 검색으로 저장했습니다.', '저장 검색 “주문·결제 timeout 조사 (2)” · 알림 조사의 수신 시각 고정 범위도 함께 저장했습니다.', '열기', () => go('saved')); return; }
+    if (a === 'more-rows') { toast('note', '안내', '시안에서는 더 불러올 행이 없습니다.', '제품에서는 다음 N행을 이어 붙입니다.'); return; }
+    if (a === 'relogin') { loginBack = { view: 'invest', state: 'base' }; loginState = 'expired'; show('login'); demoState = 'expired'; renderLogin(); syncDemo(); return; }
+    if (a === 'row') { toast('note', '안내', '이벤트 상세 패널(UI-03)은 로그 탐색 시안에서 봅니다.', '<a href="sample-ui02-log-search.html#detail">로그 탐색 시안 열기</a>'); return; }
+  }
+  if (view === 'nearby') {
+    const m = t.closest('[data-mode]');
+    if (m) { nbMode = m.dataset.mode; demoState = nbMode === 'time' ? 'time' : nbState; renderNearby(); syncDemo(); return; }
+    if (a === 'to-time') { e.preventDefault(); nbMode = 'time'; demoState = 'time'; renderNearby(); syncDemo(); return; }
+    if (a === 'more-before') { nbLoaded = true; renderNearby(); toast('note', '안내', '앞쪽으로 더 불러왔습니다.', '선택한 로그와 보던 위치는 그대로입니다.'); return; }
+    if (a === 'more-after') { if (nbState === 'gaps') { toast('note', '안내', '조회 한도 다음부터 이어서 불러왔습니다.', '시안에서는 목록이 바뀌지 않습니다.'); return; } nbAfterLoaded = true; renderNearby(); return; }
+    if (a === 'row') { toast('note', '안내', '이벤트 상세 패널(UI-03)은 로그 탐색 시안에서 봅니다.', '그 행을 가운데에 둔 주변 로그를 새로 열 수 있습니다.'); return; }
+  }
+  if (view === 'saved') {
+    const run = t.closest('[data-run]'); if (run) { openRun(SAVED.find((x) => x.id === run.dataset.run)); return; }
+    const ed = t.closest('[data-edit]'); if (ed) { opener = ed; openEdit(SAVED.find((x) => x.id === ed.dataset.edit)); return; }
+    const del = t.closest('[data-del]');
+    if (del) {
+      const s = SAVED.find((x) => x.id === del.dataset.del);
+      openDialog({ title: '저장 검색 삭제', action: '삭제', danger: true, target: [['대상', esc(s.name)]],
+        impacts: ['!삭제하면 바로 지워지고 되돌릴 수 없습니다.', '같은 계정을 쓰는 모든 사람의 목록에서 사라집니다.', '저장한 조건만 지웁니다. 로그는 지우지 않습니다.', '이 조건을 복사해 만든 알림 규칙은 그대로 남습니다.'],
+        onOk: () => { SAVED = SAVED.filter((x) => x !== s); renderSaved(); toast('', '성공', `${esc(s.name)}을(를) 삭제했습니다.`, ''); } });
+      return;
+    }
+    const tb = t.closest('[data-time]'); if (tb && editing) { editTime = tb.dataset.time; const nm = $('#e-name').value; renderEditDialog(); $('#e-name').value = nm; return; }
+    const bb = t.closest('[data-basis]'); if (bb && editing) { editBasis = bb.dataset.basis; const nm = $('#e-name').value; renderEditDialog(); $('#e-name').value = nm; return; }
+    const rm = t.closest('#dialog-root [data-rm]'); if (rm && editing) { editChips.splice(+rm.dataset.rm.slice(1), 1); const nm = $('#e-name').value; renderEditDialog(); $('#e-name').value = nm; return; }
+  }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('tr[data-act="row"]')) e.target.click(); });
+$$('#demo-view button').forEach((b) => b.onclick = () => setView(b.dataset.v));
+$('#demo-state').onchange = (e) => applyDemo(e.target.value);
+
+const themeBtn = document.getElementById('theme');
+function setTheme(t) { document.documentElement.dataset.theme = t; themeBtn.textContent = t === 'dark' ? '밝은 테마 보기' : '어두운 테마 보기'; }
+themeBtn.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+const q = new URLSearchParams(location.search);
+if (q.get('theme') === 'dark') setTheme('dark');
+const qv = DEMO[q.get('view')] ? q.get('view') : 'login';
+setView(qv, DEMO[qv].some(([v]) => v === q.get('state')) ? q.get('state') : undefined);
+</script>
+<script src="menu.js"></script>
+</body>
+</html>

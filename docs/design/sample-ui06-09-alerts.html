@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LogDock 시안 — 알림</title>
+<!-- 시안 표시용 글꼴. 제품은 글꼴 파일을 직접 제공하고 외부 CDN을 쓰지 않는다(design-system-v0.1.md 4절). -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="tokens-dark-preview.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* 이 시안의 배치. 화면 흐름 명세 5절 UI-06(알림 규칙 목록)·UI-07(규칙 편집)·UI-08(규칙 상세)·UI-09(사건 상세)와 CM-01·CM-03·CM-08의 정적 시안이다.
+     와이어프레임 정리표의 기본안(WQ-02·15·30~49)과 디자인 시스템 11·12절, API 계약 5.4·5.5·5.6절을 따른다. 규칙의 시간 구간·임계 숫자는 사용자가 넣은 값의 합성 예시이며 기본값이 아니다.
+     메일 재시도 시각은 Q12-09 일정(첫 시도 뒤 1·2·5·10·20분, 그다음 30분씩, 최대 12회)으로 계산했다. */
+  :root { --demo-h: 44px; }
+  body { min-width: 1080px; }
+  .page { display: grid; gap: var(--layout-gutter); padding: var(--space-4) var(--layout-pad-x) calc(var(--demo-h) + 48px); max-width: 1440px; align-content: start; }
+  .page[hidden] { display: none; }
+  .meta-line { font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .legend { margin: 0; padding: var(--space-3) var(--space-4); display: grid; gap: 4px; font-size: var(--text-sm); color: var(--color-text-secondary); border-top: 1px solid var(--color-border); }
+  .legend b { color: var(--color-text); font-weight: var(--font-weight-medium); }
+  .cell-sub { display: block; font-size: var(--text-sm); line-height: 16px; color: var(--color-text-secondary); margin-top: 3px; }
+  .datatable td.wrap { white-space: normal; padding-top: 7px; padding-bottom: 7px; }
+  .datatable a.name { color: var(--color-text); font-weight: var(--font-weight-medium); text-decoration: none; }
+  .datatable a.name:hover { color: var(--color-text-link); text-decoration: underline; text-underline-offset: 3px; }
+  .datatable tr.hl td { background: color-mix(in srgb, var(--color-warning-bg) 60%, transparent); }
+  .rules td { vertical-align: middle; }
+  .rules .cond { max-width: 0; }
+  .rules .cond-text { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .datatable th .th-sub { display: block; margin-top: 2px; font-weight: 400; font-size: 11px; line-height: 14px; }
+  .datatable thead th:has(.th-sub) { height: auto; padding-top: 6px; padding-bottom: 6px; vertical-align: bottom; }
+  .cell-sub a { color: var(--color-text-link); font-weight: var(--font-weight-medium); text-underline-offset: 3px; white-space: nowrap; }
+  .more-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4) 0; font-size: var(--text-sm); }
+  .listbar { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  .listbar .end { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
+  .chip.toggle { cursor: pointer; border: 0; padding: 0 10px; }
+  .chip.toggle[aria-pressed="true"] { background: var(--color-warning-bg); color: var(--color-warning-fg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-warning-border) 40%, transparent); font-weight: var(--font-weight-medium); }
+  .empty { padding: 48px var(--space-6); display: grid; justify-items: center; gap: var(--space-3); text-align: center; }
+  .empty h2 { margin: 0; font-size: var(--text-lg); }
+  .empty p { margin: 0; max-width: 520px; color: var(--color-text-secondary); }
+  .empty .row { display: flex; gap: var(--space-2); }
+
+  /* UI-07 편집 */
+  .edit { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--layout-gutter); align-items: start; }
+  .edit-main { display: grid; gap: var(--layout-gutter); }
+  .edit-side { display: grid; gap: var(--layout-gutter); position: sticky; top: calc(var(--size-topbar) + var(--space-4)); }
+  .form-body { padding: var(--space-4) var(--space-5) var(--space-5); display: grid; gap: var(--space-4); }
+  .cond-grid { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: var(--space-2) var(--space-4); align-items: start; }
+  .cond-grid > .k { font-size: var(--text-sm); color: var(--color-text-tertiary); font-weight: var(--font-weight-medium); min-height: 28px; display: flex; align-items: center; }
+  .cond-grid > .v { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 28px; }
+  .cond-grid > .v.col { display: grid; gap: 6px; justify-items: start; }
+  .cond-grid .any { color: var(--color-text-tertiary); font-size: var(--text-sm); }
+  .src-pair { display: inline-flex; align-items: center; gap: 6px; margin-right: var(--space-3); }
+  .src-pair > .lbl { font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .body-row { display: flex; align-items: center; gap: var(--space-2); }
+  .body-row .op { font-size: var(--text-sm); font-weight: var(--font-weight-medium); width: 30px; }
+  .body-row .op.ex { color: var(--color-danger-fg); }
+  .body-row .input { width: 260px; height: 28px; }
+  .body-row .check-row { font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .summary-line { padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--color-bg-page); font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .summary-line b { color: var(--color-text); font-weight: var(--font-weight-medium); }
+  .num-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+  .with-unit { display: flex; align-items: center; gap: var(--space-2); }
+  .with-unit .input { width: 96px; }
+  .with-unit .u { color: var(--color-text-secondary); font-size: var(--text-sm); white-space: nowrap; }
+  .quick { display: flex; gap: 4px; }
+  .quick .btn { min-width: 44px; }
+  .quick .btn[aria-pressed="true"] { color: var(--color-accent-fg); background: var(--color-accent-subtle); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 30%, transparent); }
+  .side-card .body { padding: var(--space-3) var(--space-4) var(--space-4); display: grid; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .side-card .big { font-size: var(--text-lg); color: var(--color-text); font-weight: var(--font-weight-strong); font-feature-settings: var(--font-feature-numeric); }
+  .side-card ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .rcpt td .btn { margin-left: 2px; }
+  .add-row { display: flex; gap: var(--space-2); align-items: flex-start; }
+  .add-row .field { flex: 1; max-width: 360px; }
+  .form-foot { position: sticky; bottom: var(--demo-h); z-index: 2; display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--color-bg-page); border-top: 1px solid var(--color-border); border-radius: 0 0 var(--radius-xl) var(--radius-xl); }
+  .form-foot .grow { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
+  .form-card { overflow: clip; }
+
+  /* UI-08·09 상세 */
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--layout-gutter); align-items: start; }
+  .section-card .kv { grid-template-columns: 148px 1fr; }
+  .section-card .kv dd > span { line-height: 22px; }
+  .card-pad { padding: var(--space-3) var(--space-4) var(--space-4); display: grid; gap: var(--space-3); }
+  .progress-head { display: flex; align-items: baseline; gap: var(--space-2); }
+  .progress-head .big { font-size: var(--text-lg); font-weight: var(--font-weight-strong); font-feature-settings: var(--font-feature-numeric); }
+  .p-note { margin: 0; font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .page-head .rule-sum { margin-top: 6px; font-size: var(--text-sm); color: var(--color-text-secondary); max-width: 860px; }
+  .datatable tbody tr.click { cursor: pointer; }
+  .datatable tbody tr.click:hover td { background: var(--color-bg-hover); }
+  details.legend-box { font-size: var(--text-sm); }
+  details.legend-box summary { cursor: pointer; padding: var(--space-3) var(--space-4); color: var(--color-text-secondary); font-weight: var(--font-weight-medium); }
+
+  .demo-switch { position: fixed; left: 0; right: 0; bottom: 0; height: var(--demo-h); display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+    padding: 0 var(--space-4); background: var(--color-toast-bg); color: var(--color-toast-text-secondary); font-size: var(--text-sm); box-shadow: var(--shadow-toast); z-index: var(--z-sticky); white-space: nowrap; }
+  .demo-switch .segmented { height: 30px; background: rgb(255 255 255 / 0.08); box-shadow: none; }
+  .demo-switch .segmented button { height: 26px; color: var(--color-toast-text-secondary); }
+  .demo-switch .segmented button[aria-pressed="true"] { background: rgb(255 255 255 / 0.16); color: var(--color-toast-text); box-shadow: none; }
+  .demo-switch select { height: 30px; border: 0; border-radius: var(--radius-full); padding: 0 var(--space-3); background: rgb(255 255 255 / 0.12); color: var(--color-toast-text); font-size: var(--text-sm); }
+  .toast-stack { position: fixed; right: var(--space-4); top: calc(var(--size-topbar) + var(--space-3)); display: grid; gap: var(--space-2); z-index: var(--z-toast); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7m0-7-7 7"/></symbol>
+  <symbol id="i-right" viewBox="0 0 16 16"><path d="m6.5 4.5 3.5 3.5-3.5 3.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><path d="m3 4.5 5 4 5-4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></symbol>
+</svg>
+
+<nav class="topbar" aria-label="주 메뉴">
+  <span class="brand"><span class="brand-mark" aria-hidden="true"></span>LogDock</span>
+  <div class="menu">
+    <a href="sample-ui02-log-search.html">로그 탐색</a>
+    <a href="sample-ui01-05-search-aids.html?view=saved">저장 검색</a>
+    <a href="#" aria-current="page" data-go="list">알림</a>
+    <a href="sample-ui10-11-connections.html">수집 연결 <span class="menu-count" aria-label="조치 필요 5건">5</span></a>
+    <div class="menu-drop"><button class="menu-btn" id="sys-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="sys-menu"><span>시스템</span><svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg></button>
+      <div class="listbox" id="sys-menu" role="menu" aria-label="시스템" hidden>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=storage">저장 공간과 보존</a>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=mail">메일 상태</a>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=audit">감사 이력</a>
+      </div></div>
+    <a href="sample-ui13-16-system.html?view=account">계정</a>
+  </div>
+  <div class="topbar-end"><span class="mono tertiary">Asia/Seoul</span><button class="btn ghost sm" id="theme" title="검토용: 어두운 테마는 첫 출시 범위가 아니다">어두운 테마 보기</button><span class="avatar" title="공용 계정">공용</span></div>
+</nav>
+<div id="banner-slot"></div>
+
+<main class="page" id="view-list"></main>
+<main class="page" id="view-edit" hidden></main>
+<main class="page" id="view-detail" hidden></main>
+<main class="page" id="view-incident" hidden></main>
+
+<div class="demo-switch" role="group" aria-label="시안 상태 바꾸기">시안
+  <div class="segmented" id="demo-view">
+    <button data-v="list" aria-pressed="true">목록 UI-06</button><button data-v="edit" aria-pressed="false">편집 UI-07</button><button data-v="detail" aria-pressed="false">상세 UI-08</button><button data-v="incident" aria-pressed="false">사건 UI-09</button>
+  </div>
+  <select id="demo-state" aria-label="시안 상태"></select>
+</div>
+<div class="toast-stack" id="toasts" aria-live="polite"></div>
+<div id="dialog-root"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const badge = (k, t) => `<span class="badge ${k}">${t}</span>`;
+const kv = (rows) => rows.filter(Boolean).map(([k, v]) => `<div><dt>${k}</dt><dd><span>${v}</span></dd></div>`).join('');
+const CHEV = '<svg class="icon" style="width:12px;height:12px"><use href="#i-right"/></svg>';
+
+/* 시각 계산(합성 데이터용) */
+const toSec = (hms) => { const [h, m, s = 0] = hms.split(':').map(Number); return h * 3600 + m * 60 + s; };
+const fromSec = (t) => { const d = ((t % 86400) + 86400) % 86400; return [Math.floor(d / 3600), Math.floor(d / 60) % 60, d % 60].map((n) => String(n).padStart(2, '0')).join(':'); };
+const addT = (hms, min, sec = 0) => fromSec(toSec(hms) + min * 60 + sec);
+const minus = (hms, m) => fromSec(Math.floor(toSec(hms) / 60) * 60 - m * 60);
+/* 메일 재시도: 첫 시도 뒤 1·2·5·10·20분, 그다음 30분씩. 최대 12회, 총 4시간 안(Q12-09). 마지막 시도는 첫 시도 약 3시간 38분 뒤 */
+const RETRY_AT = [0, 1, 3, 8, 18, 38, 68, 98, 128, 158, 188, 218];
+const lastTry = (first) => `<span class="cell-sub">마지막 시도 약 ${addT(first, 218).slice(0, 5)}</span>`;
+
+/* 상태 이름 → 색(디자인 시스템 3.4절에 더한 알림 행) */
+const TONE = {
+  '정상': 'success', '지속': 'danger', '해소 대기': 'warning', '꺼져 있어 평가하지 않음': 'neutral',
+  '완전': 'success', '일부 미관측': 'warning', '감시 불가': 'unknown', '대상 없음': 'warning',
+  '대기': 'info', '전송 중': 'info', '재시도 대기': 'warning', '전송 여부 불명': 'unknown', '메일 서버 수락': 'success', '최종 실패': 'danger', '취소': 'neutral',
+};
+const EVAL_DESC = { '지속': '오류가 계속되는 중', '해소 대기': '임계 아래로 내려와 해소를 기다리는 중' };
+const st = (s) => `${badge(TONE[s], s)}${EVAL_DESC[s] ? `<span class="cell-sub">${EVAL_DESC[s]}</span>` : ''}`;
+
+const SEED = () => ([
+  { id: 'r1', name: '주문·결제 timeout', on: true, eval: '해소 대기', quality: '완전', cond: '(서비스 주문 또는 결제) 그리고 (환경 운영) 그리고 (레벨 ERROR) 그리고 (본문에 "timeout" 포함) 그리고 (본문에 "health check" 제외) 그리고 (http.status 500 이상)', win: 15, th: 20, resolve: null, fired: '2026-11-05 09:41:00', deliv: { '메일 서버 수락': 3 }, last: '10:15:00',
+    rcpt: ['ops@example.com', 'order-team@example.com', 'oncall@example.com'], targets: 4, progress: [9, 15] },
+  { id: 'r2', name: '결제 ERROR', on: true, eval: '지속', quality: '일부 미관측', cond: '(서비스 결제) 그리고 (레벨 ERROR)', win: 5, th: 50, resolve: 10, fired: '2026-11-05 10:02:00', deliv: { '메일 서버 수락': 1, '재시도 대기': 1 }, last: '10:15:00',
+    rcpt: ['ops@example.com', 'pay-team@example.com'], targets: 2, unobs: [['결제 · app-02 · app-*.log', '읽기 일시정지', 'warning', '10:00:47']] },
+  { id: 'r3', name: '결제 5xx 응답', on: true, eval: '정상', quality: '완전', cond: '(서비스 결제) 그리고 (http.status 500 이상)', win: 60, th: 100, resolve: null, fired: '2026-11-04 22:10:00', resolvedAt: '2026-11-04 23:31:00', deliv: { '메일 서버 수락': 2 }, last: '10:15:00',
+    rcpt: ['ops@example.com', 'pay-team@example.com'], targets: 2 },
+  { id: 'r4', name: '주문 FATAL', on: true, eval: '정상', quality: '감시 불가', qsub: '대상 연결을 모두 관측하지 못함', cond: '(서비스 주문) 그리고 (레벨 FATAL)', win: 1, th: 1, resolve: null, fired: null, deliv: null, last: '10:15:00',
+    rcpt: ['ops@example.com', 'oncall@example.com'], targets: 2, unobs: [['주문 · app-01 · app.log', '관측 오래됨/미확인', 'unknown', '09:58:12'], ['주문 · app-02 · app.log', '관측 오래됨/미확인', 'unknown', '09:58:40']] },
+  { id: 'r5', name: '개발 환경 ERROR', on: false, eval: '꺼져 있어 평가하지 않음', quality: null, cond: '(환경 개발) 그리고 (레벨 ERROR)', win: 15, th: 30, resolve: null, fired: '2026-11-02 16:40:00', resolvedAt: '2026-11-02 17:12:00', deliv: { '메일 서버 수락': 1 }, last: null,
+    rcpt: ['dev-team@example.com'], targets: 1 },
+]).map((r) => ({ ...r, base: { quality: r.quality, qsub: r.qsub || '' } }));
+/* 편집 화면의 조건 칩(규칙마다) */
+const FORM0 = () => ({
+  r1: { svc: ['주문', '결제'], env: ['운영'], level: ['ERROR'], body: [{ op: '포함', v: 'timeout', cs: false }, { op: '제외', v: 'health check', cs: false }], field: [{ k: 'http.status', op: '이상', v: '500' }] },
+  r2: { svc: ['결제'], level: ['ERROR'] },
+  r3: { svc: ['결제'], field: [{ k: 'http.status', op: '이상', v: '500' }] },
+  r4: { svc: ['주문'], level: ['FATAL'] },
+  r5: { env: ['개발'], level: ['ERROR'] },
+});
+const offRule = (r) => ({ ...r, on: false, eval: '꺼져 있어 평가하지 않음', quality: null, qsub: '', last: null, progress: null });
+const applyFinal = (r) => Object.assign(r, { eval: '정상', progress: null, resolvedAt: '2026-11-05 10:24:00', deliv: { '메일 서버 수락': 1, '최종 실패': 2 }, unacked: 2 });
+const OFF_AT = '2026-11-05 10:21:40';
+
+let RULES = SEED();
+let FORM = FORM0();
+let view = 'list';
+let demoState = 'base';
+let listState = 'base';
+let evalFilter = '전체';
+let failFilter = false;
+let auditDown = false;
+let mailMissing = false;
+let FINAL_UNACKED = 0; /* 사건 단위 확인 전의 최종 실패 수(WQ-02·49) */
+let detailState = 'resolving';
+let detailRule = 'r1';
+let incCtx = { rule: 'r1', idx: 0 };
+let incState = 'base';
+let incMore = false;
+const ruleOf = (id) => RULES.find((x) => x.id === id) || RULES[0];
+
+function banner() {
+  const b = [];
+  if (listState === 'stopped') b.push(`<div class="banner danger" role="status"><strong>알림 평가 중단</strong><span>2026-11-05 10:20:00 (UTC+09:00)부터 알림 규칙을 평가하지 못하고 있습니다. 평가하지 못한 구간은 규칙 상세에 미평가 구간으로 남습니다.</span>${view === 'list' ? '' : '<a href="#" data-go="list">알림 규칙 보기</a>'}</div>`);
+  if (FINAL_UNACKED > 0) b.push(`<div class="banner" role="status"><strong>메일 최종 실패</strong><span>확인하지 않은 메일 최종 실패가 ${FINAL_UNACKED}건 있습니다. 재시도 상한(최대 12회, 총 4시간)이 지났거나 메일 서버가 받기를 거부해 보내지 못한 알림 메일입니다.</span>${view === 'list' && failFilter ? '' : '<a href="#" data-final-banner>알림 규칙 보기</a>'}</div>`);
+  if (auditDown) b.push('<div class="banner danger" role="status"><strong>감사 기록 장애</strong><span>2026-11-05 10:31:00 (UTC+09:00)부터 감사 기록을 저장하지 못하고 있습니다. 로그인·검색·수집·알림 평가는 계속되고 알림 규칙 변경은 보류됩니다.</span><a href="#">감사 이력 보기</a></div>');
+  $('#banner-slot').innerHTML = b.join('');
+}
+
+const delivSum = (d) => (d ? Object.entries(d).map(([k, n]) => (k === '최종 실패' ? `<strong style="color:var(--color-danger-fg)">${k} ${n}곳</strong>` : `${k} ${n}곳`)).join(' · ') : '<span class="dim">없음</span>');
+function delivText(r) {
+  /* 최종 실패 미확인은 그 사건(UI-09)으로 바로 간다(WQ-32) */
+  return `<span>${delivSum(r.deliv)}</span>${r.unacked ? `<span class="cell-sub">${badge('danger', `최종 실패 미확인 ${r.unacked}건`)} <a href="#" data-go="incident" data-rule="${r.id}" data-inc="0" data-state="final">사건 보기</a></span>` : ''}`;
+}
+
+/* ════ UI-06 목록 ═══════════════════════════════════════════ */
+function renderList() {
+  banner();
+  const v = $('#view-list');
+  const limit = listState === 'limit';
+  const total = RULES.length;
+  const head = `<div class="page-head"><div><h1>알림 규칙</h1><div class="meta"><span>규칙 ${limit ? 'N' : total}개(꺼진 규칙 포함) · 최대 N개</span><span aria-hidden="true">·</span><span>시각은 UTC+09:00 · 건수는 중앙 수신 시각 기준</span></div></div>
+    <div class="actions">${limit ? '<span class="disabled-reason" id="why-new">알림 규칙 수가 상한(N개)에 닿았습니다. 꺼진 규칙도 셉니다. 쓰지 않는 규칙을 지우면 만들 수 있습니다.</span><button class="btn primary" disabled aria-describedby="why-new"><svg class="icon"><use href="#i-plus"/></svg>새 규칙</button>'
+      : '<button class="btn primary" data-go="edit" data-mode="new"><svg class="icon"><use href="#i-plus"/></svg>새 규칙</button>'}</div></div>`;
+  if (listState === 'empty' || !RULES.length) {
+    v.innerHTML = head + `<section class="card empty"><h2>알림 규칙이 없습니다</h2><p>새 규칙을 만들거나, 로그 탐색에서 조건을 고른 뒤 <strong>현재 조건으로 알림 규칙 만들기</strong>를 누르세요.</p>
+      <div class="row"><button class="btn primary" data-go="edit" data-mode="new">새 규칙</button><a class="btn" style="text-decoration:none" href="sample-ui02-log-search.html">로그 탐색 열기</a></div></section>`;
+    return;
+  }
+  /* 켬/끔·감시 품질 필터는 첫 출시에 두지 않는다(WQ-37). 꺼진 규칙은 `전체`에만 세므로 그 수를 글자로 적는다 */
+  const counts = { 전체: total, 정상: 0, 지속: 0, '해소 대기': 0 };
+  RULES.forEach((r) => { if (counts[r.eval] !== undefined) counts[r.eval] += 1; });
+  const offN = RULES.filter((r) => !r.on).length;
+  const fails = RULES.filter((r) => r.unacked).length;
+  const rows = RULES.filter((r) => (evalFilter === '전체' || r.eval === evalFilter) && (!failFilter || r.unacked));
+  const stopped = listState === 'stopped';
+  const noMail = listState === 'nomail';
+  const callouts = [];
+  if (stopped) callouts.push(`<div class="callout">${badge('neutral', '10:19:00 기준')}<div><strong>평가가 멈춘 동안에는 새 알림 메일이 나가지 않습니다.</strong> 아래 평가 상태와 감시 품질은 마지막 성공 평가(10:19:00) 기준이라 지금과 다를 수 있습니다. 다시 시작되면 그때의 구간부터 평가하고 멈춘 동안의 회차는 다시 평가하지 않습니다. 평가 실패가 10분 이어지면 운영 수신 주소로 운영 메일 1통을 보냅니다. <a href="#">운영 수신 주소 보기</a></div></div>`);
+  if (noMail) callouts.push(`<div class="callout warning">${badge('warning', '메일 설정 없음')}<div><strong>메일 서버 설정이 없어 규칙을 켤 수 없습니다.</strong> 규칙은 저장돼 있습니다. 서버 운영자가 서버 설정에 메일 서버를 넣으면 켤 수 있습니다. <a href="#">메일 상태 보기</a></div></div>`);
+  const staleTh = stopped ? '<span class="th-sub">10:19:00 기준</span>' : '';
+  const table = `<section class="card section-card">
+    <div class="listbar" style="padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-border)">
+      <div class="segmented" role="group" aria-label="평가 상태로 거르기">${Object.entries(counts).map(([k, n]) => `<button data-eval="${k}" aria-pressed="${evalFilter === k}">${k} <span class="num">${n}</span></button>`).join('')}</div>
+      ${offN && !noMail ? `<span class="field-hint">꺼진 규칙 ${offN}개는 전체에만 셉니다</span>` : ''}
+      ${fails || failFilter ? `<button class="chip toggle" data-failfilter aria-pressed="${failFilter}">최종 실패 미확인 · 규칙 ${fails}개</button>` : ''}
+      ${failFilter || evalFilter !== '전체' ? '<button class="btn ghost sm" data-clear>필터 지우기</button>' : ''}
+    </div>
+    ${rows.length ? `<table class="datatable rules"><colgroup><col style="width:68px"><col style="width:170px"><col style="width:150px"><col style="width:132px"><col><col style="width:104px"><col style="width:180px"><col style="width:100px"></colgroup>
+    <thead><tr><th scope="col">켬/끔</th><th scope="col">이름</th><th scope="col">평가 상태${staleTh}</th><th scope="col">감시 품질${staleTh}</th><th scope="col">조건 요약</th><th scope="col">마지막 발화</th><th scope="col">마지막 전달 결과</th><th scope="col">마지막 성공 평가</th></tr></thead>
+    <tbody>${rows.map((r) => {
+      const qual = r.quality ? `${badge(TONE[r.quality], r.quality)}${r.qsub ? `<span class="cell-sub">${r.qsub}</span>` : ''}` : '<span class="dim">—</span>';
+      /* 스위치 이름표는 규칙 이름만 둔다. 켜짐 여부는 aria-checked가 알린다 */
+      const sw = noMail && !r.on ? `<button class="switch" role="switch" aria-checked="false" disabled aria-label="${esc(r.name)}" aria-describedby="why-nomail"></button>`
+        : `<button class="switch" role="switch" aria-checked="${r.on}" data-toggle="${r.id}" aria-label="${esc(r.name)}"></button>`;
+      return `<tr class="${r.unacked && failFilter ? 'hl' : ''}"><td><span class="switch-row">${sw}<span>${r.on ? '켬' : '끔'}</span></span></td>
+        <td class="wrap"><a class="name" href="#" data-go="detail" data-rule="${r.id}">${esc(r.name)}</a></td>
+        <td class="wrap">${st(r.eval)}</td>
+        <td class="wrap">${qual}</td>
+        <td class="cond"><span class="cond-text" title="${esc(r.cond)}">${esc(r.cond)}</span><span class="cell-sub">${r.win}분 동안 ${r.th}건 이상</span></td>
+        <td class="wrap">${r.fired ? r.fired.replace(' ', '<span class="cell-sub" style="margin-top:0">') + '</span>' : '<span class="dim">발화 없음</span>'}</td>
+        <td class="wrap">${delivText(r)}</td>
+        <td class="wrap">${r.last ? (stopped ? `10:19:00<span class="cell-sub">${badge('danger', '평가 중단')}</span>` : r.last) : '<span class="dim">—</span>'}</td></tr>`;
+    }).join('')}</tbody></table>`
+    : `<div class="empty"><h2>${failFilter ? '확인하지 않은 최종 실패가 있는 규칙이 없습니다' : `${evalFilter} 상태인 규칙이 없습니다`}</h2><button class="btn" data-clear>필터 지우기</button></div>`}
+    ${noMail ? '<p class="legend" id="why-nomail" style="color:var(--color-warning-fg)">꺼진 규칙: 메일 서버 설정이 없어 켤 수 없습니다.</p>' : ''}
+    <div class="legend">
+      <span><b>지속</b>은 조건을 넘는 오류가 계속되고 있다는 뜻입니다. 처음 넘었을 때 메일을 한 번 보냈고, 해소될 때까지 다시 보내지 않습니다.</span>
+      <span><b>해소 대기</b>는 건수가 임계 아래로 내려와 해소를 기다리는 중입니다. 그사이 다시 임계를 넘으면 지속으로 돌아가고 메일은 보내지 않습니다.</span>
+      <span><b>메일 서버 수락</b>은 메일 서버가 메일을 받았다는 뜻입니다. 받는 사람의 받은편지함에 도착했는지는 확인하지 못합니다.</span>
+      <span>마지막 전달 결과는 마지막 사건의 수신자별 전달 상태입니다. 앞선 사건에 확인하지 않은 최종 실패가 있으면 함께 보입니다.</span>
+    </div></section>`;
+  v.innerHTML = head + callouts.join('') + (failFilter ? `<div class="callout warning">${badge('warning', '최종 실패')}<div><strong>행의 사건 보기를 누르면 최종 실패한 수신 주소와 사유를 봅니다.</strong> 최종 실패한 수신자에게는 그 사건의 메일이 가지 않았고 다시 보내지 않습니다. 사건 화면에서 확인하면 배너에서 빠집니다.</div></div>` : '') + table;
+}
+
+/* 켬/끔: 끌 때만 영향 확인(UI-06 상태 6). 알림 규칙 변경이라 비밀번호를 다시 묻지 않는다(TD-17). 감사 장애 때 보류(WQ-35) */
+function toggleRule(id, after) {
+  const r = RULES.find((x) => x.id === id);
+  const apply = (on) => {
+    if (auditDown) { toast('hold', '보류', `감사 기록을 저장할 수 없어 규칙을 ${on ? '켜지' : '끄지'} 않았습니다.`, `규칙은 ${on ? '꺼진' : '켜진'} 채로 ${on ? '평가하지 않습니다' : '평가와 메일 발송을 계속합니다'}. 감사 기록이 복구된 뒤 다시 하세요. <a href="#">감사 이력 보기</a>`); after(); return; }
+    const wasOpen = r.eval === '지속' || r.eval === '해소 대기';
+    Object.assign(r, { on, eval: on ? '정상' : '꺼져 있어 평가하지 않음', quality: on ? (r.base.quality || '완전') : null, qsub: on ? r.base.qsub : '', last: null, progress: null, paused: false, failing: false });
+    if (!on && wasOpen && r.fired) r.closedOff = OFF_AT; /* 이어지던 사건을 `규칙 꺼짐`으로 닫는다(TD-07, WQ-45) */
+    toast('', '성공', on ? `${esc(r.name)}을(를) 켰습니다.` : `${esc(r.name)}을(를) 껐습니다.`, on ? '정상에서 시작합니다. 켜자마자 조건을 넘으면 새 메일이 갑니다.' : `아직 보내지 않은 메일을 취소했${wasOpen ? '고, 이어지던 사건은 규칙 꺼짐으로 닫았' : ''}습니다.`);
+    after();
+  };
+  if (!r.on) { apply(true); return; }
+  openDialog({
+    title: `규칙 끄기: ${esc(r.name)}`, action: '끄기', danger: true,
+    target: [['지금 평가 상태', `${badge(TONE[r.eval], r.eval)} ${EVAL_DESC[r.eval] ? `<span class="dim">${EVAL_DESC[r.eval]}</span>` : ''}`]],
+    impacts: ['!끄면 이 규칙을 평가하지 않아 조건을 넘어도 메일이 가지 않습니다.', '아직 보내지 않은 메일(대기·재시도 대기)은 취소합니다.', ...(r.eval === '지속' || r.eval === '해소 대기' ? ['지금 이어지는 사건은 규칙 꺼짐으로 닫습니다.'] : []), '다시 켜면 정상에서 시작합니다. 켜자마자 조건을 넘으면 새 메일이 갑니다.'],
+    onOk: () => apply(false),
+  });
+}
+
+/* ════ UI-07 편집 ═══════════════════════════════════════════ */
+function ruleForm(id) {
+  const r = ruleOf(id);
+  const f = FORM[id] || {};
+  const cp = (a) => (a || []).map((x) => (typeof x === 'object' ? { ...x } : x));
+  return { name: r.name, svc: cp(f.svc), server: cp(f.server), env: cp(f.env), target: cp(f.target), level: cp(f.level), body: cp(f.body), field: cp(f.field),
+    win: String(r.win), th: String(r.th), resolve: r.resolve ? String(r.resolve) : '', rcpt: r.rcpt.map((a) => ({ a, ok: (r.okSet || []).includes(a) })) };
+}
+const formOf = (e) => JSON.parse(JSON.stringify({ svc: e.svc, server: e.server, env: e.env, target: e.target, level: e.level, body: e.body, field: e.field }));
+const RULE_EMPTY = () => ({ name: '', svc: [], server: [], env: [], target: [], level: [], body: [], field: [], win: '', th: '', resolve: '', rcpt: [] });
+let E = null, E0 = null, E_SNAP = '', editMode = 'edit', editRule = 'r1', editState = 'base', errs = {}, testRes = null, noFilterOk = false, leaving = false;
+
+function condText(e) {
+  const p = [];
+  const g = (arr, k) => arr.length && p.push(`(${k} ${arr.join(' 또는 ')})`);
+  g(e.svc, '서비스'); g(e.server, '서버'); g(e.env, '환경'); g(e.target, '수집 대상'); g(e.level, '레벨');
+  e.body.forEach((b) => p.push(`(본문에 "${b.v}" ${b.op})`));
+  e.field.forEach((f) => p.push(`(${f.k} ${f.v} ${f.op})`));
+  return p.join(' 그리고 ');
+}
+const hasCond = (e) => ['svc', 'server', 'env', 'target', 'level', 'body', 'field'].some((k) => e[k].length);
+const condSummary = (e) => (hasCond(e) ? esc(condText(e)) : '조건 없음. 시간 범위 안의 모든 로그를 셉니다.');
+const changedCore = () => E0 && (condText(E) !== condText(E0) || E.win !== E0.win || E.th !== E0.th);
+function softItems() {
+  if (!E0) return [];
+  const it = [];
+  if (E.name !== E0.name) it.push('이름');
+  if (JSON.stringify(E.rcpt.map((r) => r.a)) !== JSON.stringify(E0.rcpt.map((r) => r.a))) it.push('수신 주소');
+  if (E.resolve !== E0.resolve) it.push('해소 대기');
+  return it;
+}
+function footNote() {
+  if (editMode !== 'edit') return '';
+  if (changedCore()) return '조건·시간 구간·임계를 바꿨습니다. 저장 전에 상태 영향을 알립니다.';
+  const it = softItems();
+  return it.length ? `바꾼 항목: ${it.join('·')}. 지금 상태(${ruleOf(editRule).eval})를 그대로 둡니다.` : '';
+}
+/* 떠나기 확인용 비교. `받았음`은 따로 바로 반영하므로(확인됨 표시) 비교에서 뺀다 */
+const snap = (e) => JSON.stringify({ ...e, rcpt: e.rcpt.map((r) => r.a) });
+const dirtyEdit = () => E && snap(E) !== E_SNAP;
+/* 저장된 규칙에 이미 있는 주소만 `받았음`을 바로 표시할 수 있다(POST /alert-rules/{id}/recipients/confirm) */
+const savedAddr = (a) => editMode === 'edit' && ruleOf(editRule).rcpt.includes(a);
+
+function chips(key, label) {
+  const arr = E[key];
+  return `<span class="src-pair"><span class="lbl">${label}</span>${arr.length ? arr.map((v, i) => `<span class="chip"><span class="chip-val">${esc(v)}</span><button aria-label="${label} ${esc(v)} 빼기" data-rm="${key}:${i}"><svg class="icon" style="width:12px;height:12px"><use href="#i-x"/></svg></button></span>`).join('') : '<span class="any">모두</span>'}<button class="btn ghost sm" data-add="${key}">더하기</button></span>`;
+}
+function renderEditForm() {
+  const isNew = editMode !== 'edit';
+  const err = (k) => (errs[k] ? `<span class="field-error">${errs[k]}</span>` : '');
+  const inv = (k) => (errs[k] ? ' aria-invalid="true"' : '');
+  const lv = E.level;
+  const levelNote = lv.includes('ERROR') && !lv.includes('미확인')
+    ? `<div class="callout warning">${badge('warning', '미확인 빠짐')}<div><strong>ERROR는 레벨 미확인 로그를 포함하지 않습니다.</strong> 레벨을 읽지 못한 로그는 이 규칙의 건수에 들어가지 않아, 레벨 없이 찍힌 오류는 알림이 오지 않을 수 있습니다. 함께 세려면 <button class="btn sm" data-add="level-unknown">미확인 더하기</button></div></div>`
+    : lv.includes('미확인') ? `<div class="callout">${badge('neutral', '안내')}<div>레벨을 읽지 못한 로그도 함께 셉니다. 레벨을 읽지 못한 INFO 같은 로그도 들어갈 수 있습니다.</div></div>` : '';
+  /* 같은 이름은 경고만 한다(TD-01). 수정할 때는 자기 자신을 뺀다 */
+  const sameName = E.name.trim() && RULES.find((r) => r.name === E.name.trim() && (isNew || r.id !== editRule));
+  const okCell = (r) => (r.ok ? badge('success', '확인됨') : badge('neutral', '확인 안 됨'));
+  return `
+  ${mailMissing ? `<div class="callout warning">${badge('warning', '메일 설정 없음')}<div><strong>메일 서버 설정이 없어 이 규칙은 꺼진 상태로 저장됩니다.</strong> 꺼진 동안에는 평가하지 않고 메일도 보내지 않습니다. 서버 운영자가 서버 설정에 메일 서버를 넣으면 규칙 목록에서 켤 수 있습니다. <a href="#">메일 상태 보기</a></div></div>` : ''}
+  ${editMode === 'from-search' ? `<div class="callout info">${badge('info', '조건 복사')}<div><strong>로그 탐색의 현재 조건을 복사했습니다.</strong> 이 규칙을 고쳐도 로그 탐색 조건과 저장 검색은 바뀌지 않고, 그쪽을 고쳐도 이 규칙은 바뀌지 않습니다. 검색 시간 범위는 옮기지 않았습니다. 알림은 아래에 넣는 시간 구간 동안 중앙 수신 시각 기준으로 셉니다.</div></div>` : ''}
+  <section class="card section-card"><header><h2>이름</h2></header><div class="form-body">
+    <div class="field" style="max-width:420px"><label class="field-label" for="f-name">이름 <span class="tertiary" style="font-weight:400">· 필수, 최대 100자</span></label><input class="input" id="f-name" value="${esc(E.name)}" maxlength="120"${inv('name')}>${err('name')}
+    ${sameName ? `<span class="field-hint">같은 이름의 규칙이 있습니다. 저장은 됩니다.</span>` : ''}</div>
+  </div></section>
+
+  <section class="card section-card"><header><h2>조건</h2><span class="end">건수는 중앙 수신 시각 기준</span></header><div class="form-body">
+    <p class="p-note">로그에 찍힌 발생 시각이 아니라 중앙이 처음 받은 시각으로 셉니다. 늦게 들어온 로그는 들어온 때의 구간에서 셉니다.</p>
+    <div class="cond-grid">
+      <span class="k">출처</span><div class="v">${chips('svc', '서비스')}${chips('server', '서버')}${chips('env', '환경')}${chips('target', '수집 대상')}</div>
+      <span class="k">레벨</span><div class="v col"><div>${chips('level', '레벨')}</div>${levelNote}</div>
+      <span class="k">본문</span><div class="v col">${E.body.map((b, i) => `<div class="body-row"><span class="op${b.op === '제외' ? ' ex' : ''}">${b.op}</span><input class="input code" value="${esc(b.v)}" data-body="${i}" aria-label="본문 ${b.op} 글자"><label class="check-row"><input type="checkbox" class="check" data-cs="${i}"${b.cs ? ' checked' : ''}>대소문자 구분</label><button class="btn ghost sm" data-rm="body:${i}">지우기</button></div>`).join('')}
+        <button class="btn ghost sm" data-add="body">+ 본문 조건</button><span class="field-hint">입력한 글자를 공백까지 한 덩어리로, 글자 그대로 찾습니다. % _ * ? \\ 따옴표도 글자로 찾습니다. 기본은 대소문자를 구분하지 않습니다.</span></div>
+      <span class="k">필드</span><div class="v col">${E.field.map((f, i) => `<div class="body-row"><span class="mono">${esc(f.k)}</span><span class="op" style="width:auto">${f.op}</span><input class="input num" style="width:96px" value="${esc(f.v)}" data-field="${i}" aria-label="${esc(f.k)} 값"><button class="btn ghost sm" data-rm="field:${i}">지우기</button></div>`).join('')}
+        <button class="btn ghost sm" data-add="field">+ 필드 조건</button><span class="field-hint">필드 조건은 정상 해석한 로그에만 적용합니다. 해석 실패 로그는 판정 불가로 빠지고 건수를 따로 보여 줍니다.</span></div>
+    </div>
+    <div class="summary-line"><b>조건 요약</b> · ${condSummary(E)}</div>
+    ${errs.nofilter ? `<div class="callout warning">${badge('warning', '조건 없음')}<div><strong>조건이 하나도 없습니다.</strong> 이 규칙은 모든 서비스·서버·환경·수집 대상·레벨의 로그를 셉니다. INFO 같은 로그까지 모두 세므로 임계를 금방 넘을 수 있습니다. <span style="display:inline-flex;gap:6px;margin-left:4px"><button class="btn sm" data-add="svc">조건 넣기</button><button class="btn sm primary" data-act="save-anyway">이대로 저장</button></span></div></div>` : ''}
+    <p class="field-hint" style="margin:0">이 규칙의 조건은 따로 저장됩니다. 저장 검색이나 로그 탐색의 조건을 고쳐도 이 규칙은 바뀌지 않고, 이 규칙을 고쳐도 저장 검색은 바뀌지 않습니다.</p>
+  </div></section>
+
+  <section class="card section-card"><header><h2>시간 구간과 임계</h2><span class="end">기본값이 없어 직접 넣습니다</span></header><div class="form-body">
+    <div class="num-row">
+      <div class="field"><label class="field-label" for="f-win">시간 구간 <span class="tertiary" style="font-weight:400">· 필수</span></label>
+        <div class="with-unit"><input class="input num" id="f-win" value="${esc(E.win)}" inputmode="numeric"${inv('win')}><span class="u">분</span></div>
+        <div class="quick" role="group" aria-label="시간 구간 빠른 선택">${[1, 5, 15, 60].map((m) => `<button class="btn sm" data-win="${m}" aria-pressed="${String(E.win) === String(m)}">${m}분</button>`).join('')}</div>${err('win')}<span class="field-hint">1~1,440분</span></div>
+      <div class="field"><label class="field-label" for="f-th">임계 건수 <span class="tertiary" style="font-weight:400">· 필수</span></label>
+        <div class="with-unit"><input class="input num" id="f-th" value="${esc(E.th)}" inputmode="numeric"${inv('th')}><span class="u">건 이상</span></div>${err('th')}<span class="field-hint">1 이상</span></div>
+      <div class="field"><label class="field-label" for="f-res">해소 대기 <span class="tertiary" style="font-weight:400">· 선택</span></label>
+        <div class="with-unit"><input class="input num" id="f-res" value="${esc(E.resolve)}" placeholder="${E.win ? `비우면 ${esc(E.win)}분` : ''}" inputmode="numeric"${inv('resolve')}><span class="u">분</span></div>${err('resolve')}<span class="field-hint">1~1,440분. 비우면 시간 구간과 같습니다.</span></div>
+    </div>
+  </div></section>
+
+  <section class="card section-card"><header><h2>수신 주소</h2><span class="end">${E.rcpt.length} / 최대 10개</span></header><div class="form-body">
+    ${E.rcpt.length ? `<table class="datatable rcpt"><colgroup><col><col style="width:150px"><col style="width:${testRes ? 300 : 0}px"><col style="width:160px"></colgroup>
+      <thead><tr><th scope="col">주소</th><th scope="col">주소 확인</th>${testRes ? '<th scope="col">테스트 메일 결과 (UTC+09:00)</th>' : '<th></th>'}<th scope="col"><span class="sr-only">동작</span></th></tr></thead>
+      <tbody>${E.rcpt.map((r, i) => `<tr><td>${esc(r.a)}</td><td class="wrap">${okCell(r)}</td><td class="wrap">${testRes ? testRes[i] || '' : ''}</td>
+        <td class="end">${!r.ok && testRes && /수락/.test(testRes[i] || '') ? (savedAddr(r.a) ? `<button class="btn sm" data-ack="${i}">받았음</button>` : '<span class="dim" style="font-size:var(--text-sm);margin-right:var(--space-2)">저장한 뒤 받았음 표시</span>') : ''}<button class="btn ghost sm" data-rm="rcpt:${i}">지우기</button></td></tr>`).join('')}</tbody></table>` : ''}
+    <div class="add-row"><div class="field"><label class="sr-only" for="f-addr">추가할 주소</label><input class="input" id="f-addr" placeholder="name@example.com"${inv('rcpt')} aria-describedby="f-addr-hint">${err('rcpt')}</div>
+      ${E.rcpt.length >= 10 ? '<button class="btn" disabled>추가(최대 10개)</button>' : '<button class="btn" data-act="add-rcpt">추가</button>'}
+      ${mailMissing ? '<button class="btn" disabled aria-describedby="why-test"><svg class="icon"><use href="#i-mail"/></svg>테스트 메일 발송</button><span class="disabled-reason" id="why-test">메일 설정이 없어 보낼 수 없습니다</span>'
+        : `<button class="btn" data-act="test"${E.rcpt.length ? '' : ' disabled'}><svg class="icon"><use href="#i-mail"/></svg>테스트 메일 발송${E.rcpt.length ? '' : '(주소 없음)'}</button>`}</div>
+    <span class="field-hint" id="f-addr-hint">1개 이상, 최대 10개. 더 많으면 메일링 리스트 주소를 쓰세요. 저장할 때 형식만 검사하므로 받을 수 있는 주소인지는 테스트 메일로 확인하세요. 새로 넣은 주소는 다음 사건부터 받고, 지운 주소로 아직 보내지 않은 메일은 취소합니다.</span>
+    ${testRes ? '<p class="p-note"><strong>메일 서버 수락</strong>은 메일 서버가 받았다는 뜻입니다. 도착했는지는 받는 사람이 받은편지함에서 확인하고 <strong>받았음</strong>을 누르세요. 받았음은 저장된 주소에 바로 반영되고 감사 기록에 남습니다. 아직 저장하지 않은 주소는 저장한 뒤 표시합니다. 보내지 못한 주소는 오타가 없는지 확인하세요.</p>' : ''}
+  </div></section>`;
+}
+function previewCount(win) { const w = +win; return w ? Math.round(18 * Math.sqrt(w / 15)) : null; }
+function renderEditSide() {
+  const w = +E.win, t = +E.th, res = +(E.resolve || E.win);
+  const ok = w >= 1 && w <= 1440 && t >= 1;
+  const cnt = ok ? previewCount(w) : null;
+  const isNew = editMode !== 'edit';
+  return `<section class="card section-card side-card"><header><h2>최근 구간의 실제 건수</h2></header><div class="body">
+    ${ok ? `<span class="big">${cnt}건 <span style="font-size:var(--text-sm);font-weight:400;color:var(--color-text-secondary)">· 임계 ${t}건 이상</span></span>
+      <span>${cnt >= t ? badge('danger', '지금 구간이면 충족') : badge('neutral', '지금 구간이면 충족하지 않음')}</span>
+      <span>2026-11-05 ${minus('10:15:00', w)} 이상 ~ 10:15:00 미만<br>(UTC+09:00, 중앙 수신 시각)</span>
+      <span>필드 조건을 판정할 수 없는 로그(판정 불가) 2건은 세지 않았습니다.</span>` : '<span>시간 구간과 임계 건수를 넣으면 최근 구간의 건수를 보여 줍니다.</span>'}
+  </div></section>
+  <section class="card section-card side-card"><header><h2>예상 동작</h2></header><div class="body">
+    ${ok ? `<ul>${isNew && mailMissing ? '<li><strong>메일 설정이 없어 꺼진 상태로 저장합니다.</strong> 켜기 전에는 평가하지 않고 메일도 보내지 않습니다. 아래는 켠 뒤의 동작입니다.</li>' : ''}
+      <li>평가할 때마다 중앙 수신 시각 기준 최근 ${w}분 동안 조건에 맞는 로그를 셉니다. ${t}건 이상이 되면 처음 한 번 수신 주소 ${E.rcpt.length}곳에 메일을 보냅니다.</li>
+      <li>계속 ${t}건 이상이면 <strong>지속</strong>입니다. 오류가 계속된다는 뜻이며 메일을 다시 보내지 않습니다.</li>
+      <li>${t}건 아래인 상태가 ${res}분(해소 대기) 이어지면 해소됩니다. 오류가 멈춰도 구간에서 빠지기까지 최대 ${w}분이 걸려, 해소까지 약 ${w + res}분이 걸릴 수 있습니다.</li>
+      <li>해소된 뒤 다시 ${t}건 이상이면 새 메일을 보냅니다. 해소됐을 때는 따로 메일을 보내지 않습니다.</li>
+      <li>레벨을 읽지 못한 로그(미확인)와 판정 불가 로그는 세지 않습니다.</li>
+      ${isNew && !mailMissing ? '<li>새 규칙은 켠 상태로 저장합니다. 저장하자마자 조건을 넘으면 메일이 갑니다.</li>' : ''}</ul>` : '<span>시간 구간과 임계 건수를 넣으면 이 규칙이 언제 메일을 보내는지 보여 줍니다.</span>'}
+  </div></section>`;
+}
+
+function renderEdit() {
+  banner();
+  const isNew = editMode !== 'edit';
+  const rule = ruleOf(editRule);
+  $('#view-edit').innerHTML = `<header><nav class="crumb" aria-label="위치"><a href="#" data-go="list">알림 규칙</a>${isNew ? '' : `${CHEV}<a href="#" data-go="detail" data-rule="${editRule}">${esc(rule.name)}</a>`}${CHEV}<span>${isNew ? '새 규칙' : '수정'}</span></nav>
+    <div class="page-head"><div><h1>${isNew ? '새 알림 규칙' : '알림 규칙 수정'}</h1><div class="meta"><span>알림 규칙 변경은 비밀번호를 다시 묻지 않고 감사 기록에 남깁니다</span></div></div></div></header>
+    ${editState === 'conflict-shown' ? `<div class="callout danger">${badge('danger', '저장하지 않음')}<div><strong>다른 사람이 먼저 이 규칙을 저장했습니다.</strong> 수정 화면을 연 뒤 2026-11-05 10:12:08 (UTC+09:00)에 이 규칙이 바뀌어 저장하지 않았습니다. 같은 계정을 쓰는 다른 사람이 고친 것일 수 있습니다. 바뀐 항목: 임계(20건 → 25건). 최신 규칙을 다시 불러온 뒤 고쳐서 저장하세요. 다시 불러오면 지금 고친 내용은 사라집니다. <button class="btn sm" data-act="reload">최신 규칙 다시 불러오기</button></div></div>` : ''}
+    <div class="edit"><div class="edit-main form-card">${renderEditForm()}
+      <div class="form-foot">${isNew ? '' : '<button class="btn ghost" data-act="delete" style="color:var(--color-danger-fg)">규칙 삭제</button>'}<span class="field-hint" id="foot-note">${footNote()}</span>
+        <span class="grow"><button class="btn" data-go="${isNew ? 'list' : 'detail'}" data-rule="${editRule}">취소</button><button class="btn primary" data-act="save">저장</button></span></div></div>
+      <aside class="edit-side" id="edit-side">${renderEditSide()}</aside></div>`;
+}
+function readEdit() {
+  if (!$('#f-name')) return;
+  E.name = $('#f-name').value; E.win = $('#f-win').value.trim(); E.th = $('#f-th').value.trim(); E.resolve = $('#f-res').value.trim();
+  $$('[data-body]').forEach((el) => { E.body[+el.dataset.body].v = el.value; });
+  $$('[data-field]').forEach((el) => { E.field[+el.dataset.field].v = el.value; });
+}
+function validateEdit() {
+  const e = {};
+  const int = (v) => /^\d+$/.test(v);
+  if (!E.name.trim()) e.name = '이름을 넣으세요.';
+  else if (E.name.trim().length > 100) e.name = `100자 이하로 넣으세요. 지금 ${E.name.trim().length}자입니다.`;
+  if (!E.win) e.win = '시간 구간을 넣으세요. 1~1,440분 사이의 정수입니다.';
+  else if (!int(E.win) || +E.win < 1 || +E.win > 1440) e.win = '1~1,440분 사이로 넣으세요.';
+  if (!E.th) e.th = '임계 건수를 넣으세요.';
+  else if (!int(E.th) || +E.th < 1) e.th = '1 이상의 정수를 넣으세요.';
+  if (E.resolve && (!int(E.resolve) || +E.resolve < 1 || +E.resolve > 1440)) e.resolve = '1~1,440분 사이로 넣거나 비우세요.';
+  if (!E.rcpt.length) e.rcpt = '수신 주소를 하나 이상 넣으세요.';
+  if (!Object.keys(e).length && !hasCond(E) && !noFilterOk) e.nofilter = true;
+  errs = e;
+  return Object.keys(e);
+}
+function doSave() {
+  if (editState === 'conflict') { editState = 'conflict-shown'; renderEdit(); window.scrollTo({ top: 0 }); return; }
+  if (auditDown) { toast('hold', '보류', '감사 기록을 저장할 수 없어 규칙 변경을 저장하지 않았습니다.', '지금 규칙이 그대로 평가되고 메일도 그대로 나갑니다. 입력한 내용은 이 화면에 남아 있으니 복구된 뒤 다시 저장하세요. <a href="#">감사 이력 보기</a>'); return; }
+  const isNew = editMode !== 'edit';
+  const rule = ruleOf(editRule);
+  const core = !isNew && changedCore();
+  const fields = () => ({ name: E.name.trim(), cond: hasCond(E) ? condText(E) : '조건 없음(모든 로그)', win: +E.win, th: +E.th, resolve: E.resolve ? +E.resolve : null, rcpt: E.rcpt.map((x) => x.a) });
+  const done = () => {
+    if (isNew) {
+      const id = `n${RULES.length + 1}`;
+      const off = mailMissing;
+      if (off && listState !== 'nomail') { listState = 'nomail'; RULES = RULES.map(offRule); }
+      RULES.push({ id, ...fields(), on: !off, eval: off ? '꺼져 있어 평가하지 않음' : '정상', quality: off ? null : '완전', qsub: '', fired: null, deliv: null, last: null, targets: 2, base: { quality: '완전', qsub: '' } });
+      FORM[id] = formOf(E);
+      if (off) toast('note', '안내', '규칙을 꺼진 상태로 저장했습니다.', '메일 설정이 없어 규칙을 켤 수 없습니다. <a href="#">메일 상태 보기</a>');
+      else toast('', '성공', '규칙을 만들고 켰습니다.', '저장하자마자 조건을 넘으면 메일이 갑니다.');
+      evalFilter = '전체'; failFilter = false; if (listState === 'empty' || listState === 'limit') listState = 'base';
+      E_SNAP = snap(E); go('list'); return;
+    }
+    Object.assign(rule, fields());
+    FORM[editRule] = formOf(E);
+    if (core) {
+      if ((rule.eval === '지속' || rule.eval === '해소 대기') && rule.fired) rule.closedCond = '2026-11-05 10:23:10'; /* 열린 사건은 `조건 수정`으로 닫는다(API 5.4) */
+      if (rule.on) Object.assign(rule, { eval: '정상', progress: null, paused: false, failing: false });
+    }
+    toast('', '성공', '규칙을 저장했습니다.', core ? '상태를 정상으로 되돌렸고 다음 평가부터 새 조건으로 판단합니다. 지난 사건의 남은 메일은 계속 보냅니다.' : '지금 상태를 그대로 둡니다.');
+    E_SNAP = snap(E); go('detail', { rule: editRule });
+  };
+  if (core) {
+    const items = [];
+    if (E.th !== E0.th) items.push(`임계(${E0.th}건 → ${E.th}건)`);
+    if (E.win !== E0.win) items.push(`시간 구간(${E0.win}분 → ${E.win}분)`);
+    if (condText(E) !== condText(E0)) items.push('조건');
+    openDialog({
+      title: '저장하면 규칙 상태가 정상으로 돌아갑니다', action: '저장', cancel: '돌아가서 고치기',
+      target: [['규칙', esc(E.name)], ['지금 상태', badge(TONE[rule.eval], rule.eval)], ['바꾼 항목', items.join(', ')]],
+      impacts: ['조건·시간 구간·임계를 바꿔 저장하면 상태를 정상으로 되돌리고, 다음 평가부터 새 조건으로 판단합니다.', '!저장 직후 새 조건을 넘으면 새 메일이 한 통 갑니다.', '이어지던 사건은 조건 수정으로 닫고 당시 조건 그대로 남습니다. 그 사건의 남은 메일은 계속 보냅니다.'],
+      onOk: done,
+    });
+    return;
+  }
+  done();
+}
+function confirmLeave(nav) {
+  const isNew = editMode !== 'edit';
+  openDialog({
+    title: isNew ? '새 규칙을 만들지 않고 나갈까요?' : '고친 내용을 버리고 나갈까요?', action: '버리고 나가기', cancel: '계속 고치기', danger: true, instant: true, focusCancel: true,
+    impacts: isNew ? ['!입력한 내용은 저장되지 않고 사라집니다.', '규칙은 만들어지지 않습니다.'] : ['!저장하지 않은 고친 내용은 사라집니다.', '규칙은 마지막으로 저장한 그대로 평가되고 메일도 그대로 나갑니다.'],
+    onOk: () => { leaving = true; nav.click(); leaving = false; },
+  });
+}
+
+/* ════ UI-08 상세 ═══════════════════════════════════════════ */
+/* 시안 상태는 규칙 r1에 덧씌운다 */
+const DETAIL = {
+  resolving: {},
+  normal: { eval: '정상', progress: null, resolvedAt: '2026-11-05 10:24:00', last: '10:40:00' },
+  firing: { eval: '지속', progress: null },
+  blind: { quality: '감시 불가', paused: true },
+  partial: { quality: '일부 미관측' },
+  failed: { last: '10:11:00', failing: true },
+  notarget: { eval: '정상', quality: '대상 없음', progress: null, resolvedAt: '2026-11-05 10:24:00', last: '10:40:00', targets: 0 },
+  noinc: { eval: '정상', progress: null, fired: null, deliv: null, noinc: true },
+};
+const UNOBS_ALL = [['주문 · app-01 · app.log', '관측 오래됨/미확인', 'unknown', '09:58:12'], ['주문 · app-02 · app.log', '관측 오래됨/미확인', 'unknown', '09:58:40'], ['결제 · app-01 · app.log', '전송 오류/보류', 'danger', '10:01:03'], ['결제 · app-02 · app-*.log', '읽기 일시정지', 'warning', '10:00:47']];
+const unobsOf = (r) => (!r.on ? [] : r.id === 'r1' ? (r.quality === '감시 불가' ? UNOBS_ALL : r.quality === '일부 미관측' ? [UNOBS_ALL[1]] : []) : (r.quality === '감시 불가' || r.quality === '일부 미관측' ? r.unobs || [] : []));
+/* r1의 지난 사건. 2026-11-03 사건은 일부 구간만 평가하고 발화했다(TD-13). 08:30 사건은 그때 임계가 25건이었다 */
+const OLD_R1 = [
+  { fired: '2026-11-04 21:10:00', win: '20:55:00 이상 ~ 21:10:00 미만', count: 22, th: 20, undecided: 0, quality: '일부 미관측', closed: '해소 · 2026-11-04 21:58:00', deliv: { '메일 서버 수락': 3 } },
+  { fired: '2026-11-04 08:30:00', win: '08:15:00 이상 ~ 08:30:00 미만', count: 25, th: 25, undecided: 0, quality: '완전', closed: '조건 수정 · 2026-11-04 09:02:10', deliv: { '메일 서버 수락': 3 } },
+  { fired: '2026-11-03 14:02:00', win: '13:47:00 이상 ~ 14:02:00 미만', count: 41, th: 20, undecided: 1, quality: '완전', closed: '해소 · 2026-11-03 15:20:00', deliv: { '메일 서버 수락': 3 }, partial: true },
+];
+const MORE_R1 = [
+  { fired: '2026-10-30 11:05:00', win: '10:50:00 이상 ~ 11:05:00 미만', count: 33, th: 20, undecided: 0, quality: '완전', closed: '해소 · 2026-10-30 11:47:00', deliv: { '메일 서버 수락': 3 } },
+  { fired: '2026-10-21 19:40:00', win: '19:25:00 이상 ~ 19:40:00 미만', count: 20, th: 20, undecided: 2, quality: '완전', closed: '규칙 꺼짐 · 2026-10-21 19:43:31', deliv: { '메일 서버 수락': 2, '취소': 1 } },
+];
+const closedOf = (r) => (r.closedOff ? `규칙 꺼짐 · ${r.closedOff}` : r.closedCond ? `조건 수정 · ${r.closedCond}` : r.resolvedAt ? `해소 · ${r.resolvedAt}` : null);
+function incidentsFor(r) {
+  if (!r.fired || r.noinc) return [];
+  const t = r.fired.slice(11);
+  const latest = r.id === 'r1'
+    ? { fired: r.fired, win: '09:26:00 이상 ~ 09:41:00 미만', count: 27, th: 20, undecided: 3, quality: '완전', closed: closedOf(r), deliv: r.deliv, oldest: '09:12:04 <span class="dim">(지연 도착 포함)</span>' }
+    : { fired: r.fired, win: `${minus(t, r.win)} 이상 ~ ${t} 미만`, count: r.th + Math.ceil(r.th * 0.3), th: r.th, undecided: 0, quality: r.base.quality || '완전', closed: closedOf(r), deliv: r.deliv };
+  return r.id === 'r1' ? [latest, ...OLD_R1, ...(incMore ? MORE_R1 : [])] : [latest];
+}
+function renderDetail() {
+  banner();
+  const r = ruleOf(detailRule);
+  const off = !r.on;
+  const res = r.resolve || r.win;
+  const unobs = unobsOf(r);
+  const head = `<header><nav class="crumb" aria-label="위치"><a href="#" data-go="list">알림 규칙</a>${CHEV}<span>${esc(r.name)}</span></nav>
+    <div class="page-head"><div><h1>${esc(r.name)}</h1><div class="rule-sum">${esc(r.cond)} · <strong>${r.win}분 동안 ${r.th}건 이상</strong>(중앙 수신 시각) · 해소 대기 ${res}분${r.resolve ? '' : '(비워 둠)'} · 수신 주소 ${r.rcpt.length}곳</div></div>
+    <div class="actions"><span class="switch-row"><button class="switch" role="switch" aria-checked="${r.on}" aria-label="${esc(r.name)}"${off && mailMissing ? ' disabled' : ` data-toggle="${r.id}"`}></button><span>${r.on ? '켬' : '끔'}</span></span><button class="btn" data-go="edit" data-mode="edit" data-rule="${r.id}">수정</button></div></div></header>`;
+  const evalSub = { '정상': r.last ? '지금 건수가 임계 아래입니다. 임계를 넘으면 메일을 한 번 보냅니다.' : '켠 뒤 첫 평가를 기다립니다. 정상에서 시작했습니다.',
+    '지속': `조건을 넘는 오류가 계속되고 있습니다. ${r.fired ? r.fired.slice(11) : ''}에 메일을 보냈고(<a href="#" data-go="incident" data-rule="${r.id}" data-inc="0">사건 보기</a>), 해소될 때까지 다시 보내지 않습니다.`,
+    '해소 대기': '건수가 임계 아래로 내려와 해소를 기다리는 중입니다.',
+    '꺼져 있어 평가하지 않음': '켜면 정상에서 시작합니다. 켜자마자 조건을 넘으면 메일이 갑니다.' }[r.eval];
+  const qSub = { '완전': `대상 연결 ${r.targets}개를 모두 관측함`, '일부 미관측': `대상 연결 ${r.targets}개 중 ${unobs.length}개를 관측하지 못함`, '감시 불가': `대상 연결 ${r.targets}개를 모두 관측하지 못함`, '대상 없음': '이 규칙이 셀 연결이 없음' }[r.quality];
+  const stats = `<section class="stat-grid" aria-label="평가 상태">
+    <div class="card stat"><span class="stat-label">평가 상태</span><span class="stat-value">${badge(TONE[r.eval], r.eval)}</span><span class="stat-sub">${evalSub}</span></div>
+    <div class="card stat"><span class="stat-label">감시 품질</span><span class="stat-value">${r.quality ? badge(TONE[r.quality], r.quality) : '<span class="dim">—</span>'}</span><span class="stat-sub">${r.quality ? qSub : '꺼져 있어 보지 않음'}</span></div>
+    <div class="card stat"><span class="stat-label">마지막 성공 평가</span><span class="stat-value">${r.last ? `2026-11-05 ${r.last} <span class="tertiary" style="font-weight:400;font-size:var(--text-sm)">(UTC+09:00)</span>` : '<span class="dim">—</span>'}</span><span class="stat-sub">${off ? '꺼져 있어 평가하지 않음' : !r.last ? '켠 뒤 아직 평가하지 않음' : r.failing ? `${badge('warning', '최근 평가 실패')} 아래 미평가 구간을 보세요` : '평가 정상'}</span></div></section>`;
+  const callout = off ? `<div class="callout">${badge('neutral', '꺼짐')}<div><strong>이 규칙은 꺼져 있어 평가하지 않고 메일도 보내지 않습니다.</strong> ${r.closedOff ? `${r.closedOff.slice(11)}에 끄면서 이어지던 사건을 규칙 꺼짐으로 닫고 아직 보내지 않은 메일을 취소했습니다. ` : ''}${mailMissing ? '메일 설정이 없어 지금은 켤 수 없습니다. <a href="#">메일 상태 보기</a>' : '켜면 정상에서 시작합니다.'}</div></div>`
+    : r.quality === '감시 불가' ? `<div class="callout">${badge('unknown', '감시 불가')}<div><strong>대상 연결을 모두 관측하지 못하고 있습니다.</strong> ${r.eval === '해소 대기' ? '해소 계산을 멈췄습니다. 지금 건수가 임계 아래로 보여도 오류가 없다는 뜻이 아닙니다. 관측이 돌아오면 멈춘 곳부터 이어서 셉니다.' : '대상의 로그가 들어오지 않아 오류가 나도 건수에 잡히지 않고, 조건을 넘어도 알림이 오지 않을 수 있습니다.'} 수집 끊김이 10분 지속되면 운영 수신 주소로 운영 메일 1통을 보냅니다.</div></div>`
+    : r.quality === '일부 미관측' ? `<div class="callout warning">${badge('warning', '일부 미관측')}<div><strong>계산은 계속합니다.</strong> 관측하지 못하는 연결의 오류는 건수에서 빠질 수 있어, 그 연결에 오류가 있어도 ${r.eval === '지속' ? '임계 아래로 내려가' : ''} 해소될 수 있습니다.</div></div>`
+    : r.quality === '대상 없음' ? `<div class="callout warning">${badge('warning', '대상 없음')}<div><strong>이 규칙이 셀 연결이 없습니다.</strong> 대상 연결이 모두 보관돼 건수를 0으로 평가하고 있어 오류가 나도 알림이 오지 않습니다. 조건을 고치거나 연결을 재활성하세요. <a href="#" data-go="edit" data-mode="edit" data-rule="${r.id}">규칙 수정</a> · <a href="sample-ui10-11-connections.html?state=archived">수집 연결 보기</a></div></div>` : '';
+  const prog = off ? '<p class="p-note">꺼져 있어 해소를 기다리지 않습니다.</p>'
+    : r.progress ? `<div class="progress-head"><span class="big">${r.progress[0]}분 / ${res}분</span>${r.paused ? badge('unknown', '멈춤') : `<span class="dim">임계(${r.th}건) 아래 유지${r.quality === '일부 미관측' ? ' · 계속 셈' : ''}</span>`}</div>
+      <div class="meter${r.paused ? ' paused' : ''}" role="meter" aria-valuemin="0" aria-valuemax="${res}" aria-valuenow="${r.progress[0]}" aria-label="해소 대기 진행"><i style="width:${(r.progress[0] / res) * 100}%"></i></div>
+      <p class="p-note">${r.paused ? '관측하지 못하는 동안의 평가는 해소 계산에 넣지 않고, 이미 쌓은 시간도 지우지 않습니다.' : r.failing ? '평가하지 못한 회차는 세지 않고, 이미 쌓은 시간은 지우지 않습니다.' : `이대로 ${res}분을 채우면 해소됩니다. 그사이 다시 ${r.th}건 이상이 되면 지속으로 돌아가고 메일은 보내지 않습니다.`}</p>`
+    : `<p class="p-note">${r.eval === '지속' ? `지금 구간 건수 ${Math.ceil(r.th * 1.5)}건 · 임계 ${r.th}건 이상이라 해소 대기를 시작하지 않았습니다.` : '해소를 기다리는 중이 아닙니다.'}</p>`;
+  const unevaluated = off ? '<p class="p-note" style="padding:var(--space-2) var(--space-3)">꺼진 동안은 평가하지 않습니다. 미평가 구간은 켜져 있을 때 평가하지 못한 회차만 남습니다.</p>'
+    : r.failing ? `<table class="datatable"><colgroup><col><col style="width:64px"><col style="width:260px"></colgroup><thead><tr><th scope="col">구간 (UTC+09:00)</th><th scope="col">회차</th><th scope="col">사유</th></tr></thead>
+      <tbody><tr><td>10:12:00 ~ 10:15:00</td><td>3회</td><td>평가 시간 초과</td></tr><tr><td>09:52:00</td><td>1회</td><td>회차 건너뜀(앞 회차가 늦게 끝남)</td></tr><tr><td>09:30:00 ~ 09:31:00</td><td>2회</td><td>평가 쿼리 실패</td></tr></tbody></table>
+      <p class="p-note" style="padding:var(--space-2) var(--space-3) 0">평가하지 못한 회차는 상태를 바꾸지 않고 해소 계산에도 넣지 않습니다. 놓친 회차는 다시 평가하지 않습니다. 평가 실패가 10분 지속되면 운영 수신 주소로 운영 메일 1통을 보냅니다.</p>`
+    : '<p class="p-note" style="padding:var(--space-2) var(--space-3)">최근 미평가 구간 없음</p>';
+  const unobsHTML = off ? '<p class="p-note" style="padding:var(--space-2) var(--space-3)">꺼져 있어 보지 않음</p>'
+    : unobs.length ? `<table class="datatable"><colgroup><col><col style="width:170px"><col style="width:96px"></colgroup><thead><tr><th scope="col">연결</th><th scope="col">관측 상태</th><th scope="col">마지막 보고</th></tr></thead>
+      <tbody>${unobs.map(([c, s, k, t]) => `<tr class="click" data-href="sample-ui12-connection-detail.html?state=stale"><td><a class="name" href="sample-ui12-connection-detail.html?state=stale">${c}</a></td><td>${badge(k, s)}</td><td>${t}</td></tr>`).join('')}</tbody></table>`
+    : `<p class="p-note" style="padding:var(--space-2) var(--space-3)">${r.quality === '대상 없음' ? '대상 연결 0개' : `없음 · 대상 연결 ${r.targets}개를 모두 관측함`}</p>`;
+  const incs = incidentsFor(r);
+  const inc = !incs.length ? `<div class="empty" style="padding:32px"><h2 style="font-size:var(--text-base)">사건이 없습니다</h2><p>이 규칙이 아직 조건을 넘은 적이 없거나, 지난 사건이 알림 이력 보관 기간(로그 보관 기간과 같은 6개월)을 지났습니다.</p></div>`
+    : `<table class="datatable"><colgroup><col style="width:160px"><col style="width:200px"><col style="width:140px"><col style="width:80px"><col style="width:120px"><col><col style="width:200px"></colgroup>
+      <thead><tr><th scope="col">발화 시각</th><th scope="col">평가 구간(중앙 수신 시각)</th><th scope="col">건수 / 임계</th><th scope="col">판정 불가</th><th scope="col">감시 품질</th><th scope="col">닫힌 이유·시각</th><th scope="col">전달 결과</th></tr></thead>
+      <tbody>${incs.map((x, i) => `<tr class="click" data-go="incident" data-rule="${r.id}" data-inc="${i}"><td><a class="name" href="#" data-go="incident" data-rule="${r.id}" data-inc="${i}">${x.fired}</a></td><td>${x.win}</td><td>${x.count}건 / ${x.th}건 이상${x.partial ? `<span class="cell-sub">${badge('warning', '일부 구간만 평가')}</span>` : ''}</td><td>${x.undecided}건</td><td>${badge(TONE[x.quality], x.quality)}</td><td>${x.closed || '<span class="dim">아직 해소되지 않음</span>'}</td><td class="wrap">${delivSum(x.deliv)}</td></tr>`).join('')}</tbody></table>
+      ${r.id === 'r1' ? `<div class="more-row">${incMore ? '<span class="dim">보관 기간(6개월) 안의 사건을 모두 불러왔습니다</span>' : `<button class="btn sm" data-act="more-inc">이전 사건 더 보기</button><span class="dim">최근 ${incs.length}건</span>`}</div>` : ''}`;
+  $('#view-detail').innerHTML = head + stats + callout + `<div class="cols">
+      <section class="card section-card"><header><h2>해소 대기 진행</h2></header><div class="card-pad">${prog}</div></section>
+      <section class="card section-card"><header><h2>${unobs.length && unobs.length === r.targets ? '미관측 대상(전부)' : '미관측 대상'}</h2></header><div class="body">${unobsHTML}</div></section></div>
+    <section class="card section-card"><header><h2>미평가 구간</h2><span class="end">알림 이력과 같이 로그 보관 기간 동안 보관</span></header><div class="body">${unevaluated}</div></section>
+    <section class="card section-card"><header><h2>사건 이력</h2><span class="end">사건을 누르면 당시 조건과 수신자별 전달 결과를 봅니다</span></header><div class="body">${inc}</div>
+      <p class="note">시각은 UTC+09:00입니다. 사건 이력은 로그 보관 기간(6개월)과 같이 보관합니다. 공간 부족으로 로그가 일찍 지워져도 사건 이력은 남습니다.</p></section>`;
+}
+
+/* ════ UI-09 사건 ═══════════════════════════════════════════ */
+/* r1의 09:41 사건에 쓰는 전달 결과. 시도 횟수와 시각은 RETRY_AT 일정을 따른다(첫 시도 09:41:04) */
+const RC = {
+  retry: [['ops@example.com', '메일 서버 수락', '1회', '09:41:04', '—', ''], ['order-team@example.com', '전송 중', `6회째 / 최대 12회${lastTry('09:41:04')}`, '10:19:02', '—', '앞선 시도: 메일 서버 연결 시간 초과(일시 오류)'], ['oncall@example.com', '재시도 대기', `5회 / 최대 12회${lastTry('09:41:05')}`, '09:59:05', '10:19:05', '메일 서버 연결 시간 초과(일시 오류)']],
+  unknown: [['ops@example.com', '메일 서버 수락', '1회', '09:41:04', '—', ''], ['order-team@example.com', '전송 여부 불명', `3회 / 최대 12회${lastTry('09:41:04')}`, '09:44:04', '09:46:30', '보내는 중에 LogDock 중앙이 다시 시작돼 결과를 알 수 없습니다. 다시 시작한 뒤 같은 메일 식별자로 다시 보냅니다.'], ['oncall@example.com', '전송 여부 불명', `3회 / 최대 12회${lastTry('09:41:05')}`, '09:44:05', '09:49:05', '메일 본문을 보낸 뒤 메일 서버 응답을 받기 전에 연결이 끊겼습니다. 같은 메일 식별자로 다시 보냅니다.']],
+  final: [['ops@example.com', '메일 서버 수락', '1회', '09:41:04', '—', ''], ['order-team@example.com', '최종 실패', '1회', '09:41:04', '—', '수신자 거부: 메일 서버가 이 주소를 받지 않았습니다(영구 오류). 다시 보내지 않습니다.'], ['oncall@example.com', '최종 실패', '12회', '13:19:05', '—', '재시도 상한(최대 12회, 총 4시간)에 닿았습니다. 마지막 오류: 메일 서버 연결 시간 초과']],
+  late: [['ops@example.com', '메일 서버 수락', '1회', '09:41:04', '—', ''], ['order-team@example.com', '메일 서버 수락', '1회', '09:41:04', '—', ''], ['oncall@example.com', '메일 서버 수락', '7회', '10:49:05', '—', `${badge('info', '해소 뒤 발송')} 메일에 발송 시점에 이미 해소됨과 지연 68분을 적어 보냄`]],
+};
+function genRows(r, inc) {
+  const sts = Object.entries(inc.deliv || {}).flatMap(([k, n]) => Array(n).fill(k));
+  const t = inc.fired.slice(11);
+  const now = toSec('10:15:30');
+  return r.rcpt.slice(0, sts.length).map((a, i) => {
+    const s = sts[i];
+    const first = addT(t, 0, 4 + i);
+    if (s === '재시도 대기') { const n = RETRY_AT.filter((m) => toSec(first) + m * 60 <= now).length; return [a, s, `${n}회 / 최대 12회${lastTry(first)}`, addT(first, RETRY_AT[n - 1]), addT(first, RETRY_AT[n]), '메일 서버 연결 시간 초과(일시 오류)']; }
+    if (s === '취소') return [a, s, '2회', addT(first, 1), '—', '규칙을 꺼서 다시 보내지 않았습니다. 앞선 시도: 메일 서버 연결 시간 초과'];
+    return [a, s, '1회', first, '—', ''];
+  });
+}
+function renderIncident() {
+  banner();
+  const r = ruleOf(incCtx.rule);
+  const all = incidentsFor(r);
+  const inc = all[incCtx.idx] || all[0];
+  const preset = r.id === 'r1' && incCtx.idx === 0 ? RC[incState] : null;
+  const rows = preset || genRows(r, inc);
+  const changed = inc.th !== r.th; /* 조건(필터·시간 구간·임계)이 바뀐 경우에만(WQ-15·48) */
+  const finalN = rows.filter((x) => x[1] === '최종 실패').length;
+  const hasState = (s) => rows.some((x) => x[1] === s);
+  const winStart = inc.win.slice(0, 8);
+  $('#view-incident').innerHTML = `<header><nav class="crumb" aria-label="위치"><a href="#" data-go="list">알림 규칙</a>${CHEV}<a href="#" data-go="detail" data-rule="${r.id}">${esc(r.name)}</a>${CHEV}<span>사건</span></nav>
+    <div class="page-head"><div><h1>사건 ${inc.fired} <span class="tertiary" style="font-size:var(--text-md);font-weight:400">(UTC+09:00)</span></h1>
+      <div class="meta">${changed ? `${badge('info', '현재 규칙과 다름')}<span>사건 뒤 임계가 ${inc.th}건 → ${r.th}건으로 바뀌었습니다. 아래는 발화 당시 규칙입니다.</span>` : '<span>발화 한 건의 기록입니다. 규칙을 고치거나 지워도 바뀌지 않습니다.</span>'}</div></div>
+      <div class="actions"><a class="btn primary" style="text-decoration:none" href="sample-ui01-05-search-aids.html?view=invest"><svg class="icon"><use href="#i-search"/></svg>조사 열기</a></div></div>
+    <p class="p-note" style="margin-top:6px">조사 열기는 로그 탐색을 알림 조사 모드로 엽니다. 지금 남아 있는 로그로 다시 찾으므로 보존 만료나 삭제 때문에 아래 당시 건수와 다를 수 있습니다.</p></header>
+    <div class="cols">
+      <section class="card section-card"><header><h2>당시 규칙</h2></header><div class="body"><dl class="kv">${kv([['이름', esc(r.name)], ['조건', esc(r.cond)], ['시간 구간 · 임계', `${r.win}분 · ${inc.th}건 이상`]])}</dl></div></section>
+      <section class="card section-card"><header><h2>평가 결과</h2></header><div class="body"><dl class="kv">${kv([
+        ['평가 구간', `${inc.win} <span class="dim">(중앙 수신 시각)</span>`], ['건수', `${inc.count}건 <span class="dim">(임계 ${inc.th}건 이상)</span>`],
+        inc.partial ? ['평가 범위', `${badge('warning', '일부 구간만 평가')} <span class="dim">일부 구간을 세지 못했지만 끝난 구간의 건수만으로 임계를 넘어 발화했습니다. 실제 건수는 이보다 많을 수 있습니다.</span>`] : null,
+        ['판정 불가', `${inc.undecided}건${inc.undecided ? ' <span class="dim">· 조건의 필드를 판정할 수 없어 세지 않음</span>' : ''}`], ['가장 오래된 발생 시각', inc.oldest || addT(winStart, 0, 41)],
+        ['감시 품질', badge(TONE[inc.quality], inc.quality)], ['닫힌 이유·시각', inc.closed || `<span class="dim">아직 해소되지 않음 · 규칙은 지금 ${r.eval}</span>`]])}</dl></div></section>
+    </div>
+    <section class="card section-card"><header><h2>수신자별 전달 결과</h2><span class="end">수신자는 발화할 때 정합니다</span></header>
+      ${finalN ? `<div style="padding:var(--space-3) var(--space-3) 0"><div class="callout danger">${badge('danger', `최종 실패 ${finalN}곳`)}<div><strong>이 수신자들은 이 사건의 메일을 받지 못했습니다.</strong> 이 사건의 메일은 더 보내지 않습니다. 규칙이 다시 조건을 넘어 새 사건이 생기면 그때 다시 보냅니다. 주소가 맞는지 <a href="#" data-go="edit" data-mode="edit" data-rule="${r.id}">규칙 수정</a>에서 테스트 메일로 확인하세요.
+        <div style="margin-top:var(--space-2);display:flex;gap:var(--space-2);align-items:center">${r.acked ? `${badge('neutral', '확인함')} <span>10:32:15에 확인했습니다. 메일 최종 실패 배너에서 빠졌습니다.</span>` : '<button class="btn sm" data-act="ack-final">최종 실패 확인</button><span>확인하면 메일 최종 실패 배너에서 빠집니다. 메일을 다시 보내지는 않습니다.</span>'}</div></div></div></div>` : ''}
+      <div class="body"><table class="datatable"><colgroup><col style="width:210px"><col style="width:140px"><col style="width:150px"><col style="width:96px"><col style="width:96px"><col></colgroup>
+      <thead><tr><th scope="col">수신 주소</th><th scope="col">전달 상태</th><th scope="col">시도</th><th scope="col">마지막 시도</th><th scope="col">다음 시도</th><th scope="col">사유·표시</th></tr></thead>
+      <tbody>${rows.map((x) => `<tr><td>${x[0]}</td><td>${badge(TONE[x[1]], x[1])}</td><td class="wrap">${x[2]}</td><td>${x[3]}</td><td>${x[4]}</td><td class="wrap">${x[5] || '<span class="dim">—</span>'}</td></tr>`).join('')}</tbody></table></div>
+      <div class="legend">
+        <span><b>메일 서버 수락</b>은 설정한 메일 서버가 메일을 받았다는 뜻입니다. 받는 사람의 받은편지함에 도착했는지는 확인하지 못합니다.</span>
+        ${hasState('재시도 대기') || hasState('전송 중') ? '<span>보내지 못한 수신자에게만 다시 보냅니다. 수신자마다 최대 12회, 총 4시간 안에서 다시 보내고, 그래도 안 되면 최종 실패로 표시합니다. 늦게 보내는 메일은 제목 앞에 늦어진 시간을 붙입니다.</span>' : ''}
+        ${hasState('전송 여부 불명') ? '<span><b>전송 여부 불명</b>은 메일이 이미 도착했을 수도 있다는 뜻입니다. 같은 메일 식별자로 다시 보내므로 받는 사람이 같은 메일을 두 통 받을 수 있습니다.</span>' : ''}
+        ${incState === 'late' ? '<span>해소된 뒤에도 보내지 못한 메일은 재시도 상한 안에서 계속 보냅니다. 이렇게 보낸 메일에는 발송 시점에 이미 해소됐다는 사실과 늦어진 시간을 적습니다.</span>' : ''}
+        <span>나중에 규칙에서 지운 주소로 아직 보내지 않은 메일은 취소하고, 새로 넣은 주소는 다음 사건부터 받습니다. 시각은 UTC+09:00입니다.</span>
+      </div></section>
+    <section class="card"><details class="legend-box"><summary>전달 상태 이름</summary>
+      <table class="datatable" style="margin:0 var(--space-1) var(--space-2)"><colgroup><col style="width:150px"><col><col style="width:360px"></colgroup><thead><tr><th scope="col">전달 상태</th><th scope="col">뜻</th><th scope="col">사유의 예</th></tr></thead><tbody>
+      ${[['대기', '메일 작업이 생겨 보낼 차례를 기다립니다.', '발화 직후'], ['전송 중', '메일 서버로 보내는 중입니다.', '—'], ['재시도 대기', '보내지 못해 다음 시도를 기다립니다. 수신자마다 최대 12회, 총 4시간까지 다시 보냅니다.', '연결 실패·시간 초과, 메일 서버 일시 오류, 인증·TLS 실패나 발신자 거부 같은 설정 문제'],
+        ['전송 여부 불명', '본문을 보냈는지 알 수 없습니다. 같은 메일 식별자로 다시 보내므로 같은 메일이 두 통 갈 수 있습니다.', '본문을 보낸 뒤 응답 없음, 보내는 중 중앙 재시작'],
+        ['메일 서버 수락', '설정한 메일 서버가 메일을 받았습니다. 받은편지함 도착을 확인한 것은 아닙니다. 다시 보내지 않습니다.', '—'], ['최종 실패', '더 보내지 않습니다.', '수신자 거부·본문 뒤 거부 같은 영구 오류, 재시도 상한 도달'], ['취소', '보내지 않기로 했습니다.', '규칙에서 이 주소를 지움, 규칙을 끄거나 지움']]
+        .map(([s, m, e]) => `<tr><td>${badge(TONE[s], s)}</td><td class="wrap">${m}</td><td class="wrap dim">${e}</td></tr>`).join('')}</tbody></table></details></section>`;
+}
+
+/* ── 확인 창(비밀번호 없음: 알림 규칙 변경은 재인증하지 않는다, TD-17) ── */
+let opener = null;
+function closeDialog() { $('#dialog-root').innerHTML = ''; document.removeEventListener('keydown', escClose); opener && opener.isConnected && opener.focus(); }
+function escClose(e) { if (e.key === 'Escape') closeDialog(); }
+function openDialog({ title, target, impacts, action, cancel = '취소', danger, onOk, instant, focusCancel }) {
+  opener = document.activeElement;
+  $('#dialog-root').innerHTML = `<div class="dialog-backdrop"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="dialog-head"><h2 id="dlg-t">${title}</h2></div>
+    <div class="dialog-body">${target ? `<dl class="kv" style="grid-template-columns:96px 1fr">${kv(target)}</dl>` : ''}
+      <div class="field"><span class="field-label">영향</span><ul class="impact">${impacts.map((i) => `<li${i.startsWith('!') ? ' class="strong"' : ''}>${i.replace(/^!/, '')}</li>`).join('')}</ul></div></div>
+    <div class="dialog-foot"><button class="btn" id="dlg-cancel">${cancel}</button><button class="btn ${danger ? 'danger' : 'primary'}" id="dlg-ok">${action}</button></div></div></div>`;
+  document.addEventListener('keydown', escClose);
+  $('#dlg-cancel').onclick = closeDialog;
+  $('.dialog-backdrop').onclick = (e) => { if (e.target.classList.contains('dialog-backdrop')) closeDialog(); };
+  /* 버리기처럼 서버에 보내지 않는 확인은 안전한 쪽(계속 고치기)에 초점을 둔다 */
+  (focusCancel ? $('#dlg-cancel') : $('#dlg-ok')).focus();
+  $('#dlg-ok').onclick = () => {
+    if (instant) { closeDialog(); onOk(); return; }
+    const ok = $('#dlg-ok'); ok.setAttribute('aria-busy', 'true'); ok.textContent = `${action} 중…`; $('#dlg-cancel').disabled = true;
+    document.removeEventListener('keydown', escClose);
+    setTimeout(() => { closeDialog(); onOk(); }, 600);
+  };
+}
+function toast(kind, label, title, text) {
+  const el = document.createElement('div');
+  el.className = `toast ${kind}`;
+  el.innerHTML = `<div class="toast-text"><span class="toast-kind">${label}</span><strong>${title}</strong>${text ? `<p>${text}</p>` : ''}</div><button class="btn ghost sm icon-only" aria-label="닫기"><svg class="icon"><use href="#i-x"/></svg></button>`;
+  el.querySelector('button').onclick = () => el.remove();
+  $('#toasts').prepend(el);
+  if (kind === '' || kind === 'note') setTimeout(() => el.remove(), 6000);
+}
+
+/* ════ 화면 전환과 시안 상태 ════════════════════════════════
+   setView: 시안 막대에서 고름. 데이터를 처음 상태로 되돌린다.
+   go: 화면 안의 링크로 이동. 켬/끔·저장 같은 바뀐 상태를 그대로 둔다. */
+const DEMO = {
+  list: [['base', '기본'], ['empty', '빈 목록'], ['stopped', '평가 중단'], ['final', '메일 최종 실패로 들어옴'], ['limit', '규칙 수 상한'], ['nomail', '메일 설정 없음'], ['audit', '감사 장애(켬/끔 보류)']],
+  edit: [['base', '규칙 수정'], ['new', '새 규칙'], ['from-search', '현재 조건으로 만들기'], ['errors', '입력 오류'], ['nofilter', '조건 없는 새 규칙'], ['nomail', '메일 설정 없음(꺼진 채 저장)'], ['audit', '감사 장애로 저장 보류'], ['conflict', '다른 사람이 먼저 저장']],
+  detail: [['resolving', '해소 대기'], ['normal', '정상'], ['firing', '지속'], ['blind', '감시 불가'], ['partial', '일부 미관측'], ['failed', '평가 실패 회차'], ['notarget', '대상 없음'], ['noinc', '사건 없음']],
+  incident: [['base', '기본'], ['retry', '재시도 중'], ['unknown', '전송 여부 불명'], ['final', '최종 실패'], ['late', '해소 뒤 보낸 메일'], ['changed', '현재 규칙과 다름'], ['partial', '일부 구간만 평가']],
+};
+function syncDemo() {
+  $$('#demo-view button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === view)));
+  const extra = demoState === '' ? `<option value="" selected>${view === 'detail' ? `목록에서 연 규칙: ${esc(ruleOf(detailRule).name)}` : '사건 이력에서 연 사건'}</option>` : '';
+  $('#demo-state').innerHTML = extra + DEMO[view].map(([v, t]) => `<option value="${v}"${v === demoState ? ' selected' : ''}>${t}</option>`).join('');
+}
+function startEdit(mode, id = 'r1') {
+  editMode = mode; editRule = id; errs = {}; testRes = null; noFilterOk = false;
+  E = mode === 'edit' ? ruleForm(id) : mode === 'from-search' ? { ...ruleForm('r1'), name: '', win: '', th: '', resolve: '', rcpt: [] } : RULE_EMPTY();
+  E0 = mode === 'edit' ? ruleForm(id) : null;
+  E_SNAP = snap(E);
+}
+function show(v) {
+  view = v;
+  ['list', 'edit', 'detail', 'incident'].forEach((k) => { $('#view-' + k).hidden = k !== v; });
+  document.title = `LogDock 시안 — ${{ list: '알림 규칙', edit: '알림 규칙 편집', detail: '알림 규칙 상세', incident: '사건 상세' }[v]}`;
+  window.scrollTo({ top: 0 });
+}
+function applyDemo(s) {
+  demoState = s; closeDialog(); auditDown = false; mailMissing = false; FINAL_UNACKED = 0; RULES = SEED(); FORM = FORM0(); incMore = false;
+  evalFilter = '전체'; failFilter = false;
+  if (view !== 'list') listState = 'base';
+  if (view === 'list') {
+    listState = s;
+    if (s === 'empty') RULES = [];
+    if (s === 'final') { FINAL_UNACKED = 2; applyFinal(RULES[0]); RULES.forEach((r) => { if (r.last) r.last = '13:50:00'; }); failFilter = true; }
+    if (s === 'nomail') { mailMissing = true; RULES = RULES.map(offRule); }
+    if (s === 'audit') auditDown = true;
+    renderList();
+  } else if (view === 'edit') {
+    editState = s;
+    if (s === 'nomail') mailMissing = true;
+    startEdit(['new', 'errors', 'nofilter', 'nomail'].includes(s) ? 'new' : s === 'from-search' ? 'from-search' : 'edit', 'r1');
+    if (s === 'audit') auditDown = true;
+    if (s === 'nofilter') { E.name = '모든 로그 급증'; E.win = '5'; E.th = '1000'; E.rcpt = [{ a: 'ops@example.com', ok: false }]; validateEdit(); }
+    renderEdit();
+    if (s === 'errors') { E.win = '1500'; E.th = '0'; E.resolve = '2000'; validateEdit(); renderEdit(); }
+  } else if (view === 'detail') { detailState = s; detailRule = 'r1'; Object.assign(RULES[0], DETAIL[s]); renderDetail(); }
+  else {
+    incState = s; incCtx = { rule: 'r1', idx: s === 'partial' ? 3 : 0 };
+    if (s === 'final') { FINAL_UNACKED = 2; applyFinal(RULES[0]); }
+    if (s === 'late') Object.assign(RULES[0], { eval: '정상', progress: null, resolvedAt: '2026-11-05 10:24:00' });
+    if (s === 'changed') RULES[0].th = 25;
+    renderIncident();
+  }
+  syncDemo();
+}
+function setView(v, state) { show(v); applyDemo(state || DEMO[v][0][0]); }
+function go(v, o = {}) {
+  closeDialog();
+  show(v);
+  if (v === 'edit') { const m = o.mode || 'edit'; editState = m === 'new' ? 'new' : 'base'; startEdit(m, o.rule || detailRule); demoState = editState; renderEdit(); }
+  else if (v === 'list') { demoState = failFilter ? 'final' : listState; renderList(); }
+  else if (v === 'detail') { detailRule = o.rule || detailRule; incMore = false; demoState = detailRule === 'r1' ? detailState : ''; renderDetail(); }
+  else {
+    const rule = o.rule || 'r1'; const idx = +(o.inc || 0);
+    incCtx = { rule, idx };
+    const r = ruleOf(rule);
+    incState = o.state || (rule === 'r1' && idx === 0 && r.deliv && r.deliv['최종 실패'] ? 'final' : 'base');
+    demoState = rule === 'r1' && idx === 0 ? incState : '';
+    renderIncident();
+  }
+  syncDemo();
+}
+function rerender() { ({ list: renderList, edit: renderEdit, detail: renderDetail, incident: renderIncident })[view](); }
+
+/* ── 이벤트 ── */
+document.addEventListener('click', (e) => {
+  const t = e.target;
+  /* 편집 중 저장하지 않고 떠나면 확인한다 */
+  if (view === 'edit' && !leaving && !t.closest('.dialog')) {
+    const nav = t.closest('[data-go], .topbar a[href$=".html"]');
+    if (nav) { readEdit(); if (dirtyEdit()) { e.preventDefault(); confirmLeave(nav); return; } }
+  }
+  const g = t.closest('[data-go]');
+  if (g && !t.closest('.switch')) { e.preventDefault(); const d = g.dataset; go(d.go, { rule: d.rule, inc: d.inc, state: d.state, mode: d.mode }); return; }
+  if (t.closest('[data-final-banner]')) { e.preventDefault(); failFilter = true; evalFilter = '전체'; if (listState === 'empty') listState = 'base'; go('list'); return; }
+  const sw = t.closest('[data-toggle]');
+  if (sw) { toggleRule(sw.dataset.toggle, rerender); return; }
+  const ev = t.closest('[data-eval]');
+  if (ev) { evalFilter = ev.dataset.eval; renderList(); return; }
+  if (t.closest('[data-failfilter]')) { failFilter = !failFilter; renderList(); return; }
+  if (t.closest('[data-clear]')) { evalFilter = '전체'; failFilter = false; renderList(); return; }
+  const tr = t.closest('tr.click[data-href]');
+  if (tr && !t.closest('a')) { location.href = tr.dataset.href; return; }
+  if (view === 'detail' && t.closest('[data-act="more-inc"]')) { incMore = true; renderDetail(); return; }
+  /* 편집 화면 */
+  if (view === 'edit') {
+    const rm = t.closest('[data-rm]');
+    if (rm) { readEdit(); const [k, i] = rm.dataset.rm.split(':'); E[k].splice(+i, 1); errs = {}; if (k === 'rcpt') testRes = null; renderEdit(); return; }
+    const ad = t.closest('[data-add]');
+    if (ad) {
+      readEdit(); const k = ad.dataset.add;
+      const ADD = { svc: '정산', server: 'app-01', env: '운영', target: '/var/app/order/app.log', level: E.level.includes('ERROR') ? 'WARN' : 'ERROR', 'level-unknown': '미확인' };
+      if (k === 'body') E.body.push({ op: '포함', v: '', cs: false });
+      else if (k === 'field') E.field.push({ k: 'http.status', op: '이상', v: '' });
+      else { const key = k === 'level-unknown' ? 'level' : k; if (!E[key].includes(ADD[k])) E[key].push(ADD[k]); }
+      errs = {}; renderEdit(); return;
+    }
+    const w = t.closest('[data-win]');
+    if (w) { readEdit(); E.win = w.dataset.win; delete errs.win; renderEdit(); return; }
+    /* `받았음`은 저장된 주소에 바로 반영하는 따로 된 요청이다. 감사에 남기므로(API 5.6절) 감사 장애 때 보류한다 */
+    const ack = t.closest('[data-ack]');
+    if (ack) {
+      readEdit(); const r = E.rcpt[+ack.dataset.ack];
+      if (auditDown) { toast('hold', '보류', '감사 기록을 저장할 수 없어 받았음을 표시하지 않았습니다.', '복구된 뒤 다시 누르세요. <a href="#">감사 이력 보기</a>'); return; }
+      r.ok = true; const rule = ruleOf(editRule); rule.okSet = [...(rule.okSet || []), r.a]; renderEdit(); toast('', '성공', `${esc(r.a)}를 확인됨으로 표시했습니다.`, '받는 사람이 받은편지함에서 메일을 확인한 주소입니다.'); return;
+    }
+    const act = t.closest('[data-act]');
+    if (act) {
+      readEdit(); const a = act.dataset.act;
+      if (a === 'add-rcpt') {
+        const v = $('#f-addr').value.trim();
+        const norm = v.toLowerCase();
+        errs = {};
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) errs.rcpt = '메일 주소 형식이 아닙니다.';
+        else if (E.rcpt.some((r) => r.a.toLowerCase() === norm)) errs.rcpt = '이미 넣은 주소입니다.';
+        else E.rcpt.push({ a: v, ok: false });
+        renderEdit(); if (errs.rcpt) { $('#f-addr').value = v; $('#f-addr').focus(); } return;
+      }
+      if (a === 'test') {
+        testRes = E.rcpt.map(() => `${badge('info', '전송 중')}`); renderEdit();
+        setTimeout(() => { testRes = E.rcpt.map((r, i) => (/order-team/.test(r.a) ? `${badge('danger', '보내지 못함')} <span class="dim">수신자 거부: 메일 서버가 이 주소를 받지 않았습니다.</span>` : i === 2 ? `${badge('info', '전송 중')}` : `${badge('success', '메일 서버 수락')} <span class="dim">10:16:02</span>`)); if (view === 'edit') { readEdit(); renderEdit(); } }, 900);
+        return;
+      }
+      if (a === 'save' || a === 'save-anyway') {
+        if (a === 'save-anyway') noFilterOk = true;
+        const bad = validateEdit(); renderEdit();
+        if (bad.length) { const first = { name: '#f-name', win: '#f-win', th: '#f-th', resolve: '#f-res', rcpt: '#f-addr' }[bad[0]]; if (first) $(first).focus(); else $('[data-act="save-anyway"]')?.focus(); return; }
+        doSave(); return;
+      }
+      if (a === 'delete') {
+        const rule = ruleOf(editRule);
+        openDialog({ title: `알림 규칙 삭제: ${esc(rule.name)}`, action: '삭제', danger: true,
+          impacts: ['!규칙을 지우면 더 평가하지 않고, 아직 보내지 않은 메일은 취소합니다. 지금 이어지는 사건은 규칙 삭제로 닫습니다.', '지난 사건 이력과 이미 보낸 메일의 조사 링크는 남습니다. 알림 이력은 로그 보관 기간(6개월)과 같이 보관합니다.', '저장 검색은 바뀌지 않습니다.'],
+          onOk: () => { if (auditDown) { toast('hold', '보류', '감사 기록을 저장할 수 없어 규칙을 지우지 않았습니다.', '규칙은 그대로 평가되고 메일도 나갑니다.'); return; } RULES = RULES.filter((x) => x.id !== editRule); toast('', '성공', '규칙을 삭제했습니다.', '사건 이력은 남습니다.'); E_SNAP = snap(E); go('list'); } });
+        return;
+      }
+      if (a === 'reload') { const r1 = ruleOf('r1'); Object.assign(r1, { th: 25, eval: '정상', progress: null }); startEdit('edit', 'r1'); editState = 'base'; renderEdit(); toast('note', '안내', '최신 규칙을 다시 불러왔습니다.', '임계가 25건으로 바뀌어 있습니다.'); return; }
+    }
+  }
+  if (view === 'incident' && t.closest('[data-act="ack-final"]')) { const r = ruleOf(incCtx.rule); r.acked = true; r.unacked = 0; FINAL_UNACKED = 0; renderIncident(); toast('', '성공', '최종 실패를 확인했습니다.', '메일 최종 실패 배너에서 빠졌습니다.'); return; }
+});
+document.addEventListener('change', (e) => { if (view === 'edit' && e.target.matches('[data-cs]')) { readEdit(); E.body[+e.target.dataset.cs].cs = e.target.checked; $('#foot-note').textContent = footNote(); } });
+document.addEventListener('input', (e) => {
+  if (view !== 'edit') return;
+  if (e.target.matches('#f-win, #f-th, #f-res, [data-body], [data-field], #f-name')) { readEdit(); $('#edit-side').innerHTML = renderEditSide(); $('#foot-note').textContent = footNote(); $$('[data-win]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.win === E.win))); }
+});
+$$('#demo-view button').forEach((b) => b.onclick = () => setView(b.dataset.v));
+$('#demo-state').onchange = (e) => { if (e.target.value) applyDemo(e.target.value); };
+
+const themeBtn = document.getElementById('theme');
+function setTheme(t) { document.documentElement.dataset.theme = t; themeBtn.textContent = t === 'dark' ? '밝은 테마 보기' : '어두운 테마 보기'; }
+themeBtn.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+const q = new URLSearchParams(location.search);
+if (q.get('theme') === 'dark') setTheme('dark');
+const qv = DEMO[q.get('view')] ? q.get('view') : 'list';
+setView(qv, DEMO[qv].some(([v]) => v === q.get('state')) ? q.get('state') : undefined);
+if (location.hash === '#off' && view === 'list') toggleRule('r2', rerender);
+if (location.hash === '#test' && view === 'edit') $('[data-act="test"]').click();
+</script>
+<script src="menu.js"></script>
+</body>
+</html>

@@ -65,10 +65,13 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
   background: var(--color-warning-bg); color: var(--color-warning-fg); border-bottom: 1px solid var(--color-border); font-size: var(--text-sm);
 }
 .banner.danger { background: var(--color-danger-bg); color: var(--color-danger-fg); }
-.banner a { color: inherit; font-weight: var(--font-weight-medium); margin-left: auto; text-underline-offset: 3px; }
+.banner > strong { flex: none; white-space: nowrap; }
+.banner a { color: inherit; font-weight: var(--font-weight-medium); margin-left: auto; text-underline-offset: 3px; white-space: nowrap; }
 /* 지나간 일 배너(감사 기록 공백, 조기 삭제 발생)는 사람이 확인할 때까지 남는다(WQ-03). 이동 링크 오른쪽에 확인 버튼 */
 .banner .ack { height: 22px; padding: 0 8px; border: 0; border-radius: var(--radius-sm); background: rgb(255 255 255 / 0.6); color: inherit; font-size: var(--text-sm); font-weight: var(--font-weight-medium); cursor: pointer; box-shadow: inset 0 0 0 1px currentColor; }
 .banner a + .ack { margin-left: var(--space-2); }
+/* 어두운 테마 미리보기에서는 흰 바탕이 밝은 글자를 가려 바탕을 빼고 테두리만 둔다(2026-11-06) */
+:root[data-theme="dark"] .banner .ack { background: transparent; }
 
 /* ── 배지 ───────────────────────────────────────────────────── */
 .badge {
@@ -196,6 +199,39 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 }
 .check:checked { background: var(--color-accent); box-shadow: none; }
 .check:checked::after { content: ""; width: 7px; height: 4px; border: solid var(--color-text-on-accent); border-width: 0 0 1.75px 1.75px; transform: translate(0, -1px) rotate(-45deg); }
+/* 켬/끔 스위치(UI-06·UI-08 규칙 켬/끔). button[role=switch][aria-checked]. 옆에 `켬`·`끔` 글자를 함께 둔다(색만으로 알리지 않음) */
+.switch {
+  appearance: none; border: 0; padding: 0; margin: 0; flex: none; width: 30px; height: 18px; border-radius: var(--radius-full); cursor: pointer; position: relative;
+  background: var(--color-border-control); transition: background var(--duration-fast);
+}
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--color-bg-surface); box-shadow: 0 1px 2px rgb(0 0 0 / 0.2); transition: transform var(--duration-fast); }
+.switch[aria-checked="true"] { background: var(--color-accent); }
+.switch[aria-checked="true"]::after { transform: translateX(12px); }
+.switch:disabled { background: var(--color-bg-subtle); box-shadow: inset 0 0 0 1px var(--color-border-strong); cursor: not-allowed; }
+.switch:disabled::after { box-shadow: none; background: var(--color-border-strong); }
+.switch-row { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); }
+/* 진행 막대(해소 대기 진행). 멈춘 진행은 빗금으로 구분하고 글자로도 `멈춤`을 쓴다 */
+.meter { height: 6px; border-radius: 3px; background: var(--color-bg-subtle); box-shadow: inset 0 0 0 1px var(--color-border); overflow: hidden; }
+.meter > i { display: block; height: 100%; border-radius: 3px; background: var(--color-info-border); }
+.meter.paused > i { background: repeating-linear-gradient(135deg, var(--color-unknown-border) 0 3px, transparent 3px 6px); box-shadow: inset 0 0 0 1px var(--color-unknown-border); }
+/* 사용량 막대(디스크). 경고 상태는 상태 색으로 칠하고 글자로도 상태를 쓴다(2026-11-06) */
+.meter.warning > i { background: var(--color-warning-border); }
+/* 상단 메뉴 펼침(시스템 UI-13~15, 2026-11-06). 펼친 목록은 .listbox·.option, 지금 화면은 체크 표시 */
+.menu-drop { position: relative; display: flex; }
+.menu-btn {
+  display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 8px 0 10px; border: 0; border-radius: var(--radius-md); background: transparent;
+  color: var(--color-text-secondary); font: inherit; font-weight: var(--font-weight-medium); cursor: pointer; transition: background var(--duration-fast), color var(--duration-fast);
+}
+.menu-btn:hover, .menu-btn[aria-expanded="true"] { color: var(--color-text); background: var(--color-bg-hover); }
+.menu-btn[data-current] { color: var(--color-accent-fg); background: var(--color-accent-subtle); }
+.menu-btn .icon { width: 12px; height: 12px; }
+.menu-drop .listbox { position: absolute; top: calc(100% + 6px); left: 0; min-width: 180px; }
+a.option { color: inherit; text-decoration: none; }
+.option[aria-current="page"] { color: var(--color-accent-fg); font-weight: var(--font-weight-medium); }
+.option[aria-current="page"]::before { content: ""; height: 7px; width: 4px; margin: 0 5px 2px; border: solid currentColor; border-width: 0 1.75px 1.75px 0; transform: rotate(45deg); }
+/* 하나만 고르는 단추(라디오). 체크 상자와 같은 크기·색, 모양만 원 */
+.check.radio { border-radius: 50%; }
+.check.radio:checked::after { width: 5px; height: 5px; border: 0; border-radius: 50%; background: var(--color-text-on-accent); transform: none; }
 
 /* ── 결과 상태 CM-04 ─────────────────────────────────────────── */
 .resultbar { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: 10px var(--space-4); color: var(--color-text-secondary); font-size: var(--text-sm); }
@@ -300,7 +336,7 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 
 /* ── 입력 칸·입력 오류 ─────────────────────────────────────
    오류는 칸 테두리 + 칸 아래 이유 글자로 함께 보인다(색만으로 알리지 않는다). 토스트로 띄우지 않는다(CM-08). */
-.field { display: grid; gap: 6px; min-width: 0; }
+.field { display: grid; gap: 6px; min-width: 0; align-content: start; }
 .field-label { font-size: var(--text-sm); font-weight: var(--font-weight-medium); color: var(--color-text-secondary); }
 .field-hint { font-size: var(--text-sm); color: var(--color-text-tertiary); }
 .input {
@@ -309,6 +345,9 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
   font-size: var(--text-md); color: var(--color-text);
 }
 .input.num { font-feature-settings: var(--font-feature-numeric); }
+/* 경로·정규식처럼 글자 하나하나가 뜻을 갖는 값. 안내 글자(placeholder)는 본문 글꼴로 둔다 */
+.input.code { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0; }
+.input.code::placeholder { font-family: var(--font-sans); font-size: var(--text-md); }
 .input::placeholder { color: var(--color-text-tertiary); }
 /* 초점은 공통 :focus-visible 2px 실선(8절)을 그대로 쓴다 */
 .input[aria-invalid="true"] { box-shadow: inset 0 0 0 1.5px var(--color-danger-border); }
@@ -428,6 +467,33 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 .step-title .t { margin-left: auto; color: var(--color-text-tertiary); font-weight: var(--font-weight-regular); font-size: var(--text-sm); font-feature-settings: var(--font-feature-numeric); }
 .step-desc { grid-column: 2; color: var(--color-text-secondary); font-size: var(--text-sm); margin-top: 2px; }
 
+/* ── 입력 단계 줄 (UI-11 등록 1~7단계) ─────────────────────────
+   사용자가 채우는 단계의 위치를 보인다. 서버 확인 결과를 보이는 .steps와 다르다.
+   지금 단계는 강조색, 지난 단계는 체크와 고른 값, 남은 단계는 번호만. 보류·실패는 상태 글자를 함께 쓴다 */
+.stepper { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.stepper li { display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: var(--space-3); align-items: center; padding: 7px var(--space-2); border-radius: var(--radius-md); }
+.stepper button { all: unset; grid-column: 1 / -1; display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: var(--space-3); align-items: center; cursor: pointer; border-radius: var(--radius-sm); }
+.stepper button:focus-visible { outline: var(--focus-ring-width) solid var(--color-focus); outline-offset: 4px; }
+.stepper li:has(button:not(:disabled)):hover { background: var(--color-bg-hover); }
+.stepper .n {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; grid-row: span 2;
+  background: var(--color-bg-surface); box-shadow: inset 0 0 0 1px var(--color-border-strong); color: var(--color-text-tertiary);
+  font: var(--font-weight-strong) 11px/1 var(--font-sans); font-feature-settings: var(--font-feature-numeric);
+}
+.stepper .t { font-weight: var(--font-weight-medium); color: var(--color-text-secondary); }
+.stepper .s { grid-column: 2; font-size: var(--text-sm); color: var(--color-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-feature-settings: var(--font-feature-numeric); }
+.stepper li[aria-current="step"] { background: var(--color-accent-subtle); }
+.stepper li[aria-current="step"] .n { background: var(--color-accent); color: var(--color-text-on-accent); box-shadow: none; }
+.stepper li[aria-current="step"] .t { color: var(--color-accent-fg); }
+.stepper li.done .n { background: var(--color-success-border); box-shadow: none; font-size: 0; }
+.stepper li.done .n::after { content: ""; width: 5px; height: 8px; margin-bottom: 2px; border: solid var(--color-text-on-accent); border-width: 0 1.75px 1.75px 0; transform: rotate(45deg); }
+.stepper li.done .t { color: var(--color-text); }
+/* 번호가 글자라서 상태 바탕 위 상태 글자 색(대비 검사를 통과한 쌍)을 쓴다. 흰 번호를 주황 위에 두면 대비가 모자란다 */
+.stepper li.hold .n { background: var(--color-warning-bg); color: var(--color-warning-fg); box-shadow: inset 0 0 0 1.5px var(--color-warning-border); }
+.stepper li.fail .n { background: var(--color-danger-bg); color: var(--color-danger-fg); box-shadow: inset 0 0 0 1.5px var(--color-danger-border); }
+.stepper li.hold .s { color: var(--color-warning-fg); }
+.stepper li.fail .s { color: var(--color-danger-fg); }
+
 /* ── 상세 화면 틀 (UI-12 등) ─────────────────────────────────── */
 .crumb { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--color-text-tertiary); }
 .crumb a { color: inherit; text-decoration: none; }
@@ -463,6 +529,7 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
   background: var(--color-neutral-bg); color: var(--color-text-secondary); }
 .callout > .badge { grid-row: span 2; }
 .callout strong { color: var(--color-text); font-weight: var(--font-weight-medium); }
+.callout a { color: var(--color-text-link); font-weight: var(--font-weight-medium); text-underline-offset: 3px; }
 .callout.warning { background: var(--color-warning-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-warning-border) 25%, transparent); }
 .callout.danger { background: var(--color-danger-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-danger-border) 25%, transparent); }
 .callout.info { background: var(--color-info-bg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-info-border) 25%, transparent); }
@@ -480,6 +547,6 @@ button, input, select { font: inherit; color: inherit; letter-spacing: inherit; 
 /* 높이가 정해진 상자 안의 글자는 가운데 정렬 상자(flex·grid)에 두고, 글꼴의 위아래 여백을 잘라 글자 높이(대문자 높이~기준선)로 가운데 둔다.
    text-box는 Chrome 133부터 지원(첫 출시 데스크톱 Chrome 한정, Q15-01). 줄 높이나 px 보정으로 맞추지 않는다. */
 .btn, .badge, .quality, .menu a, .menu-count, .kbd, .toast-kind, .stale,
-.chip > span, .segmented button, .timepick strong, .timepick .range, .select-trigger > span, .option {
+.chip > span, .segmented button, .timepick strong, .timepick .range, .select-trigger > span, .option, .stepper .n, .switch-row > span, .menu-btn > span {
   text-box: trim-both cap alphabetic;
 }

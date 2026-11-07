@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LogDock 시안 — 시스템</title>
+<!-- 시안 표시용 글꼴. 제품은 글꼴 파일을 직접 제공하고 외부 CDN을 쓰지 않는다(design-system-v0.1.md 4절). -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="tokens-dark-preview.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* 이 시안의 배치. 화면 흐름 명세 5절 UI-13(저장 공간과 보존)·UI-14(메일 상태)·UI-15(감사 이력)·UI-16(계정과 세션)과 CM-01·CM-07·CM-08의 정적 시안이다.
+     와이어프레임 정리표의 기본안(WQ-72~91)과 디자인 시스템 11·12절, API 계약 4.4·5.5·5.6절을 따른다.
+     저장량·시각·주소는 합성 값이다. 디스크 경고 기준·로그 저장 상한·감사 저장 상한·한 번에 불러오는 행 수는 정하지 않아 `N`으로 쓴다(화면 흐름 명세 7절). */
+  :root { --demo-h: 44px; }
+  body { min-width: 1080px; }
+  .page { display: grid; gap: var(--layout-gutter); padding: var(--space-4) var(--layout-pad-x) calc(var(--demo-h) + 48px); max-width: 1440px; align-content: start; }
+  .page[hidden] { display: none; }
+  .p-note { margin: 0; font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .card-pad { padding: var(--space-3) var(--space-4) var(--space-4); display: grid; gap: var(--space-3); }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--layout-gutter); align-items: start; }
+  .stat-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .stat .big { font-size: var(--text-lg); font-weight: var(--font-weight-strong); font-feature-settings: var(--font-feature-numeric); }
+  .stat .unit { font-size: var(--text-sm); font-weight: 400; color: var(--color-text-secondary); }
+  .ro { display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: var(--radius-sm); font-size: 11px; font-weight: var(--font-weight-medium); color: var(--color-text-secondary); box-shadow: inset 0 0 0 1px var(--color-border-strong); }
+  .cell-sub { display: block; font-size: var(--text-sm); line-height: 16px; color: var(--color-text-secondary); margin-top: 3px; }
+  .datatable td.wrap { white-space: normal; padding-top: 7px; padding-bottom: 7px; }
+  .section-card .kv { grid-template-columns: 148px 1fr; }
+
+  /* UI-13 */
+  .usage { display: grid; gap: var(--space-2); }
+  .usage .meter { height: 10px; border-radius: 5px; }
+  .usage .meter > i { border-radius: 5px; }
+  .usage-legend { display: flex; gap: var(--space-5); font-size: var(--text-sm); color: var(--color-text-secondary); font-feature-settings: var(--font-feature-numeric); }
+  .usage-legend b { color: var(--color-text); font-weight: var(--font-weight-medium); }
+  .span-bar { display: flex; height: 28px; border-radius: var(--radius-md); overflow: hidden; box-shadow: inset 0 0 0 1px var(--color-border); font-size: var(--text-sm); }
+  .span-bar > span { display: flex; align-items: center; padding: 0 var(--space-2); min-width: 0; white-space: nowrap; overflow: hidden; }
+  .span-bar .gone { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--color-danger-border) 35%, transparent) 0 4px, transparent 4px 9px); color: var(--color-danger-fg); font-weight: var(--font-weight-medium); }
+  .span-bar .kept { background: var(--color-success-bg); color: var(--color-success-fg); font-weight: var(--font-weight-medium); box-shadow: inset 2px 0 0 var(--color-success-border); }
+  .span-scale { display: flex; justify-content: space-between; font-size: var(--text-sm); color: var(--color-text-tertiary); font-feature-settings: var(--font-feature-numeric); }
+  .span-scale span:nth-child(2) { position: relative; }
+
+  /* UI-14 */
+  .add-row { display: flex; gap: var(--space-2); align-items: flex-start; flex-wrap: wrap; }
+  .add-row .field { flex: 1; max-width: 360px; }
+  .form-foot { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-border); background: var(--color-bg-page); border-radius: 0 0 var(--radius-xl) var(--radius-xl); }
+  .form-foot .grow { margin-left: auto; display: flex; gap: var(--space-2); }
+  .ops td .btn { margin-left: 2px; }
+
+  /* UI-15 */
+  .filters { display: flex; align-items: flex-end; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); flex-wrap: wrap; }
+  .filters .date { width: 124px; }
+  .filters .tilde { height: 32px; display: flex; align-items: center; color: var(--color-text-tertiary); }
+  .kind-wrap { position: relative; }
+  .kind-pop { position: absolute; top: calc(100% + 6px); left: 0; width: 520px; padding: var(--space-3) var(--space-4); display: grid; gap: var(--space-3); }
+  .kind-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3) var(--space-4); }
+  .kind-groups fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; align-content: start; }
+  .kind-groups legend { padding: 0 0 2px; font-size: var(--text-sm); font-weight: var(--font-weight-medium); color: var(--color-text-tertiary); }
+  .kind-groups label { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); }
+  .audit td.t { white-space: nowrap; font-feature-settings: var(--font-feature-numeric); }
+  .datatable tr.gap td, .datatable tr.cleanup td { height: auto; padding: 8px var(--space-3); white-space: normal; font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .datatable tr.gap td { background: var(--color-unknown-bg); border-top: 1px dashed var(--color-unknown-border); border-bottom: 1px dashed var(--color-unknown-border); }
+  .datatable tr.cleanup td { background: var(--color-bg-subtle); border-top: 1px dashed var(--color-border-strong); }
+  .datatable tr.gap b, .datatable tr.cleanup b { color: var(--color-text); font-weight: var(--font-weight-medium); margin-right: var(--space-2); }
+  .more-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); border-top: 1px solid var(--color-border); }
+  .empty { padding: 40px var(--space-6); display: grid; justify-items: center; gap: var(--space-3); text-align: center; }
+  .empty h2 { margin: 0; font-size: var(--text-base); }
+  .empty p { margin: 0; max-width: 560px; color: var(--color-text-secondary); font-size: var(--text-sm); }
+
+  /* UI-16 */
+  .acct { display: grid; grid-template-columns: minmax(0, 560px) minmax(0, 1fr); gap: var(--layout-gutter); align-items: start; }
+  .acct-side { display: grid; gap: var(--layout-gutter); }
+  .pw-row { display: flex; gap: var(--space-2); }
+  .pw-row .input { flex: 1; }
+  .session-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent); }
+  .session-row:last-child { border-bottom: 0; }
+  .session-row .what { flex: 1; display: grid; gap: 2px; font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .session-row .what b { color: var(--color-text); font-weight: var(--font-weight-medium); font-size: var(--text-md); }
+  .signed-out .menu, .signed-out .topbar-end .avatar { visibility: hidden; }
+  .login { max-width: 380px; margin: 48px auto 0; }
+  .login .card-pad { gap: var(--space-4); }
+  .login h1 { margin: 0; font-size: var(--text-lg); }
+
+  .demo-switch { position: fixed; left: 0; right: 0; bottom: 0; height: var(--demo-h); display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+    padding: 0 var(--space-4); background: var(--color-toast-bg); color: var(--color-toast-text-secondary); font-size: var(--text-sm); box-shadow: var(--shadow-toast); z-index: var(--z-sticky); white-space: nowrap; }
+  .demo-switch .segmented { height: 30px; background: rgb(255 255 255 / 0.08); box-shadow: none; }
+  .demo-switch .segmented button { height: 26px; color: var(--color-toast-text-secondary); }
+  .demo-switch .segmented button[aria-pressed="true"] { background: rgb(255 255 255 / 0.16); color: var(--color-toast-text); box-shadow: none; }
+  .demo-switch select { height: 30px; border: 0; border-radius: var(--radius-full); padding: 0 var(--space-3); background: rgb(255 255 255 / 0.12); color: var(--color-toast-text); font-size: var(--text-sm); }
+  .toast-stack { position: fixed; right: var(--space-4); top: calc(var(--size-topbar) + var(--space-3)); display: grid; gap: var(--space-2); z-index: var(--z-toast); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7m0-7-7 7"/></symbol>
+  <symbol id="i-down" viewBox="0 0 16 16"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><path d="m3 4.5 5 4 5-4"/></symbol>
+</svg>
+
+<nav class="topbar" aria-label="주 메뉴">
+  <span class="brand"><span class="brand-mark" aria-hidden="true"></span>LogDock</span>
+  <div class="menu">
+    <a href="sample-ui02-log-search.html">로그 탐색</a>
+    <a href="sample-ui01-05-search-aids.html?view=saved">저장 검색</a>
+    <a href="sample-ui06-09-alerts.html">알림</a>
+    <a href="sample-ui10-11-connections.html">수집 연결 <span class="menu-count" aria-label="조치 필요 5건">5</span></a>
+    <div class="menu-drop"><button class="menu-btn" id="sys-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="sys-menu"><span>시스템</span><svg class="icon"><use href="#i-down"/></svg></button>
+      <div class="listbox" id="sys-menu" role="menu" aria-label="시스템" hidden>
+        <a class="option" role="menuitem" href="#" data-go="storage">저장 공간과 보존</a>
+        <a class="option" role="menuitem" href="#" data-go="mail">메일 상태</a>
+        <a class="option" role="menuitem" href="#" data-go="audit">감사 이력</a>
+      </div></div>
+    <a href="#" data-go="account" id="menu-account">계정</a>
+  </div>
+  <div class="topbar-end"><span class="mono tertiary">Asia/Seoul</span><button class="btn ghost sm" id="theme" title="검토용: 어두운 테마는 첫 출시 범위가 아니다">어두운 테마 보기</button><span class="avatar" title="공용 계정 ops">공용</span></div>
+</nav>
+<div id="banner-slot"></div>
+
+<main class="page" id="view-storage"></main>
+<main class="page" id="view-mail" hidden></main>
+<main class="page" id="view-audit" hidden></main>
+<main class="page" id="view-account" hidden></main>
+
+<div class="demo-switch" role="group" aria-label="시안 상태 바꾸기">시안
+  <div class="segmented" id="demo-view">
+    <button data-v="storage" aria-pressed="true">저장 공간 UI-13</button><button data-v="mail" aria-pressed="false">메일 UI-14</button><button data-v="audit" aria-pressed="false">감사 UI-15</button><button data-v="account" aria-pressed="false">계정 UI-16</button>
+  </div>
+  <select id="demo-state" aria-label="시안 상태"></select>
+</div>
+<div class="toast-stack" id="toasts" aria-live="polite"></div>
+<div id="dialog-root"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const badge = (k, t) => `<span class="badge ${k}">${t}</span>`;
+const kv = (rows) => rows.filter(Boolean).map(([k, v]) => `<div><dt>${k}</dt><dd><span>${v}</span></dd></div>`).join('');
+const TZ = '<span class="tertiary" style="font-weight:400;font-size:var(--text-sm)">(UTC+09:00)</span>';
+
+/* ── 전역 배너(CM-01). 순서는 명세 CM-01에 적힌 순서. 지나간 일 배너는 `확인`을 누를 때까지 남는다(WQ-03) ── */
+const N = { mailErr: false, auditDown: false, auditGap: false, disk: false, early: false, unmeasurable: false, opsMissing: false };
+const ACKED = {};
+let view = 'storage';
+function banner() {
+  const link = (v, t) => (view === v ? '' : `<a href="#" data-go="${v}">${t}</a>`);
+  const ack = (k) => `<button class="ack" data-ack-notice="${k}">확인</button>`;
+  const b = [];
+  if (N.mailErr) b.push(`<div class="banner danger" role="status"><strong>메일 연결 오류</strong><span>2026-11-05 10:31:05 (UTC+09:00)부터 메일 서버에 보내지 못하고 있습니다. 알림 메일과 운영 메일은 재시도 대기에 있습니다.</span>${link('mail', '메일 상태 보기')}</div>`);
+  if (N.auditDown) b.push(`<div class="banner danger" role="status"><strong>감사 기록 장애</strong><span>2026-11-05 10:31:00 (UTC+09:00)부터 감사 기록을 저장하지 못하고 있습니다. 로그인·검색·수집은 계속됩니다. 키 발급, 등록·설정 변경, 비밀번호 변경, 알림 규칙·운영 수신 주소 변경은 보류되니 복구된 뒤 다시 실행하세요.</span>${link('audit', '감사 이력 보기')}</div>`);
+  if (N.auditGap && !ACKED.auditGap) b.push(`<div class="banner" role="status"><strong>감사 기록 공백</strong><span>감사 기록이 복구됐습니다. 2026-11-05 10:31:00 ~ 10:52:00 (UTC+09:00) 구간은 기록이 비어 있습니다.</span>${link('audit', '감사 이력 보기')}${ack('auditGap')}</div>`);
+  if (N.disk) b.push(`<div class="banner" role="status"><strong>디스크 경고</strong><span>중앙 로그 저장 공간이 경고 기준(N)을 넘었습니다. 공간이 부족해지면 보관 기간(6개월)이 되기 전이라도 오래된 로그부터 삭제됩니다.</span>${link('storage', '저장 공간 보기')}</div>`);
+  if (N.early && !ACKED.early) b.push(`<div class="banner danger" role="status"><strong>조기 삭제 발생</strong><span>공간이 부족해 2026-11-05 03:00:12 (UTC+09:00)에 보관 기간(6개월)이 되기 전 로그를 삭제했습니다. 지금 조회 가능 시작일은 2026-07-21(수신 시각 기준)입니다.</span>${link('storage', '저장 공간 보기')}${ack('early')}</div>`);
+  if (N.unmeasurable) b.push(`<div class="banner" role="status"><strong>저장 공간 측정 불가</strong><span>2026-11-05 09:10:00 (UTC+09:00) 뒤로 저장 공간을 측정하지 못하고 있습니다. 측정하지 못하는 동안에는 디스크 경고도 낼 수 없습니다.</span>${link('storage', '저장 공간 보기')}</div>`);
+  if (N.opsMissing) b.push(`<div class="banner" role="status"><strong>운영 수신 주소 없음</strong><span>수집 끊김·알림 평가 실패·디스크 경고 메일을 받을 주소가 없어 이 메일들이 아무에게도 가지 않습니다.</span>${link('mail', '메일 상태 보기')}</div>`);
+  $('#banner-slot').innerHTML = b.join('');
+}
+
+/* ════ UI-13 저장 공간과 보존 ═══════════════════════════════ */
+const ST = {
+  base: { start: '2026-05-05', warn: false, early: null, used: 120, free: 380, measured: '2026-11-05 10:40:00', est: false },
+  warn: { start: '2026-05-05', warn: true, early: null, used: 430, free: 70, measured: '2026-11-05 10:40:00', est: false },
+  early: { start: '2026-07-21', warn: true, early: { last: '2026-11-05 03:00:12', count: 3 }, used: 470, free: 30, measured: '2026-11-05 10:40:00', est: false },
+  unknown: { unknown: true, lastOk: '2026-11-05 09:10:00' },
+  estimate: { start: '2026-05-05', warn: false, early: null, used: 118, free: 382, measured: '2026-11-05 10:40:00', est: true },
+};
+let storageState = 'base';
+function renderStorage() {
+  banner();
+  const s = ST[storageState];
+  const u = s.unknown;
+  const unk = (t = '미확인') => badge('unknown', t);
+  const pct = u ? 0 : Math.round((s.used / (s.used + s.free)) * 100);
+  const warnBadge = u ? unk() : s.warn ? badge('warning', '디스크 경고') : badge('success', '정상');
+  const earlyBadge = u ? unk() : s.early ? badge('danger', '조기 삭제 발생') : badge('success', '없음');
+  const stats = `<section class="stat-grid four" aria-label="보존 요약">
+    <div class="card stat"><span class="stat-label">로그 보관 기간</span><span class="stat-value"><span class="big">6개월</span><span class="ro">읽기 전용</span></span><span class="stat-sub">모든 서비스 공통. 서버 운영자가 서버 설정에서만 바꿀 수 있습니다.</span></div>
+    <div class="card stat"><span class="stat-label">조회 가능 시작일</span><span class="stat-value">${u ? unk() : `<span class="big">${s.start}</span><span class="unit">수신 시각 기준</span>`}</span><span class="stat-sub">${u ? '측정하지 못해 알 수 없습니다.' : s.early ? `${badge('warning', '6개월보다 짧음')} 조기 삭제가 없었다면 2026-05-05부터입니다.` : '보관 기간대로 6개월 전부터 조회할 수 있습니다.'}</span></div>
+    <div class="card stat"><span class="stat-label">디스크 경고 상태</span><span class="stat-value">${warnBadge}</span><span class="stat-sub">${u ? '경고 기준(N)을 넘었는지 알 수 없습니다. 정상으로 보지 마세요.' : s.warn ? '경고 기준(N)을 넘었습니다. 운영 수신 주소로 운영 메일을 보냈습니다.' : '경고 기준(N) 아래입니다.'}</span></div>
+    <div class="card stat"><span class="stat-label">조기 삭제 <span class="tertiary" style="font-weight:400">· 최근 6개월</span></span><span class="stat-value">${earlyBadge}</span><span class="stat-sub">${u ? '측정하지 못해 알 수 없습니다.' : s.early ? `마지막 ${s.early.last} · ${s.early.count}번` : '보관 기간이 되기 전에 지운 로그가 없습니다.'}</span></div>
+  </section>`;
+  const todo = !u && s.warn ? `<div class="callout warning">${badge('warning', '할 일')}<div><strong>서버 설정으로 보관 기간을 줄이거나 중앙 서버 디스크를 늘리세요.</strong> 그대로 두면 공간이 부족해질 때 보관 기간이 되기 전이라도 가장 오래된 로그부터 지워지고, 지운 로그는 되돌릴 수 없습니다. 보관 기간을 줄이면 이미 저장된 로그에도 적용됩니다.</div></div>` : '';
+  const unknownNote = u ? `<div class="callout">${badge('unknown', '측정 불가')}<div><strong>저장 공간을 측정하지 못했습니다.</strong> 마지막 측정 성공은 ${s.lastOk} (UTC+09:00)입니다. 측정하지 못한 값은 0이나 정상으로 채우지 않고 미확인으로 씁니다. 측정하지 못하는 동안에는 디스크 경고를 낼 수 없어 조기 삭제가 예고 없이 일어날 수 있습니다.</div></div>` : '';
+  const span = !u && s.early ? `<section class="card section-card"><header><h2>실제 보관 범위</h2><span class="end">수신 시각 기준</span></header><div class="card-pad">
+      <div class="span-bar" role="img" aria-label="2026-05-05부터 2026-07-21까지 조기 삭제됨, 2026-07-21부터 지금까지 조회 가능"><span class="gone" style="flex:77">조기 삭제됨 · 조회할 수 없음</span><span class="kept" style="flex:107">조회 가능</span></div>
+      <div class="span-scale"><span>2026-05-05 · 보관 기간대로라면 여기부터</span><span>2026-07-21</span><span>지금 2026-11-05 10:40</span></div>
+      <p class="p-note">공간이 부족해 가장 오래된 로그부터 하루 단위로 지웠습니다. 상한을 맞추려고 필요한 양보다 조금 더 지웠을 수 있습니다. 조기 삭제는 중앙에 저장된 로그만 지우며 에이전트 대기와 로그 서버의 원본 파일은 그대로입니다.</p></div></section>` : '';
+  const usage = `<section class="card section-card"><header><h2>저장량</h2><span class="end">${u ? `마지막 측정 성공 ${s.lastOk}` : `측정 ${s.measured}`} (UTC+09:00)</span></header><div class="card-pad">
+      <div class="usage">${u ? '' : `<div class="meter${s.warn ? ' warning' : ''}" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="디스크 사용 비율 ${pct}%${s.warn ? ', 디스크 경고' : ''}"><i style="width:${pct}%"></i></div>`}
+        <div class="usage-legend"><span>로그 저장량 <b>${u ? '' : s.est ? '약 ' : ''}${u ? '' : `${s.used} GB`}</b>${u ? unk() : ''}${!u && s.est ? ` ${badge('neutral', '추정')}` : ''}</span><span>디스크 남은 공간 <b>${u ? '' : `${s.free} GB`}</b>${u ? unk() : ''}</span>${u ? '' : `<span>사용 ${pct}%</span>`}</div>
+        ${!u && s.est ? '<p class="p-note">저장량은 정확히 세지 못해 추정한 값입니다. 다음 측정에서 바뀔 수 있습니다.</p>' : ''}</div>
+      <dl class="kv">${kv([
+        ['로그 저장 상한', 'N GB <span class="dim">· 서버 설정. 넘으면 오래된 로그부터 지웁니다</span>'],
+        ['디스크 경고 기준', 'N <span class="dim">· 정하지 않음</span>'],
+        ['측정 시각', u ? `마지막 성공 ${s.lastOk} ${TZ} <span class="dim">· 그 뒤 측정하지 못함</span>` : `${s.measured} ${TZ}`],
+        ['집계 기간', u ? unk() : `수신 시각 ${s.start} ~ ${s.measured} ${TZ} <span class="dim">· 지금 보관 중인 로그 전체</span>`],
+      ])}</dl>
+      ${!u && s.early ? '<p class="p-note">조회에서 빠진 로그도 디스크에서 실제로 지워질 때까지 시간이 걸려 저장량이 바로 줄지 않을 수 있습니다.</p>' : ''}</div></section>`;
+  $('#view-storage').innerHTML = `<div class="page-head"><div><h1>저장 공간과 보존</h1><div class="meta"><span>보기만 하는 화면입니다. 보관 기간은 서버 설정에서 바꾸고, 연결·시간 구간을 정한 로그 삭제는 수집 연결 상세에서 합니다.</span></div></div></div>
+    ${stats}${unknownNote}${todo}${span}${usage}
+    <section class="card section-card"><header><h2>보관 기준</h2></header><div class="card-pad">
+      <p class="p-note">보관 기간·조회 가능 시작일·조기 삭제는 로그가 중앙에 처음 들어온 <strong>수신 시각</strong>으로 계산합니다. 로그 탐색의 기본인 발생 시각으로 이 날짜 근처를 찾으면 일부 로그가 이미 지워졌을 수 있습니다.</p>
+      <p class="p-note">보관 기간을 줄이면 이미 저장된 로그에도 적용되고, 지운 로그는 되돌릴 수 없습니다. 웹에서 보관 기간을 바꾸는 기능은 첫 출시에 없습니다.</p></div></section>`;
+}
+
+/* ════ UI-14 메일 상태 ══════════════════════════════════════ */
+const MAIL_BASE = { status: '연결됨', lastOk: '2026-11-05 10:12:40', lastTry: '2026-11-05 10:12:40 · 메일 서버 수락', host: 'smtp.example.com', port: '587', security: 'STARTTLS · 인증서 검증', from: 'logdock@example.com' };
+const MAIL = {
+  base: {},
+  error: { status: '연결 오류', lastTry: '2026-11-05 10:31:05 · 인증 실패: 메일 서버가 계정 인증을 거부했습니다' },
+  unknown: { status: '미확인', lastOk: null, lastTry: null },
+  'test-ok': {}, 'test-fail': {}, noops: {}, 'input-error': {},
+  nomail: { status: '메일 설정 없음', lastOk: null, lastTry: null, host: null },
+  plain: { security: '암호화 없음 · 평문 사내 릴레이', port: '25' },
+  audit: {},
+};
+const MAIL_TONE = { '연결됨': 'success', '연결 오류': 'danger', '미확인': 'unknown', '메일 설정 없음': 'warning' };
+let mailState = 'base', M = null, OPS = [], OPS0 = '', opsErr = '', testTo = '', testRes = null;
+const OPS_SEED = () => [{ a: 'ops@example.com', ok: true, saved: true }, { a: 'infra@example.com', ok: false, saved: true }];
+const opsDirty = () => JSON.stringify(OPS.map((r) => r.a)) !== OPS0;
+function renderMail() {
+  banner();
+  const m = M;
+  const noMail = m.status === '메일 설정 없음';
+  const conn = `<section class="card section-card"><header><h2>메일 서버 연결</h2><span class="end">메일 서버 설정은 서버 설정에서만 바꿉니다</span></header><div class="body"><dl class="kv">${kv([
+      ['연결 상태', `${badge(MAIL_TONE[m.status], m.status)} <span class="dim">${{ '연결됨': '마지막 발송 시도가 성공했습니다', '연결 오류': '마지막 발송 시도가 실패했습니다', '미확인': '아직 보낸 적이 없어 연결을 확인하지 못했습니다', '메일 설정 없음': '서버 설정에 메일 서버가 없습니다' }[m.status]}</span>`],
+      ['마지막 성공 전송', m.lastOk ? `${m.lastOk} ${TZ}` : '<span class="dim">없음</span>'],
+      ['마지막 발송 시도', m.lastTry ? m.lastTry : '<span class="dim">없음</span>'],
+      m.host ? ['메일 서버', `<span class="mono">${m.host}:${m.port}</span> <span class="ro">읽기 전용</span>`] : null,
+      m.host ? ['전송 보안', m.security.startsWith('암호화 없음') ? `${badge('warning', '암호화 없음')} <span class="dim">평문 사내 릴레이</span>` : m.security] : null,
+      m.host ? ['발신 주소', `<span class="mono">${m.from}</span>`] : null,
+    ])}</dl>
+    <p class="p-note" style="padding:var(--space-1) var(--space-2) var(--space-3)">메일 서버 주소·계정·비밀번호는 서버 운영자가 서버 설정에 넣고 LogDock을 다시 시작해야 바뀝니다. 이 화면은 비밀번호 같은 비밀 값을 보여 주지 않습니다.</p></div></section>`;
+  const callouts = [];
+  if (m.status === '연결 오류') callouts.push(`<div class="callout danger">${badge('danger', '연결 오류')}<div><strong>알림 메일과 운영 메일을 보내지 못하고 재시도 대기에 쌓고 있습니다.</strong> 수신자마다 최대 12회, 총 4시간 안에서 다시 보내고, 그 안에 고쳐지지 않으면 최종 실패로 남습니다. 인증 실패는 설정 문제라 저절로 풀리지 않습니다. 서버 운영자가 서버 설정의 메일 계정을 확인하고 LogDock을 다시 시작하세요.</div></div>`);
+  if (noMail) callouts.push(`<div class="callout warning">${badge('warning', '메일 설정 없음')}<div><strong>알림 메일과 운영 메일을 보낼 수 없습니다.</strong> 알림 규칙은 저장할 수 있지만 켤 수 없습니다. 메일 서버는 서버 운영자가 서버 설정에 넣습니다. <a href="sample-ui06-09-alerts.html?view=list&amp;state=nomail">알림 규칙 보기</a></div></div>`);
+  if (m.security.startsWith('암호화 없음')) callouts.push(`<div class="callout warning">${badge('warning', '암호화 없음')}<div><strong>서버 설정이 암호화하지 않은 사내 메일 릴레이를 허용하고 있습니다.</strong> 알림 메일의 규칙 이름·건수·조사 링크가 암호화되지 않은 채 전달됩니다. 기본은 TLS와 인증서 검증이며, 이 설정은 서버 설정에서 명시적으로 허용했을 때만 쓰입니다.</div></div>`);
+  const testResHtml = testRes ? `<div class="callout ${testRes.ok ? '' : 'danger'}" role="status">${testRes.ok ? badge('success', '메일 서버 수락') : badge('danger', '보내지 못함')}<div>${testRes.ok ? `<strong>${esc(testRes.to)}로 보낸 테스트 메일을 메일 서버가 받았습니다(10:21:02).</strong> 도착했는지는 받는 사람이 받은편지함에서 확인하세요.` : `<strong>테스트 메일을 보내지 못했습니다.</strong> 사유: 메일 서버 연결 시간 초과. 연결 문제라 주소와는 관계없습니다. 위 연결 상태와 서버 설정을 확인하세요.`}</div></div>` : '';
+  const test = `<section class="card section-card"><header><h2>테스트 발송</h2><span class="end">받을 주소를 직접 넣습니다</span></header><div class="card-pad">
+      <div class="add-row"><div class="field"><label class="sr-only" for="m-test">받을 주소</label><input class="input" id="m-test" placeholder="name@example.com" value="${esc(testTo)}"${noMail ? ' disabled' : ''}></div>
+        ${noMail ? '<button class="btn" disabled aria-describedby="why-test"><svg class="icon"><use href="#i-mail"/></svg>테스트 발송</button><span class="disabled-reason" id="why-test">메일 설정이 없어 보낼 수 없습니다</span>' : '<button class="btn" data-act="test"><svg class="icon"><use href="#i-mail"/></svg>테스트 발송</button>'}</div>
+      <p class="p-note">메일 서버로 테스트 메일 한 통을 보내 연결을 확인합니다. 테스트 메일은 다시 보내지 않고 결과만 보입니다.</p>${testResHtml}</div></section>`;
+  const savedN = OPS.filter((r) => r.saved).length;
+  const rows = OPS.map((r, i) => `<tr><td>${esc(r.a)}${r.saved ? '' : '<span class="cell-sub">저장 전</span>'}</td><td>${r.ok ? badge('success', '확인됨') : badge('neutral', '확인 안 됨')}</td><td class="wrap">${r.res || '<span class="dim">—</span>'}</td>
+      <td class="end">${!r.ok && r.res && /수락/.test(r.res) ? (r.saved ? `<button class="btn sm" data-ops-ack="${i}">받았음</button>` : '<span class="dim" style="font-size:var(--text-sm);margin-right:var(--space-2)">저장한 뒤 받았음 표시</span>') : ''}<button class="btn sm" data-ops-test="${i}"${noMail ? ' disabled' : ''}>테스트 메일</button><button class="btn ghost sm" data-ops-rm="${i}">지우기</button></td></tr>`).join('');
+  const ops = `<section class="card section-card"><header><h2>운영 수신 주소</h2><span class="end">${OPS.length} / 최대 10개</span></header><div class="card-pad">
+      <p class="p-note">수집 끊김이나 알림 평가 실패가 10분 지속되면 묶어서 운영 메일 1통을 이 주소로 보냅니다. 같은 연결은 끊긴 동안 한 번만 알리고 다시 이어져도 따로 메일을 보내지 않습니다. 디스크 경고 메일(기준 N)도 이 주소로 갑니다.</p>
+      ${!savedN && !OPS.length ? `<div class="callout warning">${badge('warning', '주소 없음')}<div><strong>운영 수신 주소가 없습니다.</strong> 수집 끊김·알림 평가 실패·디스크 경고 메일을 받을 곳이 없어 이 메일들은 아무에게도 가지 않습니다. 주소를 하나 이상 넣고 저장하세요.</div></div>` : ''}
+      ${OPS.length ? `<table class="datatable ops"><colgroup><col><col style="width:110px"><col style="width:300px"><col style="width:250px"></colgroup>
+        <thead><tr><th scope="col">주소</th><th scope="col">주소 확인</th><th scope="col">테스트 메일 결과 (UTC+09:00)</th><th scope="col"><span class="sr-only">동작</span></th></tr></thead><tbody>${rows}</tbody></table>` : ''}
+      <div class="add-row"><div class="field"><label class="sr-only" for="m-add">추가할 운영 수신 주소</label><input class="input" id="m-add" placeholder="name@example.com"${opsErr ? ' aria-invalid="true"' : ''} aria-describedby="m-add-hint">${opsErr ? `<span class="field-error">${opsErr}</span>` : ''}</div>
+        ${OPS.length >= 10 ? '<button class="btn" disabled>추가(최대 10개)</button>' : '<button class="btn" data-act="ops-add"><svg class="icon"><use href="#i-plus"/></svg>추가</button>'}</div>
+      <span class="field-hint" id="m-add-hint">최대 10개. 더 많으면 메일링 리스트 주소를 쓰세요. 저장할 때 형식만 검사하므로 받을 수 있는 주소인지는 테스트 메일로 확인하세요. 같은 주소는 대소문자를 가리지 않고 하나로 합칩니다.</span>
+      ${OPS.some((r) => r.res && /수락/.test(r.res)) ? '<p class="p-note"><strong>메일 서버 수락</strong>은 메일 서버가 받았다는 뜻입니다. 받는 사람이 받은편지함에서 확인하면 <strong>받았음</strong>을 누르세요. 받았음은 바로 반영되고 감사 기록에 남습니다.</p>' : ''}</div>
+    <div class="form-foot"><span class="field-hint">${opsDirty() ? '저장하지 않은 변경이 있습니다. 운영 수신 주소 변경은 비밀번호를 다시 묻지 않고 감사 기록에 남깁니다.' : '운영 수신 주소 변경은 비밀번호를 다시 묻지 않고 감사 기록에 남깁니다.'}</span>
+      <span class="grow"><button class="btn" data-act="ops-reset"${opsDirty() ? '' : ' disabled'}>되돌리기</button><button class="btn primary" data-act="ops-save"${opsDirty() ? '' : ' disabled'}>저장</button></span></div></section>`;
+  $('#view-mail').innerHTML = `<div class="page-head"><div><h1>메일 상태</h1><div class="meta"><span>알림 메일과 운영 메일이 같은 메일 서버로 나갑니다</span></div></div></div>${callouts.join('')}<div class="cols">${conn}${test}</div>${ops}`;
+}
+
+/* ════ UI-15 감사 이력 ══════════════════════════════════════ */
+/* 동작 코드는 API 계약 5.6절. 결과는 마지막으로 확인된 단계(WQ-85), 부분 실패(WQ-87) */
+const KINDS = [
+  ['로그인과 세션', ['로그인', '로그인 실패', '재확인 실패', '로그아웃', '전체 세션 종료']],
+  ['자격', ['비밀번호 변경', '비밀번호 재설정(로컬)']],
+  ['수집 키', ['키 발급', '키 교체', '키 폐기']],
+  ['수집 연결', ['연결 등록', '설정 변경', '서버·환경 변경', '연결 보관', '연결 재활성', '구간 로그 삭제']],
+  ['서비스·서버', ['서비스 이름 변경', '서비스 보관', '서비스 재활성', '서버 이름 변경']],
+  ['알림·메일', ['알림 규칙 만들기', '알림 규칙 수정', '알림 규칙 켬', '알림 규칙 끔', '알림 규칙 삭제', '운영 수신 주소 변경']],
+];
+const RES_TONE = { '성공': 'success', '중앙 확정': 'success', '에이전트 관측': 'success', '요청 접수': 'info', '부분 실패': 'warning', '실패': 'danger' };
+const AUDIT = [
+  ['2026-11-05 10:28:14', 'ops', '키 교체', '주문 · app-02 · app.log · 새 키 발급', '성공'],
+  ['2026-11-05 10:20:03', 'ops', '알림 규칙 수정', '알림 규칙 ID 12 · 바뀐 항목: 조건, 수신 주소', '성공'],
+  ['2026-11-05 10:12:47', 'ops', '운영 수신 주소 변경', '바뀐 항목: 주소 추가 1개', '성공'],
+  ['2026-11-05 10:05:41', 'ops', '구간 로그 삭제', '결제 · app-01 · app.log · 2026-11-04 13:00 ~ 14:00 (수신 시각)', '성공'],
+  ['2026-11-05 10:00:00', '없는 계정', '로그인 실패', '웹 세션 · 10:00~10:05 사이 4번을 한 줄로 묶음', '실패', '4건'],
+  ['2026-11-05 09:58:10', 'ops', '로그인', '웹 세션', '성공'],
+  ['2026-11-05 09:40:00', 'ops', '키 폐기', '결제 · app-02 · journald · 2026-09-14 발급 키', '에이전트 관측', '요청 접수 09:40:00 · 중앙 확정 09:40:01 · 에이전트 관측 09:41:12'],
+  ['2026-11-05 09:12:33', 'ops', '설정 변경', '주문 · app-01 · app.log', '실패', '다른 사람이 먼저 고쳐 저장하지 않음'],
+  ['2026-11-04 18:02:11', 'ops', '로그아웃', '현재 세션', '성공'],
+  ['2026-11-04 16:10:05', 'ops', '서비스 보관', '배송 · 하위 연결 2개', '부분 실패', '중앙 확정 · 연결 1개는 에이전트 관측 전'],
+  ['2026-11-04 09:00:47', 'ops', '비밀번호 변경', '공용 계정 비밀번호', '성공'],
+  ['2026-11-03 22:14:09', '서버 운영자(로컬)', '비밀번호 재설정(로컬)', '공용 계정 비밀번호', '성공'],
+  ['2026-10-30 17:59:40', 'ops', '서비스 이름 변경', '서비스 ID 3 · 이름 바뀜', '성공'],
+  ['2026-10-28 03:12:40', 'ops', '로그인', '웹 세션', '성공', null, '중앙 시계가 조정된 구간이라 시각을 확인할 수 없음'],
+];
+/* 조기 정리 상태에서 `더 보기`로 가장 오래된 기록까지 불러온 목록 끝 */
+const EARLY_END = [['2026-09-22 10:14:03', 'ops', '로그인', '웹 세션', '성공'], ['2026-09-21 18:40:51', 'ops', '설정 변경', '결제 · app-01 · app.log', '성공'], ['2026-09-21 09:02:16', 'ops', '로그인', '웹 세션', '성공']];
+const AFTER = [['2026-11-05 10:58:40', 'ops', '설정 변경', '결제 · app-01 · app.log', '성공', '장애 중 보류됐던 변경을 복구 뒤 다시 실행함'], ['2026-11-05 10:53:10', 'ops', '로그인', '웹 세션', '성공']];
+let auditState = 'base', kindOpen = false, kindSel = new Set(), kindDraft = new Set(), dateFrom = '2026-08-07', dateTo = '2026-11-05';
+function auditRow(r) {
+  const [t, acct, act, target, res, sub, timeFlag] = r;
+  return `<tr><td class="t">${t}${timeFlag ? `<span class="cell-sub">${badge('unknown', '시각 미확인')}</span>` : ''}</td><td>${acct === 'ops' ? '<span class="mono">ops</span>' : `<span class="dim">${acct}</span>`}</td><td>${act}</td><td class="wrap">${target}${timeFlag ? `<span class="cell-sub">${timeFlag}</span>` : ''}</td><td class="wrap">${badge(RES_TONE[res], res)}${!sub ? '' : sub.length <= 4 ? ` <span class="dim">${sub}</span>` : `<span class="cell-sub">${sub}</span>`}</td></tr>`;
+}
+function renderAudit() {
+  banner();
+  const st = auditState;
+  const unreadable = st === 'unreadable';
+  const early = st === 'early';
+  const down = st === 'down';
+  const rec = st === 'recovered' || st === 'empty';
+  const start = early ? '2026-09-21' : '2026-08-07';
+  const gapText = down ? '2026-11-05 10:31:00 ~ 지금' : '2026-11-05 10:31:00 ~ 10:52:00';
+  const stats = `<section class="stat-grid" aria-label="볼 수 있는 범위">
+    <div class="card stat"><span class="stat-label">조회 가능 시작일</span><span class="stat-value">${unreadable ? badge('unknown', '미확인') : `<span>${start}</span>`}</span><span class="stat-sub">${early ? '보관 목표 90일대로면 2026-08-07부터입니다.' : '보관 목표는 90일입니다. 감사 저장 상한(N)이 우선해 더 일찍 정리될 수 있습니다.'}</span></div>
+    <div class="card stat"><span class="stat-label">조기 정리 구간</span><span class="stat-value">${unreadable ? badge('unknown', '미확인') : early ? badge('warning', '목표 90일보다 일찍 정리됨') : badge('success', '없음')}</span><span class="stat-sub">${early ? '2026-08-07 ~ 2026-09-21 · 감사 저장 상한에 닿아 가장 오래된 기록부터 정리했습니다. 이 구간은 볼 수 없습니다.' : unreadable ? '읽지 못해 알 수 없습니다.' : '목표 90일보다 일찍 정리한 기록이 없습니다.'}</span></div>
+    <div class="card stat"><span class="stat-label">기록 공백 구간</span><span class="stat-value">${unreadable ? badge('unknown', '미확인') : down ? badge('danger', '감사 기록 장애 중') : rec ? badge('unknown', '기록 공백') : badge('success', '없음')}</span><span class="stat-sub">${down || rec ? `${gapText} (UTC+09:00) · 이 구간의 로그인과 작업은 기록이 없습니다.` : unreadable ? '읽지 못해 알 수 없습니다.' : '조회 가능 시작일부터 지금까지 기록을 저장하지 못한 구간이 없습니다.'}</span></div></section>`;
+  const kindLabel = kindSel.size ? `${[...kindSel][0]}${kindSel.size > 1 ? ` 외 ${kindSel.size - 1}개` : ''}` : '전체';
+  const pop = kindOpen ? `<div class="popover kind-pop" role="dialog" aria-label="동작 종류"><div class="kind-groups">${KINDS.map(([g, ks]) => `<fieldset><legend>${g}</legend>${ks.map((k) => `<label><input type="checkbox" class="check" data-kind="${k}"${kindDraft.has(k) ? ' checked' : ''}>${k}</label>`).join('')}</fieldset>`).join('')}</div>
+      <div class="popover-foot"><button class="btn sm ghost" data-act="kind-clear">모두 풀기</button><button class="btn sm" data-act="kind-cancel">취소</button><button class="btn sm primary" data-act="kind-apply">적용</button></div></div>` : '';
+  const filters = `<div class="filters">
+      <div class="field"><label class="field-label" for="a-from">기간 (UTC+09:00)</label><div style="display:flex;gap:6px"><input class="input num date" id="a-from" value="${dateFrom}"${unreadable ? ' disabled' : ''}><span class="tilde">~</span><input class="input num date" id="a-to" value="${dateTo}" aria-label="기간 끝"${unreadable ? ' disabled' : ''}></div></div>
+      <div class="field kind-wrap"><span class="field-label" id="a-kind-l">동작 종류</span><button class="select-trigger" style="min-width:180px" aria-haspopup="dialog" aria-expanded="${kindOpen}" aria-labelledby="a-kind-l" data-act="kind-toggle"${unreadable ? ' disabled' : ''}><span>${kindLabel}</span><svg class="icon"><use href="#i-down"/></svg></button>${pop}</div>
+      <button class="btn" data-act="apply"${unreadable ? ' disabled' : ''}>적용</button>
+      <span class="field-hint" style="margin-left:auto;align-self:center">최신순 · 한 번에 N건</span></div>`;
+  const note = `<div class="callout" style="margin:var(--space-3) var(--space-4) 0">${badge('neutral', '공용 계정')}<div>계정은 여러 사람이 함께 쓰는 공용 계정입니다. 기록만으로는 실제로 누가 했는지 알 수 없습니다. 비밀번호·키 원문, 로그 본문, 검색어, 수신 주소 원문은 기록하지 않습니다.</div></div>`;
+  let body;
+  if (unreadable) body = `<div class="empty"><h2>감사 이력을 읽을 수 없습니다</h2><p>마지막으로 읽은 시각은 2026-11-05 10:30:52 (UTC+09:00)입니다. 감사 기록 저장소를 읽지 못하고 있습니다. 로그인·검색·수집은 계속되고, 민감 변경과 알림 규칙 변경은 보류됩니다.</p><button class="btn" data-act="retry">다시 불러오기</button></div>`;
+  else {
+    const gapRow = (open) => `<tr class="gap"><td colspan="5"><b>기록 공백</b>${open ? '2026-11-05 10:31:00 ~ 지금 · 감사 기록 장애 중입니다.' : '2026-11-05 10:31:00 ~ 10:52:00 · 감사 기록을 저장하지 못한 구간입니다.'} 이 구간의 로그인과, 장애 중에도 허용${open ? '되는' : '된'} 긴급 키 폐기·전체 세션 종료·서버 운영자의 로컬 재설정은 기록이 남지 않습니다. 실제 결과는 각 화면에서 봅니다.</td></tr>`;
+    /* 거르기: 기간(날짜)과 동작 종류. 공백·조기 정리 구간은 고른 기간과 겹칠 때만 보인다 */
+    const day = (r) => r[0].slice(0, 10);
+    const pass = (r) => day(r) >= dateFrom && day(r) <= dateTo && (!kindSel.size || kindSel.has(r[2]));
+    const narrowed = kindSel.size > 0 || dateFrom > start;
+    const rows = (early ? EARLY_END : AUDIT).filter(pass);
+    const after = rec ? AFTER.filter(pass) : [];
+    const gapIn = (down || rec) && dateFrom <= '2026-11-05' && dateTo >= '2026-11-05';
+    const cleanupIn = early && dateFrom <= '2026-09-21';
+    const none = !rows.length && !after.length;
+    const list = none ? '' : (down && gapIn ? gapRow(true) : '') + after.map(auditRow).join('') + (rec && gapIn ? gapRow(false) : '') + rows.map(auditRow).join('')
+      + (cleanupIn ? '<tr class="cleanup"><td colspan="5"><b>조기 정리</b>2026-08-07 ~ 2026-09-21 · 감사 저장 상한에 닿아 목표 90일보다 일찍 정리한 구간입니다. 이 구간의 기록은 볼 수 없습니다.</td></tr>' : '');
+    const emptyMsg = none ? `<div class="empty"><h2>고른 기간과 동작 종류에 맞는 기록이 없습니다</h2><p>${gapIn ? `이 기간에는 기록 공백 구간 ${gapText} (UTC+09:00)이 있습니다. 그 사이의 작업은 기록이 없으므로, 기록이 없다고 작업이 없었다는 뜻은 아닙니다.` : cleanupIn ? '이 기간에는 일찍 정리돼 볼 수 없는 구간(2026-08-07 ~ 2026-09-21)이 있습니다.' : '기간이나 동작 종류를 넓혀 보세요.'}</p><button class="btn" data-act="kind-reset">거르기 풀기</button></div>` : '';
+    body = (list ? `<table class="datatable audit"><colgroup><col style="width:170px"><col style="width:140px"><col style="width:170px"><col><col style="width:220px"></colgroup>
+      <thead><tr><th scope="col">시각 (UTC+09:00)</th><th scope="col">공용 계정</th><th scope="col">동작</th><th scope="col">대상</th><th scope="col">결과</th></tr></thead><tbody>${list}</tbody></table>` : '') + emptyMsg
+      + (none ? '' : `<div class="more-row">${early ? '<span class="dim">조회 가능 시작일까지 모두 불러왔습니다</span>' : narrowed ? `<span class="dim">${rows.length + after.length}건 · 끝까지 불러왔습니다</span>` : '<button class="btn sm" data-act="more">더 보기</button><span class="dim">최근 N건</span>'}</div>`);
+  }
+  $('#view-audit').innerHTML = `<div class="page-head"><div><h1>감사 이력</h1><div class="meta"><span>로그인·자격·키·수집 연결·알림 설정 변경의 기록</span></div></div></div>${stats}
+    <section class="card section-card" style="overflow:visible">${filters}${unreadable ? '' : note}<div class="body" style="padding-top:var(--space-2)">${body}</div></section>`;
+}
+
+/* ════ UI-16 계정과 세션 ═══════════════════════════════════ */
+let acctState = 'base', pwErr = {}, endFailed = false;
+const COMMON = ['password1234567', 'qwerty123456789', '1q2w3e4r5t6y7u8i', 'aaaaaaaaaaaaaaa'];
+function renderAccount() {
+  banner();
+  document.body.classList.toggle('signed-out', acctState === 'signed-out');
+  if (acctState === 'signed-out') {
+    $('#view-account').innerHTML = `<section class="card login" aria-labelledby="login-t"><div class="card-pad"><h1 id="login-t">로그인</h1>
+      <div class="field"><label class="field-label" for="l-id">계정 이름</label><input class="input" id="l-id" autocomplete="username"></div>
+      <div class="field"><label class="field-label" for="l-pw">비밀번호</label><input class="input" id="l-pw" type="password" autocomplete="current-password"></div>
+      <button class="btn primary" data-act="relogin">로그인</button>
+      <p class="p-note">로그인 화면(UI-01)은 묶음 4에서 다듬습니다.</p></div></section>`;
+    return;
+  }
+  const err = (k) => (pwErr[k] ? `<span class="field-error">${pwErr[k]}</span>` : '');
+  const inv = (k) => (pwErr[k] ? ' aria-invalid="true"' : '');
+  const pwField = (id, label, hint, k, ac) => `<div class="field"><label class="field-label" for="${id}">${label}</label><div class="pw-row"><input class="input" type="password" id="${id}" autocomplete="${ac}"${inv(k)}${hint ? ` aria-describedby="${id}-h"` : ''}><button class="btn ghost sm" type="button" data-show="${id}" aria-pressed="false" style="height:32px">보기</button></div>${err(k)}${hint ? `<span class="field-hint" id="${id}-h">${hint}</span>` : ''}</div>`;
+  $('#view-account').innerHTML = `<div class="page-head"><div><h1>계정과 세션</h1><div class="meta"><span>공용 계정 <span class="mono">ops</span> · 여러 사람이 함께 씁니다</span></div></div></div>
+    <div class="acct">
+      <section class="card section-card"><header><h2>비밀번호 변경</h2></header><div class="card-pad">
+        ${pwErr.throttled ? `<div class="callout danger">${badge('danger', '잠시 막음')}<div><strong>비밀번호 확인 시도가 많아 잠시 막았습니다.</strong> N분 뒤 다시 시도하세요. 남은 시간은 줄어드는 대로 고칩니다.</div></div>` : ''}
+        ${pwField('pw-cur', '현재 비밀번호', '', 'cur', 'current-password')}
+        ${pwField('pw-new', '새 비밀번호', '15자 이상. 띄어쓰기를 넣은 긴 문구도 쓸 수 있습니다. 흔하거나 알려진 비밀번호는 쓸 수 없습니다.', 'new', 'new-password')}
+        ${pwField('pw-new2', '새 비밀번호 다시 입력', '', 'new2', 'new-password')}
+        <div class="callout">${badge('neutral', '영향')}<div>바꾸면 현재 세션을 포함한 모든 세션이 끝나고, 함께 쓰는 사람도 새 비밀번호로 다시 로그인해야 합니다.</div></div>
+        <div><button class="btn primary" data-act="pw-change"${pwErr.throttled ? ' disabled' : ''}>비밀번호 변경</button></div></div></section>
+      <div class="acct-side">
+        <section class="card section-card"><header><h2>세션</h2></header><div class="card-pad" style="padding-top:0;gap:0">
+          <div class="session-row"><div class="what"><b>로그아웃</b>이 브라우저의 세션만 끝냅니다. 이 브라우저에 남긴 검색 조건 복원 정보도 지웁니다.</div><button class="btn" data-act="logout">로그아웃</button></div>
+          <div class="session-row"><div class="what"><b>모든 세션 종료</b>현재 세션을 포함해 이 계정의 모든 세션을 끝냅니다. 함께 쓰는 사람도 모두 다시 로그인해야 합니다.</div><button class="btn" data-act="end-all">${endFailed ? '다시 시도' : '모든 세션 종료'}</button></div>
+          ${endFailed ? `<div class="callout danger" style="margin-top:var(--space-2)">${badge('danger', '확정 못 함')}<div><strong>모든 세션을 끝냈는지 확정하지 못했습니다.</strong> 일부 세션이 아직 남아 있을 수 있습니다. 다시 시도하세요. 계속 실패하면 서버 운영자가 서버에서 비밀번호를 재설정하면 모든 세션이 끝납니다.</div></div>` : ''}
+        </div></section>
+        <section class="card section-card"><header><h2>세션 규칙</h2></header><div class="card-pad"><p class="p-note">활동이 1시간 없거나 로그인한 지 24시간이 지나면 다시 로그인해야 합니다. 비밀번호를 바꾸면 모든 세션이 끝납니다.</p></div></section>
+        <section class="card section-card"><header><h2>비밀번호를 잊었거나 잠겼을 때</h2></header><div class="card-pad"><p class="p-note">서버 운영자가 서버에서 로컬 절차로 재설정합니다. 이메일로 복구하지 않습니다. 재설정하면 모든 세션이 끝나고, 감사 이력에는 계정 칸이 <strong>서버 운영자(로컬)</strong>로 남습니다.</p></div></section>
+      </div></div>`;
+}
+function validatePw() {
+  const cur = $('#pw-cur').value, nw = $('#pw-new').value, nw2 = $('#pw-new2').value;
+  const e = {};
+  const len = [...nw].length;
+  if (!cur) e.cur = '현재 비밀번호를 넣으세요.';
+  if (!nw) e.new = '새 비밀번호를 넣으세요.';
+  else if (len < 15) e.new = `비밀번호가 짧습니다(15자 이상). 지금 ${len}자입니다.`;
+  else if (nw === cur) e.new = '현재 비밀번호와 같습니다. 다른 문구를 쓰세요.';
+  if (nw && nw2 !== nw) e.new2 = '새 비밀번호와 다릅니다.';
+  return e;
+}
+
+/* ── 확인 창(CM-07)과 토스트(CM-08) ── */
+let opener = null;
+function closeDialog() { $('#dialog-root').innerHTML = ''; document.removeEventListener('keydown', escClose); opener && opener.isConnected && opener.focus(); }
+function escClose(e) { if (e.key === 'Escape') closeDialog(); }
+function openDialog({ title, target, impacts, action, cancel = '취소', danger, onOk }) {
+  opener = document.activeElement;
+  $('#dialog-root').innerHTML = `<div class="dialog-backdrop"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="dialog-head"><h2 id="dlg-t">${title}</h2></div>
+    <div class="dialog-body">${target ? `<dl class="kv" style="grid-template-columns:96px 1fr">${kv(target)}</dl>` : ''}
+      <div class="field"><span class="field-label">영향</span><ul class="impact">${impacts.map((i) => `<li${i.startsWith('!') ? ' class="strong"' : ''}>${i.replace(/^!/, '')}</li>`).join('')}</ul></div></div>
+    <div class="dialog-foot"><button class="btn" id="dlg-cancel">${cancel}</button><button class="btn ${danger ? 'danger' : 'primary'}" id="dlg-ok">${action}</button></div></div></div>`;
+  document.addEventListener('keydown', escClose);
+  $('#dlg-cancel').onclick = closeDialog;
+  $('.dialog-backdrop').onclick = (e) => { if (e.target.classList.contains('dialog-backdrop')) closeDialog(); };
+  $('#dlg-ok').focus();
+  $('#dlg-ok').onclick = () => {
+    const ok = $('#dlg-ok'); ok.setAttribute('aria-busy', 'true'); ok.textContent = `${action} 중…`; $('#dlg-cancel').disabled = true;
+    document.removeEventListener('keydown', escClose);
+    setTimeout(() => { closeDialog(); onOk(); }, 600);
+  };
+}
+function toast(kind, label, title, text) {
+  const el = document.createElement('div');
+  el.className = `toast ${kind}`;
+  el.innerHTML = `<div class="toast-text"><span class="toast-kind">${label}</span><strong>${title}</strong>${text ? `<p>${text}</p>` : ''}</div><button class="btn ghost sm icon-only" aria-label="닫기"><svg class="icon"><use href="#i-x"/></svg></button>`;
+  el.querySelector('button').onclick = () => el.remove();
+  $('#toasts').prepend(el);
+  if (kind === '' || kind === 'note') setTimeout(() => el.remove(), 6000);
+}
+
+/* ════ 화면 전환과 시안 상태 ════════════════════════════════
+   setView: 시안 막대에서 고름. 상태를 처음으로 되돌린다. go: 화면 안 링크·메뉴로 이동. 바뀐 상태를 그대로 둔다. */
+const DEMO = {
+  storage: [['base', '정상'], ['warn', '디스크 경고'], ['early', '조기 삭제 발생'], ['unknown', '값 미확인(측정 불가)'], ['estimate', '저장량 추정']],
+  mail: [['base', '기본'], ['error', '연결 오류'], ['unknown', '연결 미확인(보낸 적 없음)'], ['test-ok', '테스트 발송 성공'], ['test-fail', '테스트 발송 실패'], ['noops', '운영 수신 주소 없음'], ['input-error', '주소 입력 오류'], ['nomail', '메일 설정 없음'], ['plain', '평문 사내 릴레이 경고'], ['audit', '감사 장애로 저장 보류']],
+  audit: [['base', '기본'], ['filtered', '동작 종류로 거름'], ['down', '감사 기록 장애 중'], ['recovered', '복구 뒤 기록 공백'], ['empty', '거른 결과 없음(공백 포함)'], ['early', '목표 90일보다 일찍 정리'], ['unreadable', '이력을 읽을 수 없음']],
+  account: [['base', '기본'], ['errors', '비밀번호 입력 오류'], ['throttled', '확인 시도 제한'], ['audit', '감사 장애(변경 보류, 세션 종료는 진행)'], ['end-failed', '세션 종료를 확정 못 함'], ['signed-out', '다시 로그인']],
+};
+let demoState = 'base';
+const TITLES = { storage: '저장 공간과 보존', mail: '메일 상태', audit: '감사 이력', account: '계정과 세션' };
+function syncDemo() {
+  $$('#demo-view button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === view)));
+  $('#demo-state').innerHTML = DEMO[view].map(([v, t]) => `<option value="${v}"${v === demoState ? ' selected' : ''}>${t}</option>`).join('');
+  const sys = view !== 'account';
+  $('#sys-btn').toggleAttribute('data-current', sys);
+  $$('#sys-menu [data-go]').forEach((a) => (a.dataset.go === view ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
+  sys ? $('#menu-account').removeAttribute('aria-current') : $('#menu-account').setAttribute('aria-current', 'page');
+}
+function show(v) {
+  view = v;
+  Object.keys(TITLES).forEach((k) => { $('#view-' + k).hidden = k !== v; });
+  document.title = `LogDock 시안 — ${TITLES[v]}`;
+  closeMenu();
+  window.scrollTo({ top: 0 });
+}
+function render() { ({ storage: renderStorage, mail: renderMail, audit: renderAudit, account: renderAccount })[view](); }
+function applyDemo(s) {
+  demoState = s; closeDialog(); Object.keys(N).forEach((k) => { N[k] = false; }); Object.keys(ACKED).forEach((k) => delete ACKED[k]);
+  document.body.classList.remove('signed-out');
+  if (view === 'storage') { storageState = s; N.disk = s === 'warn' || s === 'early'; N.early = s === 'early'; N.unmeasurable = s === 'unknown'; }
+  else if (view === 'mail') {
+    mailState = s; M = { ...MAIL_BASE, ...MAIL[s] }; OPS = s === 'noops' ? [] : OPS_SEED(); opsErr = ''; testTo = ''; testRes = null;
+    if (s === 'error') N.mailErr = true;
+    if (s === 'noops') N.opsMissing = true;
+    if (s === 'audit') N.auditDown = true;
+    if (s === 'test-ok') { testTo = 'oncall@example.com'; testRes = { ok: true, to: testTo }; }
+    if (s === 'test-fail') { testTo = 'oncall@example.com'; testRes = { ok: false, to: testTo }; OPS[1].res = `${badge('danger', '보내지 못함')} <span class="dim">수신자 거부: 메일 서버가 이 주소를 받지 않았습니다. 주소에 오타가 없는지 확인하세요.</span>`; OPS[0].res = `${badge('success', '메일 서버 수락')} <span class="dim">10:21:02</span>`; }
+    if (s === 'input-error') { OPS.push({ a: 'team-a@example.com', ok: false, saved: false }); opsErr = '메일 주소 형식이 아닙니다.'; }
+    OPS0 = JSON.stringify(OPS.filter((r) => r.saved).map((r) => r.a));
+  } else if (view === 'audit') {
+    auditState = s; kindOpen = false; kindSel = new Set(); dateFrom = s === 'early' ? '2026-09-21' : '2026-08-07'; dateTo = '2026-11-05';
+    if (s === 'filtered') { kindSel = new Set(['키 발급', '키 교체', '키 폐기']); dateFrom = '2026-10-01'; }
+    if (s === 'empty') { kindSel = new Set(['전체 세션 종료']); dateFrom = '2026-11-05'; }
+    if (s === 'down' || s === 'unreadable') N.auditDown = true;
+    if (s === 'recovered' || s === 'empty') N.auditGap = true;
+  } else {
+    acctState = s === 'signed-out' ? 'signed-out' : 'form'; pwErr = {}; endFailed = s === 'end-failed';
+    if (s === 'errors') pwErr = { cur: '비밀번호가 맞지 않습니다.', new: '흔하거나 알려진 비밀번호라 쓸 수 없습니다. 다른 문구를 쓰세요.', new2: '새 비밀번호와 다릅니다.' };
+    if (s === 'throttled') pwErr = { throttled: true, cur: '비밀번호가 맞지 않습니다.' };
+    if (s === 'audit') N.auditDown = true;
+  }
+  render();
+  if (view === 'mail' && mailState === 'input-error') $('#m-add').value = 'infra@';
+  syncDemo();
+}
+function setView(v, state) { show(v); applyDemo(state || DEMO[v][0][0]); }
+function go(v) {
+  closeDialog(); show(v);
+  if (v === 'mail' && !M) { applyDemo('base'); return; }
+  if (v === 'mail') demoState = mailState; else if (v === 'storage') demoState = storageState; else if (v === 'audit') demoState = auditState; else demoState = acctState === 'signed-out' ? 'signed-out' : 'base';
+  render(); syncDemo();
+}
+function closeMenu() { $('#sys-menu').hidden = true; $('#sys-btn').setAttribute('aria-expanded', 'false'); }
+function signOut(title, text, kind = '') { acctState = 'signed-out'; show('account'); demoState = 'signed-out'; render(); syncDemo(); toast(kind, kind === 'fail' ? '실패' : '성공', title, text); }
+
+/* ── 이벤트 ── */
+document.addEventListener('click', (e) => {
+  const t = e.target;
+  if (t.closest('#sys-btn')) { const open = $('#sys-menu').hidden; $('#sys-menu').hidden = !open; $('#sys-btn').setAttribute('aria-expanded', String(open)); if (open) $('#sys-menu .option').focus(); return; }
+  if (!t.closest('.menu-drop')) closeMenu();
+  const g = t.closest('[data-go]');
+  if (g) { e.preventDefault(); go(g.dataset.go); return; }
+  const ackN = t.closest('[data-ack-notice]');
+  if (ackN) { ACKED[ackN.dataset.ackNotice] = true; render(); toast('', '성공', '확인했습니다.', '같은 일이 다시 생기면 배너가 다시 보입니다.'); return; }
+  const sh = t.closest('[data-show]');
+  if (sh) { const inp = $('#' + sh.dataset.show); const on = inp.type === 'password'; inp.type = on ? 'text' : 'password'; sh.textContent = on ? '숨기기' : '보기'; sh.setAttribute('aria-pressed', String(on)); return; }
+  const a = t.closest('[data-act]')?.dataset.act;
+  /* UI-14 */
+  if (view === 'mail') {
+    const i = (sel) => +t.closest(sel).getAttribute(sel.slice(1, -1));
+    if (t.closest('[data-ops-rm]')) { OPS.splice(i('[data-ops-rm]'), 1); opsErr = ''; renderMail(); return; }
+    if (t.closest('[data-ops-test]')) {
+      const k = i('[data-ops-test]'); OPS[k].res = badge('info', '전송 중'); renderMail();
+      setTimeout(() => { OPS[k].res = /infra/.test(OPS[k].a) && mailState !== 'base' ? `${badge('danger', '보내지 못함')} <span class="dim">수신자 거부: 메일 서버가 이 주소를 받지 않았습니다.</span>` : M.status === '연결 오류' ? `${badge('danger', '보내지 못함')} <span class="dim">인증 실패: 연결 문제라 주소와는 관계없습니다.</span>` : `${badge('success', '메일 서버 수락')} <span class="dim">10:21:02 · 도착은 받는 쪽에서 확인</span>`; if (view === 'mail') renderMail(); }, 800);
+      return;
+    }
+    if (t.closest('[data-ops-ack]')) {
+      const k = i('[data-ops-ack]');
+      if (N.auditDown) { toast('hold', '보류', '감사 기록을 저장할 수 없어 받았음을 표시하지 않았습니다.', '복구된 뒤 다시 누르세요. <a href="#" data-go="audit">감사 이력 보기</a>'); return; }
+      OPS[k].ok = true; renderMail(); toast('', '성공', `${esc(OPS[k].a)}를 확인됨으로 표시했습니다.`, '받는 사람이 받은편지함에서 메일을 확인한 주소입니다.'); return;
+    }
+    if (a === 'ops-add') {
+      const v = $('#m-add').value.trim(); opsErr = '';
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) opsErr = '메일 주소 형식이 아닙니다.';
+      else if (OPS.some((r) => r.a.toLowerCase() === v.toLowerCase())) opsErr = '이미 넣은 주소입니다.';
+      else OPS.push({ a: v, ok: false, saved: false });
+      renderMail(); if (opsErr) { $('#m-add').value = v; $('#m-add').focus(); } return;
+    }
+    if (a === 'ops-reset') { OPS = OPS.filter((r) => r.saved); const keep = JSON.parse(OPS0); OPS = keep.map((addr) => OPS.find((r) => r.a === addr) || { a: addr, ok: false, saved: true }); opsErr = ''; renderMail(); return; }
+    if (a === 'ops-save') {
+      if (N.auditDown) { toast('hold', '보류', '감사 기록을 저장할 수 없어 운영 수신 주소를 바꾸지 않았습니다.', '지금 주소로 운영 메일이 그대로 갑니다. 입력한 내용은 화면에 남아 있으니 복구된 뒤 다시 저장하세요. <a href="#" data-go="audit">감사 이력 보기</a>'); return; }
+      OPS.forEach((r) => { r.saved = true; }); OPS0 = JSON.stringify(OPS.map((r) => r.a)); N.opsMissing = OPS.length === 0;
+      renderMail(); toast('', '성공', '운영 수신 주소를 저장했습니다.', OPS.length ? `${OPS.length}곳. 받을 수 있는 주소인지 테스트 메일로 확인하세요.` : '운영 수신 주소가 없어 운영 메일이 아무에게도 가지 않습니다.'); return;
+    }
+    if (a === 'test') {
+      const v = $('#m-test').value.trim(); testTo = v;
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { testRes = null; renderMail(); const f = $('#m-test'); f.setAttribute('aria-invalid', 'true'); f.insertAdjacentHTML('afterend', '<span class="field-error">메일 주소 형식이 아닙니다.</span>'); f.focus(); return; }
+      testRes = null; renderMail();
+      setTimeout(() => { testRes = { ok: M.status !== '연결 오류', to: v }; if (view === 'mail') renderMail(); }, 800); return;
+    }
+  }
+  /* UI-15 */
+  if (view === 'audit') {
+    if (a === 'kind-toggle') { kindOpen = !kindOpen; kindDraft = new Set(kindSel); renderAudit(); return; }
+    if (a === 'kind-cancel') { kindOpen = false; renderAudit(); return; }
+    if (a === 'kind-clear') { kindDraft = new Set(); $$('[data-kind]').forEach((c) => { c.checked = false; }); return; }
+    if (a === 'kind-apply') { kindSel = new Set(kindDraft); kindOpen = false; renderAudit(); return; }
+    if (a === 'kind-reset') { kindSel = new Set(); dateFrom = auditState === 'early' ? '2026-09-21' : '2026-08-07'; dateTo = '2026-11-05'; renderAudit(); return; }
+    if (a === 'apply') { dateFrom = $('#a-from').value.trim(); dateTo = $('#a-to').value.trim(); kindOpen = false; renderAudit(); return; }
+    if (a === 'more') { toast('note', '안내', '시안에서는 더 불러올 기록이 없습니다.', '제품에서는 다음 N건을 이어 붙이고, 조회 가능 시작일에 닿으면 끝났다고 씁니다.'); return; }
+    if (a === 'retry') { toast('fail', '실패', '감사 이력을 읽을 수 없습니다.', '마지막 성공 2026-11-05 10:30:52. 감사 기록 저장소가 복구되면 다시 불러오세요.'); return; }
+    if (!t.closest('.kind-wrap') && kindOpen) { kindOpen = false; renderAudit(); }
+  }
+  /* UI-16 */
+  if (view === 'account') {
+    if (a === 'pw-change') {
+      const ev = validatePw();
+      pwErr = ev; const vals = { cur: $('#pw-cur').value, nw: $('#pw-new').value, nw2: $('#pw-new2').value };
+      if (Object.keys(ev).length) { renderAccount(); $('#pw-cur').value = vals.cur; $('#pw-new').value = vals.nw; $('#pw-new2').value = vals.nw2; $(`#${{ cur: 'pw-cur', new: 'pw-new', new2: 'pw-new2' }[Object.keys(ev)[0]]}`).focus(); return; }
+      openDialog({ title: '비밀번호 변경', action: '비밀번호 변경', target: [['대상', '공용 계정 <span class="mono">ops</span>']],
+        impacts: ['!현재 세션을 포함한 모든 세션이 끝납니다.', '함께 쓰는 사람도 새 비밀번호로 다시 로그인해야 합니다.', '위 칸의 현재 비밀번호로 확인하므로 여기서 다시 묻지 않습니다.'],
+        onOk: () => {
+          if (N.auditDown) { toast('hold', '보류', '감사 기록을 저장할 수 없어 비밀번호를 바꾸지 않았습니다.', '지금 비밀번호와 세션이 그대로입니다. 복구된 뒤 다시 하세요. <a href="#" data-go="audit">감사 이력 보기</a>'); return; }
+          if (COMMON.includes(vals.nw.toLowerCase())) { pwErr = { new: '흔하거나 알려진 비밀번호라 쓸 수 없습니다. 다른 문구를 쓰세요.' }; renderAccount(); $('#pw-cur').value = vals.cur; $('#pw-new').focus(); return; }
+          signOut('비밀번호를 바꿨습니다.', '모든 세션을 끝냈습니다. 새 비밀번호로 다시 로그인하세요.');
+        } });
+      return;
+    }
+    if (a === 'logout') { signOut('로그아웃했습니다.', '이 브라우저에 남긴 검색 조건 복원 정보도 지웠습니다.'); return; }
+    if (a === 'end-all') {
+      openDialog({ title: '모든 세션 종료', action: '모든 세션 종료', danger: true, target: [['대상', '공용 계정 <span class="mono">ops</span>의 모든 세션']],
+        impacts: ['!현재 세션을 포함해 모든 세션을 끝냅니다. 함께 쓰는 사람도 모두 다시 로그인해야 합니다.', '세션 차단을 확정 저장했을 때만 완료로 알립니다.', ...(N.auditDown ? ['감사 기록 장애 중이어도 진행하며, 이 작업은 감사 이력에 공백으로 남습니다.'] : [])],
+        onOk: () => {
+          endFailed = false;
+          signOut('모든 세션을 끝냈습니다. 다시 로그인하세요.', N.auditDown ? '감사 기록 장애 중이라 이 작업은 감사 이력에 공백으로 남습니다.' : '');
+        } });
+      return;
+    }
+    if (a === 'relogin') { acctState = 'form'; document.body.classList.remove('signed-out'); demoState = 'base'; renderAccount(); syncDemo(); toast('', '성공', '로그인했습니다.', ''); return; }
+  }
+});
+document.addEventListener('change', (e) => { const c = e.target.closest('[data-kind]'); if (c) { c.checked ? kindDraft.add(c.dataset.kind) : kindDraft.delete(c.dataset.kind); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#sys-menu').hidden) { closeMenu(); $('#sys-btn').focus(); } });
+$$('#demo-view button').forEach((b) => b.onclick = () => setView(b.dataset.v));
+$('#demo-state').onchange = (e) => applyDemo(e.target.value);
+
+const themeBtn = document.getElementById('theme');
+function setTheme(t) { document.documentElement.dataset.theme = t; themeBtn.textContent = t === 'dark' ? '밝은 테마 보기' : '어두운 테마 보기'; }
+themeBtn.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+const q = new URLSearchParams(location.search);
+if (q.get('theme') === 'dark') setTheme('dark');
+const qv = DEMO[q.get('view')] ? q.get('view') : 'storage';
+setView(qv, DEMO[qv].some(([v]) => v === q.get('state')) ? q.get('state') : undefined);
+if (location.hash === '#menu') $('#sys-btn').click();
+if (location.hash === '#kinds' && view === 'audit') $('[data-act="kind-toggle"]').click();
+</script>
+</body>
+</html>

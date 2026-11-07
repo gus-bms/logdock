@@ -22,6 +22,11 @@
   .toolbar { position: relative; }
   .tp-pop { position: absolute; left: var(--layout-pad-x); top: calc(100% + var(--space-2)); width: 384px; }
   .tp-pop[hidden], .tp-pop [hidden] { display: none; }
+  /* 상대·고정 범위를 같은 칸에 겹쳐 두고 안 쓰는 쪽은 보이지 않게만 한다. 팝업 높이는 더 큰 쪽(고정 범위 + 오류 줄 자리)으로 고정된다 */
+  .tp-range { display: grid; align-items: start; }
+  .tp-range > .field { grid-area: 1 / 1; }
+  .tp-pop .tp-range > [hidden] { display: grid; visibility: hidden; }
+  .tp-pop #tp-err[hidden] { display: flex; visibility: hidden; }
   .rel-row { display: grid; grid-template-columns: auto 88px 1fr; gap: var(--space-2); align-items: center; }
   .sel-wrap { position: relative; }
   .sel-wrap .listbox { position: absolute; left: 0; top: calc(100% + 4px); width: 100%; }
@@ -38,6 +43,42 @@
   body.detail-open .toast-stack { right: calc(420px + var(--space-6)); }
   .hint { position: fixed; left: 50%; bottom: var(--space-4); transform: translateX(-50%); background: var(--color-accent); color: var(--color-text-on-accent); padding: 6px var(--space-3); border-radius: var(--radius-full); font-size: var(--text-sm); box-shadow: var(--shadow-toast); }
   body.detail-open .hint { display: none; }
+  /* ── 시안 상태(2026-11-06 묶음 5): CM-04 결과 상태, 조건 저장, CM-03 조건 편집 상태 ── */
+  :root { --demo-h: 44px; }
+  .main { padding-bottom: calc(var(--demo-h) + 56px); }
+  .hint { bottom: calc(var(--demo-h) + var(--space-3)); }
+  .chart-state { position: absolute; inset: 40px var(--space-4) var(--space-3); display: grid; place-items: center; border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--color-text-secondary); background: var(--color-bg-surface); text-align: center; }
+  .chart-state.partial { inset: 40px auto 26px 44px; place-items: start; padding: var(--space-2); background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--color-unknown-border) 30%, transparent) 0 4px, transparent 4px 9px), var(--color-bg-surface); color: var(--color-unknown-fg); font-weight: var(--font-weight-medium); }
+  #notice[hidden], #tablefoot[hidden], #logtable[hidden], #chart-state[hidden] { display: none !important; }
+  .qpop { max-width: 520px; }
+  .chart-card.hide-plot #hist { visibility: hidden; }
+  .facets.pending .cnt { color: transparent; position: relative; }
+  .facets.pending .cnt::after { content: "—"; position: absolute; right: 0; color: var(--color-text-tertiary); }
+  .facets.pending .bar i { visibility: hidden; }
+  .facets.zero .bar i { width: 0 !important; }
+  .stale-result { opacity: 0.45; }
+  .result-empty { padding: 40px var(--space-6); text-align: center; color: var(--color-text-secondary); font-size: var(--text-sm); display: grid; gap: var(--space-2); justify-items: center; }
+  .result-empty strong { color: var(--color-text); font-size: var(--text-base); }
+  .issues { margin: 0 var(--space-3) var(--space-2); width: calc(100% - 2 * var(--space-3)); }
+  .issues td.wrap { white-space: normal; }
+  .toolbar-note { grid-column: 2 / -1; display: flex; gap: var(--space-2); align-items: center; margin-top: var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .toolbar-note.error { color: var(--color-danger-fg); }
+  .chip.invalid { background: var(--color-danger-bg); box-shadow: inset 0 0 0 1px var(--color-danger-border); }
+  .chip.changed { box-shadow: inset 0 0 0 1px var(--color-warning-border); }
+  .chip .mark { font: var(--font-weight-medium) 11px/16px var(--font-sans); color: var(--color-warning-fg); padding-right: 6px; }
+  .qpop { position: absolute; z-index: var(--z-popover); padding: var(--space-3); display: grid; gap: var(--space-2); font-size: var(--text-sm); }
+  .qpop .grp { font-size: 11px; font-weight: var(--font-weight-medium); color: var(--color-text-tertiary); margin-top: var(--space-1); }
+  .qpop label { display: flex; align-items: center; gap: var(--space-2); }
+  .qpop .cols2 { display: grid; grid-template-columns: 180px 220px; gap: var(--space-4); }
+  .qpop .opt { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); height: 28px; padding: 0 var(--space-2); border-radius: var(--radius-md); }
+  .qpop .opt[aria-selected="true"] { background: var(--color-bg-selected); color: var(--color-accent-fg); font-weight: var(--font-weight-medium); }
+  .qpop .opt[aria-disabled="true"] { color: var(--color-text-disabled); }
+  .demo-switch { position: fixed; left: 0; right: 0; bottom: 0; height: var(--demo-h); display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+    padding: 0 var(--space-4); background: var(--color-toast-bg); color: var(--color-toast-text-secondary); font-size: var(--text-sm); box-shadow: var(--shadow-toast); z-index: var(--z-sticky); white-space: nowrap; }
+  .demo-switch .segmented { height: 30px; background: rgb(255 255 255 / 0.08); box-shadow: none; }
+  .demo-switch .segmented button { height: 26px; color: var(--color-toast-text-secondary); }
+  .demo-switch .segmented button[aria-pressed="true"] { background: rgb(255 255 255 / 0.16); color: var(--color-toast-text); box-shadow: none; }
+  .demo-switch select { height: 30px; border: 0; border-radius: var(--radius-full); padding: 0 var(--space-3); background: rgb(255 255 255 / 0.12); color: var(--color-toast-text); font-size: var(--text-sm); }
 </style>
 </head>
 <body>
@@ -60,11 +101,16 @@
   <span class="brand"><span class="brand-mark" aria-hidden="true"></span>LogDock</span>
   <div class="menu">
     <a href="#" aria-current="page">로그 탐색</a>
-    <a href="#">저장 검색</a>
-    <a href="#">알림</a>
+    <a href="sample-ui01-05-search-aids.html?view=saved">저장 검색</a>
+    <a href="sample-ui06-09-alerts.html">알림</a>
     <a href="#">수집 연결 <span class="menu-count" aria-label="조치 필요 2건">2</span></a>
-    <a href="#">저장 공간</a>
-    <a href="#">감사 이력</a>
+    <div class="menu-drop"><button class="menu-btn" id="sys-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="sys-menu"><span>시스템</span><svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg></button>
+      <div class="listbox" id="sys-menu" role="menu" aria-label="시스템" hidden>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=storage">저장 공간과 보존</a>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=mail">메일 상태</a>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=audit">감사 이력</a>
+      </div></div>
+    <a href="sample-ui13-16-system.html?view=account">계정</a>
   </div>
   <div class="topbar-end"><span class="mono tertiary">Asia/Seoul</span><button class="btn ghost sm" id="theme" title="검토용: 어두운 테마는 첫 출시 범위가 아니다">어두운 테마 보기</button><span class="avatar" title="공용 계정">공용</span></div>
 </nav>
@@ -73,7 +119,7 @@
   <button class="timepick" id="tp" aria-haspopup="dialog" aria-expanded="false" aria-controls="tp-pop">
     <svg class="icon"><use href="#i-clock"/></svg><strong>최근 1시간</strong><span class="range mono">13:02–14:02</span><svg class="icon tertiary"><use href="#i-down"/></svg>
   </button>
-  <div class="querybar" role="group" aria-label="검색 조건">
+  <div class="querybar" id="qbar" role="group" aria-label="검색 조건">
     <svg class="icon"><use href="#i-search"/></svg>
     <span class="chip"><span class="chip-key">서비스</span><span class="chip-op">=</span><span class="chip-val">billing</span><button aria-label="서비스 조건 지우기"><svg class="icon" style="width:12px;height:12px"><use href="#i-x"/></svg></button></span>
     <span class="chip"><span class="chip-key">환경</span><span class="chip-op">=</span><span class="chip-val">prod</span><button aria-label="환경 조건 지우기"><svg class="icon" style="width:12px;height:12px"><use href="#i-x"/></svg></button></span>
@@ -84,9 +130,9 @@
   <div class="segmented" role="group" aria-label="시간 기준">
     <button aria-pressed="true">발생 시각</button><button aria-pressed="false">수신 시각</button>
   </div>
-  <button class="btn primary">검색 <span class="kbd">↵</span></button>
-  <button class="btn icon-only" aria-label="조건 저장" title="조건 저장"><svg class="icon"><use href="#i-save"/></svg></button>
-  <button class="btn icon-only" aria-label="현재 조건으로 알림 규칙 만들기" title="현재 조건으로 알림 규칙 만들기"><svg class="icon"><use href="#i-bell"/></svg></button>
+  <button class="btn primary" id="search-btn">검색 <span class="kbd">↵</span></button>
+  <button class="btn icon-only" id="save-btn" aria-label="조건 저장" title="조건 저장"><svg class="icon"><use href="#i-save"/></svg></button>
+  <a class="btn icon-only" id="rule-btn" href="sample-ui06-09-alerts.html?view=edit&amp;state=from-search" aria-label="현재 조건으로 알림 규칙 만들기" title="현재 조건으로 알림 규칙 만들기"><svg class="icon"><use href="#i-bell"/></svg></a>
   </div>
 <!-- CM-02 시간 범위 선택 팝오버. 동작·초점은 Base UI Popover에 맡긴다. 빠른 선택 버튼과 기본 N은 화면 설계에서 정한다(와이어프레임 CM-02) -->
 <div class="popover tp-pop" id="tp-pop" role="dialog" aria-label="시간 범위" hidden>
@@ -95,6 +141,7 @@
     <span class="field-hint">수신 시각은 중앙이 처음 유효하게 받은 시각으로, 늦게 도착한 로그를 찾을 때 씁니다.</span></div>
   <div class="field"><span class="field-label">범위</span>
     <div class="segmented" id="tp-mode"><button aria-pressed="true" data-v="rel">상대 범위</button><button aria-pressed="false" data-v="abs">고정 범위</button></div></div>
+  <div class="tp-range">
   <div id="tp-rel" class="field">
     <div class="rel-row"><span>최근</span><input class="input num" id="tp-n" value="1" inputmode="numeric" aria-label="최근 범위 크기">
       <div class="sel-wrap"><button class="select-trigger" id="tp-unit" aria-haspopup="listbox" aria-expanded="false" style="width:100%"><span>시간</span><svg class="icon"><use href="#i-down"/></svg></button>
@@ -105,12 +152,13 @@
       <label class="field"><span class="field-hint">끝(제외)</span><input class="input num" id="tp-e" value="2026-11-05 12:00:00" aria-describedby="tp-err"></label></div>
     <span class="field-error" id="tp-err" hidden>끝 시각은 시작 시각보다 뒤여야 합니다.</span>
     <span class="field-hint">UTC+09:00 · 시작 시각은 포함하고 끝 시각은 포함하지 않습니다.</span></div>
+  </div>
   <div class="popover-foot"><button class="btn" id="tp-cancel">취소</button><button class="btn primary" id="tp-apply">적용</button></div>
 </div>
 </div>
 
 <div class="workspace">
-  <aside class="sidebar facets" aria-label="항목별 건수">
+  <aside class="sidebar facets" id="facets" aria-label="항목별 건수">
     <div class="facet">
       <div class="facet-head"><h3>레벨</h3><button class="btn ghost sm">초기화</button></div>
       <label class="facet-row"><input class="check" type="checkbox" checked><span class="name"><span class="lv error">ERROR</span></span><span class="cnt" id="f-error">–</span><span class="bar"><i class="error" id="b-error"></i></span></label>
@@ -136,7 +184,7 @@
   </aside>
 
   <main class="main">
-    <section class="card chart-card" aria-labelledby="hist-title">
+    <section class="card chart-card" id="chart-card" aria-labelledby="hist-title">
       <div class="chart-head">
         <h2 id="hist-title">분당 발생량</h2>
         <div class="chart-legend" aria-label="범례">
@@ -148,10 +196,11 @@
       </div>
       <svg id="hist" role="img" aria-label="분당 발생량 막대 그래프. 같은 값은 아래 결과 표와 왼쪽 항목별 건수에서 볼 수 있습니다."></svg>
       <div class="chart-tip" id="tip"></div>
+      <div class="chart-state" id="chart-state" hidden></div>
     </section>
 
     <section class="card" aria-label="검색 결과">
-      <div class="resultbar" role="status">
+      <div class="resultbar" id="resultbar" role="status">
         <span class="badge success">완료</span>
         <span><strong id="total">–</strong>건</span>
         <span class="sep"></span>
@@ -159,21 +208,21 @@
         <span class="sep"></span>
         <span><span class="mono">14:02:09</span>까지 수신된 로그 기준</span>
         <span class="end">
-          <span class="tertiary">판정 불가 37건 제외</span><a href="#" style="color:var(--color-text-link);font-size:var(--text-sm)">보기</a>
           <button class="btn ghost sm"><svg class="icon"><use href="#i-sort"/></svg>최신순</button>
         </span>
       </div>
-      <div class="notice">
+      <div id="extra"></div>
+      <div class="notice" id="notice">
         <span class="badge warning">읽기 일시정지</span>
         <span><span class="mono">app-02</span>의 수집이 <span class="mono">13:40–13:52</span>에 멈췄습니다. 이 구간의 결과가 빠졌을 수 있습니다.</span>
         <a href="#" style="margin-left:auto">수집 연결 보기</a>
       </div>
-      <table class="logtable">
+      <table class="logtable" id="logtable">
         <colgroup><col style="width:168px"><col style="width:84px"><col style="width:84px"><col style="width:108px"><col></colgroup>
         <thead><tr><th>발생 시각 <span style="font-weight:400">(2026년)</span></th><th>레벨</th><th>서버</th><th>수집 대상</th><th>본문</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
-      <div class="tablefoot"><button class="btn sm">더 보기 <span class="tertiary">(50건씩)</span></button></div>
+      <div class="tablefoot" id="tablefoot"><button class="btn sm">더 보기 <span class="tertiary">(50건씩)</span></button></div>
     </section>
   </main>
 </div>
@@ -183,8 +232,8 @@
     <span class="lv error">ERROR</span>
     <h2>이벤트 상세</h2>
     <div class="actions">
-      <button class="btn sm"><svg class="icon"><use href="#i-context"/></svg>주변 로그</button>
-      <button class="btn ghost sm icon-only" aria-label="본문 복사" title="본문 복사"><svg class="icon"><use href="#i-copy"/></svg></button>
+      <a class="btn sm" style="text-decoration:none" href="sample-ui01-05-search-aids.html?view=nearby"><svg class="icon"><use href="#i-context"/></svg>주변 로그</a>
+      <button class="btn sm" data-ui02="copy-body">본문 복사</button><button class="btn sm" data-ui02="copy-fields">필드 복사</button>
       <button class="btn ghost sm icon-only" id="drawer-close" aria-label="닫기" title="닫기 (Esc)"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
   </div>
@@ -226,7 +275,7 @@
   </div>
 </aside>
 
-<div class="toast-stack" aria-live="polite">
+<div class="toast-stack" id="toasts" aria-live="polite">
   <div class="toast"><div class="toast-text"><span class="toast-kind">성공</span><strong>검색 조건을 저장했습니다.</strong><p>저장 검색 “결제 실패 확인” · <a href="#">열기</a></p></div><button class="btn ghost sm icon-only" aria-label="닫기"><svg class="icon"><use href="#i-x"/></svg></button></div>
 </div>
 
@@ -390,7 +439,331 @@ document.getElementById('tp-apply').onclick = () => {
 tbSeg.forEach((b) => b.addEventListener('click', () => { setPressed(tbSeg, b.textContent); setPressed(document.querySelectorAll('#tp-basis button'), b.textContent); }));
 if (location.hash === '#time') { tpOpen(true); }
 if (location.hash === '#time-error') { tpOpen(true); document.querySelector('#tp-mode [data-v="abs"]').click(); document.getElementById('tp-apply').click(); }
+// 알림 규칙 수 상한(WQ-34): 버튼을 쓸 수 없게 두고 이유를 글자로 쓴다. title만으로 알리지 않는다(디자인 시스템 11절)
+if (location.hash === '#rule-limit') {
+  const a = document.getElementById('rule-btn');
+  const b = document.createElement('button');
+  b.className = 'btn icon-only'; b.disabled = true; b.setAttribute('aria-label', '현재 조건으로 알림 규칙 만들기'); b.setAttribute('aria-describedby', 'why-rule'); b.innerHTML = a.innerHTML;
+  a.replaceWith(b);
+  document.querySelector('.toolbar').insertAdjacentHTML('beforeend', '<p class="disabled-reason" id="why-rule" style="grid-column:2 / -1;justify-self:end;margin:var(--space-2) 0 0">알림 규칙 수가 상한(N개)에 닿아 현재 조건으로 규칙을 만들 수 없습니다. 꺼진 규칙도 셉니다. 쓰지 않는 규칙을 지우면 만들 수 있습니다.</p>');
+}
+// 감사 기록 장애 중 로그인한 뒤(UI-01 상태 6): 로그인은 되고 이 화면 위 전역 배너로 알린다
+if (location.hash === '#audit-down') {
+  document.querySelector('.topbar').insertAdjacentHTML('afterend', '<div class="banner danger" role="status"><strong>감사 기록 장애</strong><span>2026-11-05 10:31:00 (UTC+09:00)부터 감사 기록을 저장하지 못하고 있습니다. 로그인·검색·수집은 계속됩니다. 키 발급, 등록·설정 변경, 비밀번호 변경, 알림 규칙 변경 등은 보류되니 복구된 뒤 다시 실행하세요.</span><a href="sample-ui13-16-system.html?view=audit&amp;state=down">감사 이력 보기</a></div>');
+}
 </script>
 <div class="hint">행을 누르면 이벤트 상세가 열립니다</div>
+<div class="demo-switch" role="group" aria-label="시안 상태 바꾸기">시안
+  <div class="segmented" id="demo-view"><button data-v="search" aria-pressed="true">검색 UI-02</button><button data-v="detail" aria-pressed="false">상세 UI-03</button></div>
+  <select id="demo-state" aria-label="시안 상태"></select>
+</div>
+<div id="dialog-root"></div>
+<script>
+/* 시안 상태(2026-11-06 묶음 5). 와이어프레임 UI-02 상태 2~14, CM-04 상태 1~10, CM-03 상태 3~6, 판정 불가 보기(WQ-06).
+   기존 장면은 `기본`이다. 시간·건수·사유 코드·요청 참조는 합성 값이고, 정하지 않은 한도는 N으로 쓴다. */
+const UI02 = (() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const badge = (k, t) => `<span class="badge ${k}">${t}</span>`;
+  const X = '<svg class="icon" style="width:12px;height:12px"><use href="#i-x"/></svg>';
+  const RANGE = '<span>적용 범위 <span class="mono">2026-11-05 13:02:00 ~ 14:02:00</span> KST · 발생 시각 기준</span>';
+  const NUMS = () => [...document.querySelectorAll('#facets .cnt, .chart-legend b')];
+  const SNAP = { drawer: $('#drawer').innerHTML, qbar: $('#qbar').innerHTML, actions: $('.toolbar-actions').innerHTML, resultbar: $('#resultbar').innerHTML, notice: $('#notice').innerHTML, rows: $('#rows').innerHTML, foot: $('#tablefoot').innerHTML, toasts: $('#toasts').innerHTML, nums: NUMS().map((n) => n.textContent) };
+  /* 항목별 건수와 범례 숫자를 상태에 맞춘다: 끝나지 않았으면 —, 0건이면 0, 부분이면 완료 구간만 */
+  const setNums = (f) => NUMS().forEach((n, i) => { n.textContent = f(+SNAP.nums[i].replace(/,/g, '')); });
+  const COND = '(서비스 billing) 그리고 (환경 prod) 그리고 (본문에 "healthcheck" 제외) 그리고 (본문에 "timeout" 포함)';
+  /* 판정 불가는 필드·레벨 조건이 있을 때만 생긴다. 기본 장면에는 필드 조건이 없어 판정 불가 건수를 보이지 않고,
+     완료 0건과 판정 불가만 보기 장면에만 필드 조건(http.status ≥ 500)을 더해 보인다(2026-11-07) */
+  const FIELD = () => $('#qbar input').insertAdjacentHTML('beforebegin', `<span class="chip"><span class="chip-key">http.status</span><span class="chip-op">≥</span><span class="chip-val">500</span><button aria-label="http.status 조건 지우기">${X}</button></span>`);
+  const COND_F = `${COND} 그리고 (http.status 500 이상)`;
+  const ZERO_VIEW = () => { chartMsg('0건 · 이 범위에 조건에 맞는 로그가 없습니다'); $('#facets').classList.add('zero'); setNums(() => '0'); };
+  let view = 'search', state = 'base';
+
+  function toast(kind, label, title, text) {
+    const el = document.createElement('div');
+    el.className = `toast ${kind}`;
+    el.innerHTML = `<div class="toast-text"><span class="toast-kind">${label}</span><strong>${title}</strong>${text ? `<p>${text}</p>` : ''}</div><button class="btn ghost sm icon-only" aria-label="닫기"><svg class="icon"><use href="#i-x"/></svg></button>`;
+    el.querySelector('button').onclick = () => el.remove();
+    $('#toasts').prepend(el);
+    if (kind === '' || kind === 'note') setTimeout(() => el.remove(), 6000);
+  }
+  function closeDialog() { $('#dialog-root').innerHTML = ''; }
+  function resetAll() {
+    closeDialog();
+    document.querySelectorAll('.qpop, .toolbar-note, #why-rule').forEach((e) => e.remove());
+    $('#qbar').innerHTML = SNAP.qbar; $('.toolbar-actions').innerHTML = SNAP.actions; $('#drawer').innerHTML = SNAP.drawer;
+    $('#resultbar').innerHTML = SNAP.resultbar; $('#notice').innerHTML = SNAP.notice; $('#notice').hidden = false;
+    $('#rows').innerHTML = SNAP.rows; $('#logtable').hidden = false; $('#tablefoot').innerHTML = SNAP.foot; $('#tablefoot').hidden = false;
+    $('#extra').innerHTML = ''; $('#toasts').innerHTML = ''; NUMS().forEach((n, i) => { n.textContent = SNAP.nums[i]; });
+    $('#chart-state').hidden = true; $('#chart-state').className = 'chart-state'; $('#chart-card').classList.remove('hide-plot');
+    $('#facets').classList.remove('pending', 'zero');
+    ['#chart-card', '#facets', '#logtable'].forEach((s) => $(s).classList.remove('stale-result'));
+  }
+  const chartMsg = (html, partial) => { const c = $('#chart-state'); c.hidden = false; c.innerHTML = html; if (partial) c.classList.add('partial'); else $('#chart-card').classList.add('hide-plot'); };
+  const noTable = (html) => { $('#logtable').hidden = true; $('#tablefoot').hidden = true; $('#notice').hidden = true; if (html) $('#extra').innerHTML = `<div class="result-empty">${html}</div>`; };
+  const note = (html, kind = '') => $('.toolbar').insertAdjacentHTML('beforeend', `<p class="toolbar-note ${kind}">${html}</p>`);
+  const keepRows = (pred) => { [...$('#rows').children].forEach((tr) => { if (!pred(tr.cells[0].textContent.slice(6))) tr.remove(); }); };
+
+  const S = {
+    base() {},
+    /* CM-04 상태 1, WQ-07: 로그인 직후에는 검색하지 않는다. 0이나 빈 표를 보이지 않는다 */
+    before() {
+      $('#qbar').innerHTML = '<svg class="icon"><use href="#i-search"/></svg><input aria-label="본문 검색 또는 조건 추가" placeholder="본문 검색 또는 조건 추가">';
+      $('#resultbar').innerHTML = `${badge('neutral', '실행 전')}<span>조건과 시간 범위를 정한 뒤 검색을 누르세요.</span><span class="end"><button class="btn primary sm">검색</button></span>`;
+      chartMsg('아직 검색하지 않았습니다. 발생량·분포·목록 자리에 0을 표시하지 않습니다.');
+      $('#facets').classList.add('pending'); setNums(() => '—');
+      noTable('<strong>아직 검색하지 않았습니다</strong><span>로그인한 뒤 바로 검색하지 않습니다. 조건 요약: 조건 없음. 시간 범위 안의 모든 로그를 찾습니다.</span>');
+    },
+    /* CM-04 상태 2: 진행 상태·취소·실행 조건. 최신 구간부터 처리한다(SD-31) */
+    loading() {
+      $('#resultbar').innerHTML = `${badge('info', '조회 중')}<span>발생 시각 기준 · <span class="mono">2026-11-05 13:02:00 ~ 14:02:00</span> KST</span><span class="sep"></span><span>처리한 구간: <span class="mono">14:02:00</span>부터 <span class="mono">13:41:10</span>까지</span><span class="end"><button class="btn sm" data-ui02="cancel">취소</button></span>`;
+      chartMsg('시간별 발생량 불러오는 중'); $('#facets').classList.add('pending'); setNums(() => '—');
+      $('#notice').hidden = true; $('#tablefoot').hidden = true;
+      $('#rows').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--color-text-secondary)">목록 불러오는 중</td></tr>';
+    },
+    /* CM-04 상태 4: 0건을 로그가 없다는 뜻으로 오해하지 않게 수집 문제를 함께 보인다(SD-32) */
+    zero() {
+      FIELD();
+      $('#resultbar').innerHTML = `${badge('neutral', '완료 0건')}${RANGE}<span class="sep"></span><span><span class="mono">14:02:09</span>까지 수신된 로그 기준</span><span class="end"><span class="tertiary">판정 불가 37건 제외</span><a href="#" data-ui02="ud-on" style="color:var(--color-text-link);font-size:var(--text-sm)">보기</a><button class="btn ghost sm">범위 조정</button></span>`;
+      ZERO_VIEW();
+      noTable();
+      $('#extra').innerHTML = `<div class="callout" style="margin:0 var(--space-3) var(--space-2)">${badge('neutral', '적용 조건')}<div>${COND_F} · 조회 가능 시작일 <span class="mono">2026-05-05</span> (수신 시각 기준)</div></div>
+        <table class="datatable issues" aria-label="이 범위의 수집 문제"><thead><tr><th scope="col">이 범위의 수집 문제 · 서비스 · 서버 · 대상</th><th scope="col">상태</th><th scope="col">범위 · 건수</th></tr></thead><tbody>
+        <tr><td>billing · app-02 · journald · api</td><td>${badge('warning', '읽기 일시정지')}</td><td class="mono">13:40:00 ~ 13:52:00</td></tr>
+        <tr><td>billing · app-01 · journald · api</td><td>${badge('info', '대기 중')}</td><td>에이전트 대기 2.4MB</td></tr>
+        <tr><td>billing · app-02 · journald · worker</td><td>${badge('warning', '거부(크기 초과)')}</td><td>2건</td></tr>
+        <tr><td>billing · app-01 · journald · worker</td><td>${badge('unknown', '수신 확인·검색 가능 미확인')}</td><td class="mono">13:58:00 이후</td></tr></tbody></table>
+        <p style="margin:0 var(--space-4) var(--space-3);font-size:var(--text-sm)"><a href="sample-ui12-connection-detail.html?state=problem" style="color:var(--color-text-link)">수집 연결 보기</a></p>`;
+    },
+    /* CM-04 상태 5: 발생 시각 범위만으로 만료를 단정하지 않는다(SD-33) */
+    'zero-expired'() {
+      $('#resultbar').innerHTML = `${badge('neutral', '완료 0건')}<span>적용 범위 <span class="mono">2026-04-20 00:00:00 ~ 2026-05-10 00:00:00</span> KST · 발생 시각 기준</span><span class="sep"></span><span><span class="mono">14:02:09</span>까지 수신된 로그 기준</span>`;
+      chartMsg('0건'); $('#facets').classList.add('zero'); setNums(() => '0');
+      noTable();
+      $('#extra').innerHTML = `<div class="callout warning" style="margin:0 var(--space-3) var(--space-3)">${badge('warning', '일부 만료됐을 수 있음')}<div><strong>조회 가능 시작일은 2026-05-05(수신 시각 기준)입니다.</strong> 보관 기간과 조기 삭제는 수신 시각으로 계산하므로, 이 범위의 로그 일부는 이미 삭제됐을 수 있습니다. 결과가 있는 완료에서도 같은 문구를 씁니다.</div></div>`;
+    },
+    /* CM-04 상태 6: 부분 집계를 전체 건수로 쓰지 않는다(SD-29). 미완료는 범위의 앞쪽 */
+    partial() {
+      $('#resultbar').innerHTML = `${badge('warning', '부분·한도')}<span>실행 예산(시간)을 넘어 <span class="mono">14:02:00 ~ 13:30:00</span> 구간만 완료</span><span class="sep"></span><span>미완료 <span class="mono">13:02:00 ~ 13:30:00</span> · 이어서 조회할 수 있음</span><span class="end"><button class="btn sm">이어서 조회</button><button class="btn ghost sm">범위 줄이기</button></span>`;
+      const c = $('#chart-state'); c.style.width = `${(28 / 60) * 100 * 0.93}%`; chartMsg('미완료 13:02~13:30', true);
+      $('#hist-title').insertAdjacentHTML('beforeend', ' <span class="tertiary" style="font-weight:400" data-tmp>· 완료 구간의 건수(전체 건수 아님)</span>');
+      $('.facet h3').insertAdjacentHTML('beforeend', ' <span class="tertiary" style="font-weight:400;font-size:11px" data-tmp>완료 구간</span>');
+      keepRows((t) => t >= '13:30'); setNums((n) => Math.round(n * 0.58).toLocaleString('ko-KR')); $('#tablefoot').innerHTML = '<button class="btn sm">더 보기 <span class="tertiary">(완료 구간)</span></button>';
+    },
+    /* CM-04 상태 7, 12절 search_timeout: 사유 코드와 요청 참조, 자동으로 다시 시도하지 않는다 */
+    error() {
+      $('#resultbar').innerHTML = `${badge('danger', '시간 초과·오류')}<span><strong style="font-size:var(--text-sm)">검색이 시간 안에 끝나지 않았습니다.</strong> 조건은 그대로 남아 있습니다.</span><span class="sep"></span><span class="mono">search_timeout · 요청 참조 req-7f3a2c</span><span class="end"><button class="btn sm">같은 조건으로 다시 실행</button></span>`;
+      chartMsg('검색하지 못해 발생량을 보여 줄 수 없습니다'); $('#facets').classList.add('pending'); setNums(() => '—');
+      noTable('<strong>검색하지 못했습니다</strong><span>끝낸 구간이 없습니다. 로그 저장소를 쓸 수 없을 때는 같은 자리에 <span class="mono">storage_unavailable</span>과 요청 참조를 씁니다.</span>');
+    },
+    /* CM-04 상태 8: 받은 결과의 범위와, 브라우저 취소와 서버 중단 확인을 구별한다 */
+    cancel() { cancelled(true); },
+    'cancel-browser'() { cancelled(false); },
+    /* CM-04 상태 9, 12절 run_expired: 더 보기 위치가 만료됨 */
+    expired() {
+      $('#tablefoot').innerHTML = `<div class="callout warning" style="width:100%;max-width:640px">${badge('warning', '만료·접근 제한')}<div><strong>검색 결과가 오래돼 더 불러올 수 없습니다.</strong> 같은 조건으로 다시 검색하세요. 위 결과는 그대로 둡니다. <button class="btn sm">다시 검색</button></div></div>`;
+    },
+    /* CM-04 상태 9 둘째 예, 12절 session_expired */
+    session() {
+      $('#resultbar').innerHTML = `${badge('warning', '만료·접근 제한')}<span><strong style="font-size:var(--text-sm)">로그인 세션이 만료됐습니다.</strong> 보이던 결과를 지웠습니다. 다시 로그인하면 이 화면과 검색 조건으로 돌아옵니다.</span><span class="end"><a class="btn primary sm" style="text-decoration:none" href="sample-ui01-05-search-aids.html?view=login&amp;state=expired">다시 로그인</a></span>`;
+      chartMsg('결과를 지웠습니다'); $('#facets').classList.add('pending'); setNums(() => '—'); noTable();
+    },
+    /* CM-04 상태 10, CM-03 상태 5: 오류 칸과 고칠 이유, 이전 결과는 `이전 조건의 결과`로 흐리게 */
+    'cond-error'() {
+      $('#qbar input').insertAdjacentHTML('beforebegin', `<span class="chip invalid" aria-invalid="true"><span class="chip-key">http.status</span><span class="chip-op">≥</span><span class="chip-val">abc</span><button aria-label="http.status 조건 지우기">${X}</button></span>`);
+      note('<span aria-hidden="true">!</span> 조건 오류: 필드 http.status — 숫자 범위에는 숫자를 넣어야 합니다. 이 칸을 고치거나 지우세요.', 'error');
+      $('#resultbar').innerHTML = `${badge('neutral', '이전 조건의 결과')}<span><strong style="font-size:var(--text-sm)">지금 조건의 결과가 아닙니다.</strong> 조건을 고친 뒤 검색하면 바뀝니다.</span><span class="sep"></span>${RANGE}`;
+      ['#chart-card', '#facets', '#logtable'].forEach((s) => $(s).classList.add('stale-result'));
+    },
+    /* UI-02 상태 11: 고친 조건과 적용된 조건을 구분한다. 결과는 흐리게 두지 않는다 */
+    dirty() {
+      $('#qbar input').insertAdjacentHTML('beforebegin', `<span class="chip changed"><span class="chip-key">서버</span><span class="chip-op">=</span><span class="chip-val">app-01</span><span class="mark">고침</span><button aria-label="서버 조건 지우기">${X}</button></span>`);
+      note(`${badge('warning', '검색 전')} 고친 조건은 아직 검색하지 않았습니다. 검색을 누르면 고친 조건으로 찾습니다. 아래 결과는 적용된 조건의 결과입니다.`);
+    },
+    /* UI-02 상태 12~14: 조건 저장은 항상 새 항목(WQ-09) */
+    save() { saveDialog(''); },
+    'save-dup'() { saveDialog('dup'); },
+    'save-limit'() { saveDialog('limit'); },
+    /* CM-03 상태 3: 값 목록. 미확인·미입력·보관됨은 일반 값과 따로 둔다 */
+    values() {
+      const chip = $('#qbar .chip'); chip.style.boxShadow = '0 0 0 2px var(--color-focus)';
+      const r = chip.getBoundingClientRect();
+      document.body.insertAdjacentHTML('beforeend', `<div class="popover qpop" role="dialog" aria-label="서비스 값" style="left:${r.left}px;top:${r.bottom + window.scrollY + 6}px;width:260px">
+        <input class="input" placeholder="서비스 찾기" aria-label="서비스 찾기" style="height:28px">
+        <span class="grp">서비스</span><label><input type="checkbox" class="check" checked>billing</label><label><input type="checkbox" class="check">orders</label>
+        <span class="grp">보관된 서비스</span><label><input type="checkbox" class="check">shipping <span class="badge neutral" style="height:16px;padding:0 4px;font-size:11px">보관됨</span></label>
+        <span class="field-hint">보관된 서비스의 과거 로그도 보관 기간 안에서 검색됩니다. 고른 서비스에 속하지 않는 수집 대상을 함께 고르면 결과는 0건입니다.</span>
+        <div class="popover-foot"><button class="btn sm">취소</button><button class="btn sm primary">적용</button></div></div>`);
+    },
+    /* CM-03 상태 4: 필드 이름 후보와 연산. 맞지 않는 연산은 비활성과 이유 */
+    fields() {
+      const input = $('#qbar input'); input.value = 'ht'; input.focus();
+      const r = input.getBoundingClientRect();
+      const ops = ['같음', '다름', '있음', '없음', '이상', '이하', '초과', '미만'];
+      document.body.insertAdjacentHTML('beforeend', `<div class="popover qpop" role="dialog" aria-label="필드 조건" style="left:${r.left - 8}px;top:${r.bottom + window.scrollY + 10}px">
+        <div class="cols2"><div><span class="grp">최근 받은 필드 이름</span><div class="opt" aria-selected="true"><span class="mono">http.status</span><span class="tertiary">숫자</span></div><div class="opt"><span class="mono">http.method</span><span class="tertiary">글자</span></div><div class="opt"><span class="mono">http.path</span><span class="tertiary">글자</span></div><div class="opt"><span class="mono">items</span><span class="tertiary">배열</span></div></div>
+        <div><span class="grp">http.status의 연산</span>${ops.map((o, i) => `<div class="opt"${i === 4 ? ' aria-selected="true"' : ''}>${o}</div>`).join('')}</div></div>
+        <span class="field-hint">같음·다름은 화면에 보이는 값으로 비교합니다. 500을 넣으면 숫자 500과 글자 "500"이 함께 맞습니다. 있음은 키가 있으면 참이고 null·빈 글자·0·false도 있음입니다.</span>
+        <span class="field-hint">배열 필드(items)는 있음·없음만 쓸 수 있습니다. 같음·이상 같은 연산은 쓸 수 없고, 값을 찾으려면 본문 조건을 쓰세요. 중첩 필드는 점 경로로 씁니다(예: err.type).</span></div>`);
+    },
+    /* CM-03 상태 6: 조건 수 상한. 값은 측정 뒤 Q15에서 정한다 */
+    'cond-limit'() {
+      const input = $('#qbar input'); input.disabled = true; input.value = ''; input.placeholder = '조건 추가(상한 도달)'; input.setAttribute('aria-describedby', 'why-cond');
+      note('<span class="disabled-reason" id="why-cond">조건은 최대 N개까지 넣을 수 있습니다. 조건을 지운 뒤 더하세요. 검색식은 최대 N자입니다.</span>');
+    },
+    /* WQ-06: 같은 화면의 목록을 판정 불가 로그만으로 바꾸고 원래 결과로 돌아가는 버튼을 둔다.
+       원래 결과는 완료 0건 장면이다. 목록만 바꾸므로 그래프와 항목별 건수는 원래 결과(0건)를 그대로 보인다 */
+    ud() {
+      FIELD(); ZERO_VIEW();
+      $('#resultbar').innerHTML = `${badge('neutral', '판정 불가만 보기')}<span><strong>37</strong>건 · 조건의 필드를 판정할 수 없어 결과에서 뺀 로그</span><span class="sep"></span>${RANGE}<span class="end"><button class="btn sm" data-ui02="ud-off">원래 결과로</button></span>`;
+      $('#notice').hidden = true;
+      $('#rows').innerHTML = [['14:01:44.208', 'app-01', 'journald · api', 'upstream <mark>timeout</mark> status=?? (JSON 해석 실패)'], ['13:59:02.771', 'app-02', 'journald · api', '{"msg":"gateway <mark>timeout</mark>","http":'], ['13:47:15.005', 'app-01', 'journald · worker', 'batch <mark>timeout</mark> after 30s (필드 없음)']]
+        .map(([t, s, tg, b]) => `<tr tabindex="0" class="lv-unknown"><td class="mono">11-05 ${t}</td><td><span class="lv unknown">미확인</span></td><td class="mono">${s}</td><td class="muted">${tg}</td><td class="body"><span class="quality" style="margin:0 var(--space-2) 0 0">해석 실패</span>${b}</td></tr>`).join('');
+      $('#tablefoot').innerHTML = '<button class="btn sm">더 보기 <span class="tertiary">(판정 불가)</span></button>';
+    },
+    /* WQ-34: 알림 규칙 상한이면 버튼을 쓸 수 없게 두고 이유를 글자로 */
+    'rule-limit'() {
+      const a = document.getElementById('rule-btn');
+      const b = document.createElement('button'); b.className = 'btn icon-only'; b.disabled = true; b.setAttribute('aria-label', '현재 조건으로 알림 규칙 만들기'); b.setAttribute('aria-describedby', 'why-rule'); b.innerHTML = a.innerHTML; a.replaceWith(b);
+      note('<span class="disabled-reason" id="why-rule">알림 규칙 수가 상한(N개)에 닿아 현재 조건으로 규칙을 만들 수 없습니다. 꺼진 규칙도 셉니다. 쓰지 않는 규칙을 지우면 만들 수 있습니다.</span>');
+    },
+  };
+  function cancelled(serverConfirmed) {
+    $('#resultbar').innerHTML = `${badge('neutral', '취소')}<span>취소 전에 받은 결과: <span class="mono">14:02:00 ~ 13:58:10</span> 구간, 7행</span><span class="sep"></span><span>${serverConfirmed ? '서버 중단 확인됨' : '브라우저에서 취소함. 서버 중단은 확인하지 못했습니다.'}</span><span class="end"><button class="btn sm">다시 실행</button></span>`;
+    chartMsg('취소돼 발생량을 끝까지 세지 않았습니다'); $('#facets').classList.add('pending'); setNums(() => '—');
+    keepRows((t) => t >= '13:58:10'); $('#tablefoot').hidden = true; $('#notice').hidden = true; /* 받은 구간(13:58~14:02)에는 수집 문제가 없다 */
+  }
+  function saveDialog(kind) {
+    const err = kind === 'dup' ? '<span class="field-error">같은 이름이 이미 있습니다. 다른 이름을 넣으세요.</span>' : '';
+    const lim = kind === 'limit';
+    $('#dialog-root').innerHTML = `<div class="dialog-backdrop"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="sv-t">
+      <div class="dialog-head"><h2 id="sv-t">조건 저장</h2></div>
+      <div class="dialog-body">
+        ${lim ? `<div class="callout warning">${badge('warning', '상한 도달')}<div><strong>저장 검색은 최대 N개까지 저장할 수 있어 더 저장할 수 없습니다.</strong> 저장 검색 화면에서 쓰지 않는 항목을 지운 뒤 다시 저장하세요. <a href="sample-ui01-05-search-aids.html?view=saved&amp;state=limit">저장 검색 열기</a></div></div>` : ''}
+        <div class="field"><label class="field-label" for="sv-name">이름</label><input class="input" id="sv-name" value="결제 timeout 조사"${kind === 'dup' ? ' aria-invalid="true"' : ''}${lim ? ' disabled' : ''}>${err}</div>
+        <dl class="kv" style="grid-template-columns:72px 1fr"><div><dt>조건</dt><dd><span>${COND}</span></dd></div><div><dt>시간</dt><dd><span>발생 시각 기준 · 상대 범위 최근 1시간</span></dd></div></dl>
+        <p class="field-hint" style="margin:0">지금 고른 시간 방식을 그대로 저장합니다. 상대 범위는 열 때마다 그 시점을 기준으로 다시 계산해 결과가 달라질 수 있습니다. 이 계정을 함께 쓰는 사람 모두가 보는 저장 검색 목록에 새 항목으로 들어갑니다.</p></div>
+      <div class="dialog-foot"><button class="btn" data-ui02="dlg-close">${lim ? '닫기' : '취소'}</button>${lim ? '<button class="btn primary" disabled aria-describedby="sv-why">저장(상한 도달)</button>' : '<button class="btn primary" data-ui02="dlg-save">저장</button>'}</div></div></div>`;
+    if (!lim) { const i = $('#sv-name'); i.focus(); if (kind === 'dup') i.select(); }
+  }
+
+  /* 상세(UI-03) 상태는 묶음 6에서 더한다 */
+  const DEMO = {
+    search: [['base', '기본(완료)'], ['before', '실행 전'], ['loading', '조회 중'], ['zero', '완료 0건(수집 문제 요약)'], ['zero-expired', '완료 0건: 범위 일부 만료'], ['partial', '부분·한도'], ['error', '시간 초과·오류'], ['cancel', '취소(서버 중단 확인)'], ['cancel-browser', '취소(서버 중단 미확인)'], ['expired', '더 보기 위치 만료'], ['session', '세션 만료'], ['cond-error', '조건 오류와 이전 결과'], ['dirty', '고친 조건 아직 검색 안 함'], ['save', '조건 저장'], ['save-dup', '조건 저장: 이름 겹침'], ['save-limit', '조건 저장: 개수 상한'], ['values', '조건 값 목록'], ['fields', '필드 이름 후보와 연산'], ['cond-limit', '조건 수 상한'], ['ud', '판정 불가만 보기'], ['rule-limit', '알림 규칙 상한']],
+    detail: [['base', '기본(패널 열림)'], ['body-long', '본문: 긴 본문 접음'], ['body-nowrap', '본문: 줄바꿈 끔'], ['body-json', '본문: JSON 펼침'], ['body-ansi', '본문: ANSI 색 코드'], ['time-ok', '시각: 정상으로 읽음'], ['time-fallback', '시각: 시각 대체'], ['time-suspect', '시각: 시각 의심'], ['time-tz', '시각: 시간대 추정'], ['parse-fail', '해석 실패'], ['omitted', '필드 일부 생략'], ['add-field', '필드로 조건 추가'], ['copy', '본문·필드 복사'], ['closed', '닫고 목록으로 돌아감'], ['gone', '가져올 수 없음(가능성)'], ['gone-deleted', '가져올 수 없음(수동 삭제 확인)'], ['session', '세션 만료']],
+  };
+  function sync() {
+    document.querySelectorAll('#demo-view button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === view)));
+    $('#demo-state').innerHTML = DEMO[view].map(([v, t]) => `<option value="${v}"${v === state ? ' selected' : ''}>${t}</option>`).join('');
+  }
+  function apply(v, s) {
+    view = v; state = s;
+    document.querySelectorAll('[data-tmp]').forEach((e) => e.remove()); $('#chart-state').style.width = '';
+    resetAll(); closeDetail();
+    if (v === 'search') S[s]();
+    else if (S2[s]) S2[s]();
+    sync(); window.scrollTo({ top: 0 });
+  }
+  /* ── 상세(UI-03) 상태(2026-11-06 묶음 6): UI-03 상태 2~8, CM-06 상태 3~7. 패널은 기존 마크업을 상태마다 고쳐 그린다 ── */
+  const row = (i = 0) => document.querySelectorAll('#rows tr')[i];
+  const sec = (i) => document.querySelectorAll('#drawer .drawer-section')[i];
+  const head = (label, btns = '') => `<div class="drawer-section-head"><p class="section-label">${label}</p>${btns ? `<span style="display:flex;gap:2px">${btns}</span>` : ''}</div>`;
+  /* 목록의 시각 대체 행(13:57:40, app-02, 일반 텍스트)을 열 때 패널 내용을 그 행에 맞춘다 */
+  const ROW7_TIME = () => timeSec(['시각 대체', '로그에서 발생 시각을 읽지 못해 관측 시각으로 검색합니다.'], [['발생', '<span class="badge unknown">미확인</span>'], ['관측', `2026-11-05 13:57:40.004${TZ}`], ['수신', `2026-11-05 13:57:41.220${TZ}`]], '기준 시각 2026-11-05 13:57:40.004 · 시각 출처: 관측 시각');
+  function openRow7(body, lvRaw) {
+    openDetail(row(7)); const l = $('#drawer .drawer-head .lv'); l.className = 'lv unknown'; l.textContent = '미확인';
+    bodySec(body, BTN('줄바꿈', true) + BTN('JSON 펼치기', false, true));
+    const d = sec(3).querySelectorAll('dl dd'); d[1].innerHTML = '<span class="v mono">app-02</span>'; d[2].querySelector('.v').textContent = 'journald · worker';
+    d[3].innerHTML = `<span class="v"><span class="mono">${lvRaw}</span> <span class="tertiary">→</span> <span class="lv unknown">미확인</span></span><span class="tertiary" style="margin-left:auto;font-size:var(--text-sm)">원본 → 정규화</span>`;
+    ROW7_TIME();
+  }
+  const kvs = (rows) => `<dl class="kv">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd><span class="v">${v}</span></dd></div>`).join('')}</dl>`;
+  const TZ = ' <span class="tertiary">(UTC+09:00)</span>';
+  const qual = (k, t) => `<div class="callout ${k}" style="margin-bottom:var(--space-2)">${badge(k, t[0])}<div>${t[1]}</div></div>`;
+  const timeSec = (q, rows, basis) => { sec(2).innerHTML = head('시각') + (q ? qual('warning', q) : '') + `<p class="field-hint" style="margin:0 0 var(--space-1)">${basis}</p>` + kvs(rows); };
+  const bodySec = (text, btns, hint, style = '') => { sec(0).innerHTML = head('본문', btns) + `<pre class="codebox"${style}>${text}</pre>` + (hint ? `<p class="field-hint" style="margin:var(--space-2) 0 0">${hint}</p>` : ''); };
+  const BTN = (t, on, dis) => `<button class="btn ghost sm"${on ? ' aria-pressed="true" style="color:var(--color-accent-fg)"' : ''}${dis ? ' disabled' : ''}>${t}</button>`;
+  const disableActs = (why) => { $('#drawer .drawer-head .actions').innerHTML = `<button class="btn sm" disabled aria-describedby="why-act">주변 로그</button><button class="btn sm" disabled aria-describedby="why-act">본문 복사</button><button class="btn sm" disabled aria-describedby="why-act">필드 복사</button><button class="btn ghost sm icon-only" id="drawer-close" aria-label="닫기" title="닫기 (Esc)"><svg class="icon"><use href="#i-x"/></svg></button>`; $('#drawer .drawer-head').insertAdjacentHTML('afterend', `<p class="disabled-reason" id="why-act" style="margin:0 var(--space-4) var(--space-2)">${why}</p>`); };
+  const JSON1 = '{"msg":"payment request timeout","level":50,"order":{"id":"ORD-1043"},"http":{"method":"POST","path":"/v1/payments/confirm","status":504},"err":{"type":"GatewayTimeoutError","message":"upstream timed out after 5000ms"}}';
+  const S2 = {
+    base() { openDetail(row()); },
+    /* UI-03 상태 2: 접기·줄바꿈·JSON 펼침은 표시 동작이며 저장된 본문을 바꾸지 않는다. 검색은 본문 전체로 한다 */
+    'body-long'() { openDetail(row()); bodySec('{"msg":"settlement batch timeout","level":50,"http":{"status":500},"items":[{"id":"ITM-0001","amount":12000},{"id":"ITM-0002","amount":8000},{"id":"ITM-0003","amount":4500},{"id":"ITM-0004",…', BTN('줄바꿈', true) + BTN('JSON 펼치기'), '화면에서 처음 N자만 보여 줍니다. 저장된 본문은 잘리지 않았고 검색은 본문 전체로 합니다. <button class="btn ghost sm" style="color:var(--color-text-link)">전체 보기</button>'); },
+    'body-nowrap'() { openDetail(row()); bodySec(JSON1, BTN('줄바꿈') + BTN('JSON 펼치기'), '한 줄로 보여 주고 가로로 밀어 봅니다.', ' style="white-space:pre;overflow-x:auto"'); },
+    'body-json'() { openDetail(row()); bodySec(JSON.stringify(JSON.parse(JSON1), null, 2).replace(/</g, '&lt;'), BTN('줄바꿈', true) + BTN('JSON 접기', true), '펼친 모양은 보기용입니다. 본문 복사는 저장된 그대로 복사합니다.'); },
+    'body-ansi'() { openDetail(row()); bodySec('2026-11-05 14:01:57 <span style="color:var(--color-danger-fg);font-weight:600">ERROR</span> cart sync <mark>timeout</mark> status=500', BTN('줄바꿈', true) + BTN('JSON 펼치기(JSON 아님)', false, true), '색 코드는 화면에 그릴 때만 처리했습니다. 저장된 본문에는 그대로 있고 본문 복사도 색 코드를 포함해 저장된 그대로 복사합니다. 단어 중간에 색 코드가 끼면 검색에서 찾지 못할 수 있습니다.'); },
+    /* CM-06 상태 3: 기준 시각은 본문 시각 → 입력 외피 시각 → 관측 시각 순서로 정하고 시각 출처로 보인다 */
+    'time-ok'() { openDetail(row()); timeSec(null, [['발생', `2026-11-05 14:01:58.902${TZ}`], ['관측', `2026-11-05 14:01:58.910${TZ}`], ['수신', `2026-11-05 14:01:59.140${TZ}`]], '기준 시각 2026-11-05 14:01:58.902 · 시각 출처: 본문 시각. 기준 시각은 검색·정렬·발생량의 축입니다.'); },
+    /* CM-06 상태 4: 발생 시각을 관측 시각으로 바꿔 쓰지 않고 미확인으로 둔다 */
+    'time-fallback'() { openRow7('connection pool <mark>timeout</mark>, waiting=12', '없음'); sec(1).innerHTML = head('필드') + '<p class="field-hint" style="margin:0">일반 텍스트 로그라 필드가 없습니다. 본문으로 찾습니다.</p>'; disableOne('copy-fields', '필드가 없어 필드 복사를 쓸 수 없습니다'); },
+    /* CM-06 상태 5: 원본 시각을 보존해 보이고 검색과 정렬은 관측 시각으로 */
+    'time-suspect'() { openDetail(row()); timeSec(['시각 의심', '로그 시각이 읽은 시각보다 미래라 관측 시각으로 검색합니다.'], [['발생(원본)', `2026-11-05 23:01:58.902${TZ}`], ['관측', `2026-11-05 14:01:58.910${TZ}`], ['수신', `2026-11-05 14:01:59.140${TZ}`]], '기준 시각 2026-11-05 14:01:58.910 · 시각 출처: 관측 시각. 서버 시계 자체가 틀렸으면 수집 상태의 시각 확인 필요로 따로 알립니다.'); },
+    /* CM-06 상태 6: 연결의 로그 시간대를 비우면 에이전트 서버 시간대로 읽는다. 기준 시각은 소급해 바꾸지 않는다 */
+    'time-tz'() { openDetail(row()); timeSec(['시간대 추정', '로그 시각에 시간대가 없어 에이전트 서버 시간대로 읽었습니다.'], [['발생', `2026-11-05 14:01:58.902${TZ} <span class="tertiary">· 원문 2026-11-05 14:01:58.902를 서버 시간대로 해석</span>`], ['관측', `2026-11-05 14:01:58.910${TZ}`], ['수신', `2026-11-05 14:01:59.140${TZ}`]], '기준 시각 2026-11-05 14:01:58.902 · 시각 출처: 본문 시각. 시간대가 다르면 <a href="sample-ui12-connection-detail.html" style="color:var(--color-text-link)">수집 연결 설정</a>의 로그 시간대로 바로잡을 수 있고, 바꾼 뒤 받은 로그부터 적용됩니다.'); },
+    /* CM-06 상태 7, UI-03 상태 3: 해석 실패 로그는 본문으로 찾고 필드·레벨 조건에서는 판정 불가 */
+    'parse-fail'() {
+      openRow7('{"msg":"connection pool <mark>timeout</mark>, waiting=12","lvl":', '읽지 못함');
+      sec(1).innerHTML = head('필드') + qual('warning', ['해석 실패', 'JSON으로 읽지 못해 필드가 없습니다. 본문은 그대로 검색됩니다. 이 로그는 필드 조건에서 판정 불가로 빠지고, 레벨도 읽지 못해 레벨 조건에서도 판정 불가입니다.']);
+      disableOne('copy-fields', '필드가 없어 필드 복사를 쓸 수 없습니다');
+    },
+    'omitted'() { openDetail(row(4)); $('#drawer .drawer-head .lv').className = 'lv info'; $('#drawer .drawer-head .lv').textContent = 'INFO'; bodySec('{"msg":"settlement batch 2026-11-05 started","<mark>timeout</mark>":"30s","job":{"name":"bulk-export","rows":20000,"attrs":{…}}}', BTN('줄바꿈', true) + BTN('JSON 펼치기')); { const d = sec(3).querySelectorAll('dl dd'); d[2].querySelector('.v').textContent = 'journald · worker'; d[3].innerHTML = '<span class="v"><span class="mono">info</span> <span class="tertiary">→</span> <span class="lv info">INFO</span></span><span class="tertiary" style="margin-left:auto;font-size:var(--text-sm)">원본 → 정규화</span>'; } sec(1).innerHTML = head('필드') + qual('warning', ['필드 일부 생략', '상한(N)을 넘은 필드 일부를 필드에서 뺐습니다. 본문에는 그대로 있고 본문 검색으로 찾을 수 있습니다.']) + kvs([['<span class="mono">job.name</span>', '<span class="mono">bulk-export</span>'], ['<span class="mono">job.rows</span>', '<span class="mono">20000</span>']]); },
+    /* UI-03 상태 4, WQ-20: 필드를 누르면 `같음`으로 더하고 검색을 눌러야 적용(UI-02 상태 11과 같은 표시) */
+    'add-field'() { openDetail(row()); addField('order.id', '1043'); },
+    /* UI-03 상태 5, WQ-21: 본문은 저장된 그대로, 필드는 `점 경로=값` 줄로. 토스트 없이 버튼 글자가 잠시 바뀐다 */
+    copy() { openDetail(row()); const b = $('[data-ui02="copy-body"]'); b.textContent = '복사함'; b.setAttribute('aria-live', 'polite'); },
+    /* UI-03 상태 6: 닫으면 원래 조건·선택 행·스크롤로 돌아가고 초점도 그 행으로 */
+    closed() { openDetail(row(2)); closeDetail(); },
+    /* UI-03 상태 7, WQ-22: 본문·필드·주변 로그·복사를 보이지 않는다. 사유를 확인할 수 없으면 가능성을 함께 */
+    gone() { goneDetail('<strong>이 로그를 지금 가져올 수 없습니다.</strong> 보관 기간이 지났거나 삭제됐을 수 있습니다. 목록에 남은 줄은 검색했을 때 받은 정보이고, 지금 조회할 수 있다는 뜻이 아닙니다.'); },
+    'gone-deleted'() { goneDetail('<strong>이 로그는 구간 로그 삭제로 지웠습니다.</strong> billing · app-01 · journald · api 연결의 2026-11-05 14:00:00 ~ 14:02:00 (UTC+09:00) 구간입니다. 목록에 남은 줄은 검색했을 때 받은 정보입니다. <a href="sample-ui13-16-system.html?view=audit" style="color:var(--color-text-link)">감사 이력 보기</a>'); },
+    /* UI-03 상태 8, WQ-23: 세션이 끝나면 보이던 본문과 필드를 지우고 로그인 안내만 */
+    session() {
+      openDetail(row());
+      $('#drawer .drawer-body').innerHTML = `<div class="drawer-section"><div class="callout warning">${badge('warning', '만료·접근 제한')}<div><strong>로그인 세션이 만료됐습니다.</strong> 다시 로그인하면 이 화면으로 돌아옵니다. 보이던 본문과 필드를 화면에서 지웠습니다. <a class="btn primary sm" style="text-decoration:none;margin-top:var(--space-2)" href="sample-ui01-05-search-aids.html?view=login&amp;state=expired">다시 로그인</a></div></div></div>`;
+      disableActs('세션이 끝나 쓸 수 없습니다');
+    },
+  };
+  function disableOne(key, why) { const b = $(`[data-ui02="${key}"]`); b.disabled = true; b.setAttribute('aria-describedby', 'why-one'); $('#drawer .drawer-head').insertAdjacentHTML('afterend', `<p class="disabled-reason" id="why-one" style="margin:0 var(--space-4) var(--space-2)">${why}</p>`); }
+  function goneDetail(msg) {
+    openDetail(row());
+    $('#drawer .drawer-body').innerHTML = `<div class="drawer-section"><div class="callout warning">${badge('warning', '가져올 수 없음')}<div>${msg}</div></div>
+      ${kvs([['조회 가능 시작일', '2026-05-05 <span class="tertiary">(수신 시각 기준)</span>']])}
+      <button class="btn sm" style="margin-top:var(--space-2);justify-self:start;align-self:flex-start">같은 조건으로 다시 검색</button></div>`;
+    disableActs('가져올 수 없어 주변 로그와 복사를 쓸 수 없습니다');
+  }
+  function addField(k, v) {
+    $('#qbar input').insertAdjacentHTML('beforebegin', `<span class="chip changed"><span class="chip-key">${k}</span><span class="chip-op">=</span><span class="chip-val">${v}</span><span class="mark">고침</span><button aria-label="${k} 조건 지우기">${X}</button></span>`);
+    if (!document.querySelector('.toolbar-note')) note(`${badge('warning', '검색 전')} 고친 조건은 아직 검색하지 않았습니다. 검색을 누르면 고친 조건으로 찾습니다. 아래 결과는 적용된 조건의 결과입니다.`);
+    toast('', '성공', `조건에 ${k} 같음 ${v}를 더했습니다.`, '로그 탐색에서 검색을 눌러야 적용됩니다. 연산은 조건 편집기에서 바꿀 수 있습니다.');
+  }
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#drawer-close')) { closeDetail(); return; }
+    const add = e.target.closest('#drawer [aria-label="이 값으로 조건 추가"]');
+    if (add) { const r = add.closest('div'); addField(r.querySelector('dt').textContent.trim(), r.querySelector('dd .v').textContent.trim()); return; }
+    const a = e.target.closest('[data-ui02]')?.dataset.ui02;
+    if (a === 'copy-body' || a === 'copy-fields') { const b = e.target.closest('button'); const t = b.textContent; b.textContent = '복사함'; setTimeout(() => { b.textContent = t; }, 1500); return; }
+    if (!a) { if (!e.target.closest('.qpop, #qbar')) document.querySelectorAll('.qpop').forEach((p) => p.remove()); return; }
+    if (a === 'cancel') { apply('search', 'cancel'); return; }
+    if (a === 'ud-on') { e.preventDefault(); apply('search', 'ud'); return; }
+    if (a === 'ud-off') { apply('search', 'zero'); return; }
+    if (a === 'dlg-close') { closeDialog(); return; }
+    if (a === 'dlg-save') {
+      const n = $('#sv-name').value.trim();
+      if (!n || n === '주문 장애 시간대') { saveDialog('dup'); if (!n) { $('#sv-name').value = ''; $('.field-error').textContent = '이름을 넣으세요.'; } return; }
+      closeDialog(); toast('', '성공', '검색 조건을 저장했습니다.', `저장 검색 “${n.replace(/[<>&"]/g, '')}” · <a href="sample-ui01-05-search-aids.html?view=saved">열기</a>`);
+    }
+  });
+  $('#save-btn').addEventListener('click', () => saveDialog(''));
+  document.querySelectorAll('#demo-view button').forEach((b) => b.addEventListener('click', () => apply(b.dataset.v, 'base')));
+  $('#demo-state').addEventListener('change', (e) => apply(view, e.target.value));
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeDialog(); document.querySelectorAll('.qpop').forEach((p) => p.remove()); } });
+  const q = new URLSearchParams(location.search);
+  const qv = DEMO[q.get('view')] ? q.get('view') : 'search';
+  const qs = DEMO[qv].some(([x]) => x === q.get('state')) ? q.get('state') : null;
+  if (qs) apply(qv, qs); else sync();
+  return { apply, S, S2, DEMO };
+})();
+</script>
+<script src="menu.js"></script>
 </body>
 </html>

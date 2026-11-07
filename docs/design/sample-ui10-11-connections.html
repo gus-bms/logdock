@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LogDock 시안 — 수집 연결</title>
+<!-- 시안 표시용 글꼴. 제품은 글꼴 파일을 직접 제공하고 외부 CDN을 쓰지 않는다(design-system-v0.1.md 4절). -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="tokens-dark-preview.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  /* 이 시안의 배치. 화면 흐름 명세 5절 UI-10(수집 연결 목록)·UI-11(수집 연결 등록)과 4절 CM-05·CM-07·CM-08의 정적 시안이다.
+     와이어프레임 정리표의 기본안(WQ-50~61)과 API 계약 초안 2.8절·4.4절·5.1~5.3절을 따른다. 모든 값은 합성 예시이며 화면 구현 승인이 아니다. */
+  body { min-width: 1080px; }
+  .page { display: grid; gap: var(--layout-gutter); padding: var(--space-4) var(--layout-pad-x) 96px; max-width: 1440px; align-content: start; }
+  .page[hidden] { display: none; }
+
+  /* UI-10 목록 */
+  .listbar { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; position: relative; }
+  .listbar .count { margin-left: auto; font-size: var(--text-sm); color: var(--color-text-secondary); font-feature-settings: var(--font-feature-numeric); }
+  .listbar .chip button { width: 24px; }
+  .filter-pop { position: absolute; top: calc(100% + 6px); left: 0; width: 640px; grid-template-columns: 150px 150px 1fr; column-gap: var(--space-5); row-gap: var(--space-3); }
+  .filter-pop[hidden] { display: none; }
+  .filter-pop .popover-foot { grid-column: 1 / -1; justify-content: space-between; align-items: center; }
+  .filter-group { display: grid; gap: 2px; align-content: start; }
+  .filter-group .section-label { margin-bottom: var(--space-1); }
+  .filter-group.cols2 { grid-template-columns: 1fr 1fr; grid-template-rows: auto repeat(6, auto); grid-auto-flow: column; column-gap: var(--space-3); }
+  .filter-group.cols2 .section-label { grid-column: 1 / -1; grid-row: 1; }
+  .filter-pop .check-row { height: 28px; font-size: var(--text-table); }
+  .svc > header h2 { display: flex; align-items: center; gap: var(--space-2); }
+  .svc > header .svc-count { font-size: var(--text-sm); color: var(--color-text-tertiary); font-feature-settings: var(--font-feature-numeric); }
+  .svc > header .end { flex-wrap: wrap; justify-content: flex-end; }
+  .svc > .body { padding: 0 var(--space-1) var(--space-1); }
+  .conn tbody tr { cursor: pointer; }
+  .conn tbody tr:hover td { background: var(--color-bg-hover); }
+  .conn { table-layout: fixed; }
+  .conn td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conn td:first-child { padding-left: var(--space-3); }
+  .conn .kind { display: inline-block; width: 72px; color: var(--color-text-tertiary); }
+  .conn td.obs-cell { white-space: normal; padding-top: 6px; padding-bottom: 6px; }
+  .conn .obs { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+  .conn .sub { font-size: var(--text-sm); line-height: 16px; color: var(--color-text-secondary); }
+  .conn a.open { color: var(--color-text-link); text-decoration: none; font-weight: var(--font-weight-medium); }
+  .conn a.open:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .empty { padding: var(--space-8, 48px) var(--space-6); display: grid; justify-items: center; gap: var(--space-3); text-align: center; }
+  .empty h2 { margin: 0; font-size: var(--text-lg); }
+  .empty p { margin: 0; max-width: 520px; color: var(--color-text-secondary); }
+  .progress-card table { table-layout: fixed; }
+  .progress-card td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .progress-card .kind { display: inline-block; width: 72px; color: var(--color-text-tertiary); }
+  .progress-card .body { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--space-5); padding: var(--space-4); align-items: start; }
+
+  /* UI-11 등록 */
+  .reg { display: grid; grid-template-columns: var(--layout-side) minmax(0, 1fr); gap: var(--layout-gutter); align-items: start; }
+  .reg-side { padding: var(--space-2); position: sticky; top: calc(var(--size-topbar) + var(--space-4)); }
+  .reg-main > header .lead { font-size: var(--text-sm); color: var(--color-text-tertiary); margin-left: var(--space-2); }
+  .reg-body { padding: var(--space-5); display: grid; gap: var(--space-5); align-content: start; }
+  .reg-body > * { max-width: 800px; }
+  /* 아래 버튼 줄은 화면 아래에 붙여 긴 단계에서도 스크롤 없이 누른다. --demo-h는 시안 조작 막대 높이(제품은 0) */
+  .reg-main { overflow: clip; }
+  .reg-foot { position: sticky; bottom: var(--demo-h); z-index: 1; box-shadow: 0 -1px 0 var(--color-border); display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4); background: var(--color-bg-page); border-top: 1px solid var(--color-border); }
+  .reg-foot .grow { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
+  .choices { display: grid; gap: var(--space-3); }
+  .choice { display: grid; grid-template-columns: 15px minmax(0, 1fr); column-gap: var(--space-3); align-items: center; }
+  .choice > .field { grid-column: 2; margin-top: var(--space-2); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+  .reg-body .segmented { justify-self: start; }
+  select.select-trigger { appearance: none; padding-right: 32px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4.5 6.5 3.5 3.5 3.5-3.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; background-size: 16px; }
+  .reg-body .kv { grid-template-columns: 148px 1fr; }
+  .summary { background: var(--color-bg-page); border-radius: var(--radius-lg); padding: var(--space-1) var(--space-2); }
+  .keyfile { display: grid; gap: var(--space-2); }
+  .keyfile .head { display: flex; align-items: center; gap: var(--space-2); }
+  .keyfile .head .end { margin-left: auto; display: flex; gap: var(--space-2); }
+  .codebox .c { color: var(--color-text-tertiary); }
+
+  :root { --demo-h: 44px; }
+  .demo-switch { position: fixed; left: 0; right: 0; bottom: 0; height: var(--demo-h); display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+    padding: 0 var(--space-4); background: var(--color-toast-bg); color: var(--color-toast-text-secondary); font-size: var(--text-sm); box-shadow: var(--shadow-toast); z-index: var(--z-sticky); white-space: nowrap; }
+  .demo-switch .segmented { height: 30px; background: rgb(255 255 255 / 0.08); box-shadow: none; }
+  .demo-switch .segmented button { height: 26px; color: var(--color-toast-text-secondary); }
+  .demo-switch .segmented button[aria-pressed="true"] { background: rgb(255 255 255 / 0.16); color: var(--color-toast-text); box-shadow: none; }
+  .demo-switch select { height: 30px; border: 0; border-radius: var(--radius-full); padding: 0 var(--space-3); background: rgb(255 255 255 / 0.12); color: var(--color-toast-text); font-size: var(--text-sm); }
+  .toast-stack { position: fixed; right: var(--space-4); top: calc(var(--size-topbar) + var(--space-3)); display: grid; gap: var(--space-2); z-index: var(--z-toast); }
+  .dialog.wide { width: min(640px, 100%); }
+  .dialog .datatable td, .dialog .datatable th { padding: 0 var(--space-2); }
+  .dialog .datatable td { height: 32px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-down" viewBox="0 0 16 16"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="m4.5 4.5 7 7m0-7-7 7"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="7" height="7" rx="1.5"/><path d="M3.5 10.5v-6a1 1 0 0 1 1-1h6"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 16 16"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></symbol>
+  <symbol id="i-right" viewBox="0 0 16 16"><path d="m6.5 4.5 3.5 3.5-3.5 3.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 16 16"><path d="M2.5 4h11M4.5 8h7M6.5 12h3"/></symbol>
+</svg>
+
+<nav class="topbar" aria-label="주 메뉴">
+  <span class="brand"><span class="brand-mark" aria-hidden="true"></span>LogDock</span>
+  <div class="menu">
+    <a href="sample-ui02-log-search.html">로그 탐색</a>
+    <a href="sample-ui01-05-search-aids.html?view=saved">저장 검색</a>
+    <a href="sample-ui06-09-alerts.html">알림</a>
+    <a href="#" aria-current="page" id="menu-conn">수집 연결 <span class="menu-count" id="menu-count"></span></a>
+    <div class="menu-drop"><button class="menu-btn" id="sys-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="sys-menu"><span>시스템</span><svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg></button>
+      <div class="listbox" id="sys-menu" role="menu" aria-label="시스템" hidden>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=storage">저장 공간과 보존</a>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=mail">메일 상태</a>
+        <a class="option" role="menuitem" href="sample-ui13-16-system.html?view=audit">감사 이력</a>
+      </div></div>
+    <a href="sample-ui13-16-system.html?view=account">계정</a>
+  </div>
+  <div class="topbar-end"><span class="mono tertiary">Asia/Seoul</span><button class="btn ghost sm" id="theme" title="검토용: 어두운 테마는 첫 출시 범위가 아니다">어두운 테마 보기</button><span class="avatar" title="공용 계정">공용</span></div>
+</nav>
+<div id="banner-slot"></div>
+
+<!-- ── UI-10 수집 연결 목록 ─────────────────────────────────── -->
+<main class="page" id="view-list">
+  <div class="page-head">
+    <div>
+      <h1>수집 연결</h1>
+      <div class="meta"><span>서비스별 수집 연결과 관리 상태·관측 상태</span><span aria-hidden="true">·</span><span>시각은 UTC+09:00 · 날짜가 없는 시각은 2026-11-05</span></div>
+    </div>
+    <div class="actions"><button class="btn primary" data-go="reg"><svg class="icon"><use href="#i-plus"/></svg>새 연결 등록</button></div>
+  </div>
+
+  <div class="listbar" id="listbar">
+    <div class="segmented" id="scope" role="group" aria-label="보기">
+      <button data-scope="active" aria-pressed="true">사용 중 <span class="num" id="n-active"></span></button><button data-scope="archived" aria-pressed="false">보관됨 <span class="num" id="n-archived"></span></button>
+    </div>
+    <button class="select-trigger" id="filter-btn" aria-expanded="false" aria-controls="filter-pop"><span id="filter-label">상태 필터: 전체</span><svg class="icon"><use href="#i-down"/></svg></button>
+    <span id="chips" style="display:contents"></span>
+    <span class="count" id="list-count"></span>
+    <div class="popover filter-pop" id="filter-pop" hidden role="dialog" aria-label="상태 필터"></div>
+  </div>
+
+  <div id="archive-progress"></div>
+  <div id="groups" style="display:grid;gap:var(--layout-gutter)"></div>
+</main>
+
+<!-- ── UI-11 수집 연결 등록 ─────────────────────────────────── -->
+<main class="page" id="view-reg" hidden>
+  <header>
+    <nav class="crumb" aria-label="위치"><a href="#" data-go="list">수집 연결</a><svg class="icon" style="width:12px;height:12px"><use href="#i-right"/></svg><span>새 연결 등록</span></nav>
+    <div class="page-head"><div><h1>새 연결 등록</h1><div class="meta"><span>확정하기 전에는 서비스·연결·키를 만들지 않습니다</span></div></div></div>
+  </header>
+  <div class="reg">
+    <nav class="card reg-side" aria-label="등록 단계"><ol class="stepper" id="stepper"></ol></nav>
+    <section class="card section-card reg-main" aria-labelledby="reg-h">
+      <header><h2 id="reg-h"></h2><span class="lead" id="reg-lead"></span></header>
+      <div class="reg-body" id="reg-body"></div>
+      <div class="reg-foot" id="reg-foot"></div>
+    </section>
+  </div>
+</main>
+
+<div class="demo-switch" role="group" aria-label="시안 상태 바꾸기">시안
+  <div class="segmented" id="demo-view">
+    <button data-v="list" aria-pressed="true">목록 UI-10</button><button data-v="reg" aria-pressed="false">등록 UI-11</button>
+  </div>
+  <select id="demo-state" aria-label="시안 상태"></select>
+</div>
+<div class="toast-stack" id="toasts" aria-live="polite"></div>
+<div id="dialog-root"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const badge = (k, t) => `<span class="badge ${k}">${t}</span>`;
+const stale = (t) => `<span class="stale">마지막 보고 기준 ${t}</span>`;
+const unk = '<span class="unknown-v">미확인</span>';
+const kv = (rows) => rows.map(([k, v]) => `<div><dt>${k}</dt><dd><span>${v}</span></dd></div>`).join('');
+
+/* CM-05 상태 이름 → 색(design-system 3.4절 표) */
+const ADMIN = ['등록·연결 대기', '사용', '종료 진행', '전송 차단'];
+const OBS = ['연결 대기', '관측됨·무로그', '수집/전송 진행', '읽기 일시정지', '설정/복구 확인 필요', '디스크 사용 불가', '이벤트 거부 관측', '전송 오류/보류', '복구 중', '관측 오래됨/미확인', '시각 확인 필요', '중단/보관'];
+const TONE = {
+  '사용': 'success', '등록·연결 대기': 'info', '종료 진행': 'info', '전송 차단': 'warning', '보관': 'neutral',
+  '수집/전송 진행': 'success', '연결 대기': 'info', '복구 중': 'info', '읽기 일시정지': 'warning', '설정/복구 확인 필요': 'warning', '이벤트 거부 관측': 'warning', '시각 확인 필요': 'warning',
+  '디스크 사용 불가': 'danger', '전송 오류/보류': 'danger', '관측 오래됨/미확인': 'unknown', '관측됨·무로그': 'neutral', '중단/보관': 'neutral',
+};
+const KIND = { file: '파일', file_pattern: '파일명 규칙', journald: 'journald' };
+
+/* 합성 연결. 경로·이름·시각은 모두 예시다. action은 API 4.4절 `조치 필요` 계산 결과(서버가 계산해 메뉴와 목록이 같이 쓴다) */
+const SEED = () => ({
+  svc: { 결제: { archived: false }, 주문: { archived: false }, 배송: { archived: true, at: '2026-10-30 18:00:00' } },
+  conn: [
+    { svc: '결제', kind: 'file', target: '/var/app/payment/app.log', server: 'app-01', env: '운영', admin: '사용', obs: '수집/전송 진행', report: '10:14:52', queue: '0.3MB', link: 'base' },
+    { svc: '결제', kind: 'file_pattern', target: '/var/app/payment/app-*.log', server: 'app-02', env: '운영', admin: '사용', obs: '읽기 일시정지', sub: '대기 공간 포화 · 10:02:11부터', report: '10:14:40', queue: '512MB', link: 'problem' },
+    { svc: '결제', kind: 'journald', target: '컨테이너 payment-worker', server: 'app-01', env: '운영', admin: '사용', obs: '관측됨·무로그', report: '10:14:50', queue: '0MB' },
+    { svc: '결제', kind: 'file', target: '/var/app/payment/settle.log', server: 'app-03', env: '운영', admin: '전송 차단', obs: '전송 오류/보류', sub: '인증 오류 · 키 폐기 10:15:04', report: '10:14:52', queue: '0.3MB', queueStale: true, action: true, link: 'blocked' },
+    { svc: '주문', kind: 'journald', target: '단위 order-api', server: 'app-02', env: '운영', admin: '사용', obs: '관측 오래됨/미확인', sub: '09:31:07 이후 보고 없음', report: '09:31:07', queue: '40MB', queueStale: true, action: true, link: 'stale' },
+    { svc: '주문', kind: 'file', target: '/var/app/order/app.log', server: 'app-02', env: '운영', admin: '사용', obs: '설정/복구 확인 필요', sub: '이어 읽을 근거 없음', report: '10:13:20', queue: '1.2MB', action: true, link: 'hold' },
+    { svc: '주문', kind: 'file', target: '/var/app/order/batch/app.log', server: null, env: null, admin: '사용', obs: '시각 확인 필요', sub: '서버 시계가 중앙보다 4분 23초 빠름', report: '10:14:49', queue: '0.1MB', action: true },
+    { svc: '주문', kind: 'file_pattern', target: '/var/app/order/app-*.log', server: 'app-01', env: '운영', admin: '등록·연결 대기', obs: '연결 대기', sub: '등록 뒤 26시간 · 설정을 적용하지 않았을 수 있음', report: null, queue: null, action: true },
+    { svc: '결제', kind: 'file', target: '/var/app/payment/legacy.log', server: 'app-02', env: '운영', admin: '보관', obs: '중단/보관', report: '2026-10-28 09:00:00', queue: null, archivedAt: '2026-10-28 09:02:10' },
+    { svc: '배송', kind: 'file', target: '/var/app/delivery/app.log', server: 'app-01', env: '운영', admin: '보관', obs: '중단/보관', report: '2026-10-30 17:58:40', queue: null, archivedAt: '2026-10-30 18:00:00', withSvc: true },
+  ],
+});
+const REFS = {
+  주문: { searches: ['주문 오류', '주문·결제 연동 오류'], rules: ['주문 오류 알림'] },
+  결제: { searches: ['결제 승인 실패'], rules: ['결제 오류 급증'] },
+  배송: { searches: [], rules: [] },
+};
+let D = SEED();
+let scope = 'active';
+let filters = new Set(); /* 'q:action' | 'a:<관리 상태>' | 'o:<관측 상태>' */
+let archiveFlow = null;
+let reauthOk = false; /* CM-07 상태 2: 최근 재인증이 유효하면 비밀번호를 다시 묻지 않는다 */
+
+function actionCount() { return D.conn.filter((c) => c.action && c.admin !== '보관').length; }
+function renderMenu() {
+  const n = actionCount(), el = $('#menu-count');
+  el.hidden = n === 0; el.textContent = n; el.setAttribute('aria-label', `조치 필요 ${n}건`);
+}
+function matches(c) {
+  if (!filters.size) return true;
+  const q = [...filters].filter((f) => f.startsWith('q:')), a = [...filters].filter((f) => f.startsWith('a:')), o = [...filters].filter((f) => f.startsWith('o:'));
+  if (q.length && !c.action) return false;
+  if (a.length && !a.includes('a:' + c.admin)) return false;
+  if (o.length && !o.includes('o:' + c.obs)) return false;
+  return true;
+}
+function inScope(c) { return scope === 'archived' ? c.admin === '보관' : c.admin !== '보관'; }
+
+function rowHTML(c) {
+  const srv = c.server ?? '<span class="dim">미입력</span>', env = c.env ?? '<span class="dim">미입력</span>';
+  const report = c.report ?? '<span class="dim">없음</span>';
+  const queue = c.queue == null ? unk : c.queueStale ? `${c.queue} <span class="stale">마지막 보고 기준</span>` : c.queue;
+  const href = `sample-ui12-connection-detail.html${c.link ? `?state=${c.link}` : ''}`;
+  return `<tr data-href="${href}"><td title="${esc(c.target)}"><span class="kind">${KIND[c.kind]}</span>${esc(c.target)}</td><td>${srv}</td><td>${env}</td>
+    <td>${badge(TONE[c.admin], c.admin)}</td><td class="obs-cell"><div class="obs">${badge(TONE[c.obs], c.obs)}${c.sub ? `<span class="sub">${c.sub}</span>` : ''}</div></td>
+    <td>${report}</td><td>${queue}</td><td class="end"><a class="open" href="${href}">열기</a></td></tr>`;
+}
+
+function renderList() {
+  renderMenu();
+  const act = D.conn.filter((c) => c.admin !== '보관'), arc = D.conn.filter((c) => c.admin === '보관');
+  $('#n-active').textContent = act.length; $('#n-archived').textContent = arc.length;
+  $$('#scope button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.scope === scope)));
+  const none = D.conn.length === 0;
+  $('#listbar').hidden = none;
+  /* 필터 칩 */
+  $('#filter-label').textContent = filters.size ? `상태 필터: ${filters.size}개 선택` : '상태 필터: 전체';
+  $('#chips').innerHTML = [...filters].map((f) => `<span class="chip"><span class="chip-val">${f === 'q:action' ? '조치 필요' : f.slice(2)}</span><button aria-label="${f === 'q:action' ? '조치 필요' : f.slice(2)} 빼기" data-unfilter="${esc(f)}"><svg class="icon" style="width:12px;height:12px"><use href="#i-x"/></svg></button></span>`).join('')
+    + (filters.size ? '<button class="btn ghost sm" data-unfilter="*">필터 지우기</button>' : '');
+  const visible = D.conn.filter((c) => inScope(c) && matches(c));
+  const total = D.conn.filter(inScope).length;
+  $('#list-count').textContent = filters.size ? `연결 ${total}개 중 ${visible.length}개` : `연결 ${total}개`;
+
+  if (none) {
+    $('#groups').innerHTML = `<section class="card empty"><h2>아직 수집 연결이 없습니다</h2>
+      <p>연결을 등록하면 서비스와 수집 대상을 정하고 키와 설정을 받습니다. 받은 설정을 로그 서버의 에이전트에 적용하면 수집을 시작합니다.</p>
+      <button class="btn primary" data-go="reg"><svg class="icon"><use href="#i-plus"/></svg>새 연결 등록</button></section>`;
+    return;
+  }
+  const names = Object.keys(D.svc);
+  const groups = names.map((name) => {
+    const s = D.svc[name];
+    const all = D.conn.filter((c) => c.svc === name && inScope(c));
+    const rows = all.filter(matches);
+    if (!rows.length) return '';
+    let head;
+    if (scope === 'active') {
+      head = `<span class="svc-count">${filters.size ? `연결 ${all.length}개 중 ${rows.length}개` : `연결 ${all.length}개`}</span>
+        <span class="end"><button class="btn sm ghost" data-svc-act="rename" data-svc="${name}">이름 변경</button><button class="btn sm ghost" data-svc-act="archive" data-svc="${name}">서비스 보관</button></span>`;
+    } else if (s.archived) {
+      head = `${badge('neutral', '보관')}<span class="svc-count">보관 ${s.at} · 연결 ${all.length}개</span>
+        <span class="end"><span class="disabled-reason" id="why-${name}">보관된 서비스는 이름을 바꿀 수 없습니다. 먼저 재활성하세요.</span><button class="btn sm ghost" disabled aria-describedby="why-${name}">이름 변경</button><button class="btn sm" data-svc-act="reactivate" data-svc="${name}">서비스 재활성</button></span>`;
+    } else {
+      head = `<span class="svc-count">사용 중인 서비스 · 보관된 연결 ${all.length}개</span><span class="end">보관된 연결은 연결 상세에서 재활성합니다</span>`;
+    }
+    return `<section class="card section-card svc" aria-labelledby="svc-${name}"><header><h2 id="svc-${name}">${esc(name)}</h2>${head}</header>
+      <div class="body"><table class="datatable conn"><colgroup><col style="width:28%"><col style="width:88px"><col style="width:68px"><col style="width:136px"><col><col style="width:${scope === 'archived' ? 168 : 80}px"><col style="width:168px"><col style="width:48px"></colgroup>
+      <thead><tr><th scope="col">수집 대상</th><th scope="col">서버 표시명</th><th scope="col">환경</th><th scope="col">관리 상태</th><th scope="col">관측 상태</th><th scope="col">마지막 보고</th><th scope="col">대기량</th><th scope="col"><span class="sr-only">상세</span></th></tr></thead>
+      <tbody>${rows.map(rowHTML).join('')}</tbody></table></div></section>`;
+  }).join('');
+  $('#groups').innerHTML = groups || `<section class="card empty"><h2>${filters.size ? '조건에 맞는 연결이 없습니다' : '보관된 연결이 없습니다'}</h2>${filters.size ? '<button class="btn" data-unfilter="*">필터 지우기</button>' : ''}</section>`;
+  renderArchiveFlow();
+}
+
+/* 상태 필터 팝오버(WQ 표기: 같은 묶음 안은 하나라도, 관리·관측을 함께 고르면 둘 다) */
+function renderFilterPop() {
+  const row = (key, label) => `<label class="check-row"><input type="checkbox" class="check" data-f="${esc(key)}"${filters.has(key) ? ' checked' : ''}>${label}</label>`;
+  const adminList = scope === 'archived' ? [] : ADMIN;
+  $('#filter-pop').innerHTML = `
+    <div class="filter-group"><p class="section-label">빠른 선택</p>${row('q:action', '조치 필요')}</div>
+    <div class="filter-group"><p class="section-label">관리 상태</p>${adminList.map((s) => row('a:' + s, s)).join('') || '<span class="dim" style="font-size:var(--text-sm)">보관됨 보기는 모두 보관</span>'}</div>
+    <div class="filter-group cols2"><p class="section-label">관측 상태</p>${OBS.map((s) => row('o:' + s, s)).join('')}</div>
+    <div class="popover-foot"><span class="field-hint">같은 묶음 안에서는 하나라도 맞으면, 관리·관측 상태를 함께 고르면 둘 다 맞는 연결을 보입니다.</span><button class="btn sm" id="filter-close">닫기</button></div>`;
+}
+function toggleFilterPop(open) {
+  const pop = $('#filter-pop'), btn = $('#filter-btn');
+  const o = open ?? pop.hidden;
+  if (o) renderFilterPop();
+  pop.hidden = !o; btn.setAttribute('aria-expanded', String(o));
+  if (o) $('input', pop).focus({ preventScroll: true }); else btn.focus({ preventScroll: true });
+}
+
+/* 서비스 보관 뒤 진행 단계(CM-07 진행 단계, API 5.1절 보관의 진행 단계) */
+function renderArchiveFlow() {
+  if (!archiveFlow || scope !== 'active') { $('#archive-progress').innerHTML = ''; return; }
+  const f = archiveFlow, seen = f.rows.filter((r) => r.obs === 'seen').length;
+  $('#archive-progress').innerHTML = `<section class="card section-card progress-card" aria-labelledby="ap-h"><header><h2 id="ap-h">서비스 보관 진행 · ${esc(f.name)}</h2><span class="end">보관된 연결은 <a href="#" data-scope-go="archived">보관됨</a>에서 봅니다<button class="btn ghost sm icon-only" aria-label="진행 닫기" data-close-flow><svg class="icon"><use href="#i-x"/></svg></button></span></header>
+    <div class="body"><ol class="steps">
+      <li class="step done"><span class="step-mark"></span><div class="step-title">요청 접수<span class="t">완료 10:20:03</span></div></li>
+      <li class="step done"><span class="step-mark"></span><div class="step-title">중앙 확정<span class="t">완료 10:20:04</span></div><div class="step-desc">하위 연결 ${f.rows.length}개 새 수신 차단 · 유효 키 무효</div></li>
+      <li class="step ${seen === f.rows.length ? 'done' : 'wait'}"><span class="step-mark"></span><div class="step-title">에이전트 관측<span class="t">연결 ${f.rows.length}개 중 ${seen}개</span></div><div class="step-desc">에이전트 요청에 보관으로 답하면 관측으로 봅니다. 설정을 먼저 빼서 요청이 오지 않으면 미확인으로 남습니다.</div></li>
+    </ol>
+    <table class="datatable"><colgroup><col><col style="width:100px"><col style="width:260px"><col style="width:220px"></colgroup>
+      <thead><tr><th scope="col">하위 연결</th><th scope="col">서버</th><th scope="col">에이전트 관측</th><th scope="col">남은 대기</th></tr></thead>
+      <tbody>${f.rows.map((r) => `<tr><td title="${esc(r.c.target)}"><span class="kind">${KIND[r.c.kind]}</span>${esc(r.c.target)}</td><td>${r.c.server ?? '<span class="dim">미입력</span>'}</td>
+        <td>${r.obs === 'seen' ? `${badge('success', '관측')} <span class="dim">10:20:31</span>` : r.obs === 'unknown' ? `${badge('unknown', '미확인')} <span class="dim">${r.c.report ? `마지막 보고 ${r.c.report}` : '보고를 받은 적 없음'}</span>` : `${badge('info', '대기')} <span class="dim">다음 보고에서 확인</span>`}</td>
+        <td>${r.c.queue == null ? unk : `${r.c.queue} ${stale(r.obs === 'seen' ? '10:20:31' : r.c.report)}`}</td></tr>`).join('')}</tbody></table></div>
+    <p class="note" style="padding:0 var(--space-4) var(--space-3);margin:0;font-size:var(--text-sm);color:var(--color-text-tertiary)">남은 대기는 에이전트에 그대로 남습니다. 서버에서 읽기를 멈추는 일은 서버 운영자가 따로 합니다.</p></section>`;
+}
+
+/* ── 확인 창 CM-07 (UI-12 시안과 같은 틀) ─────────────────────── */
+let opener = null;
+function closeDialog() { $('#dialog-root').innerHTML = ''; document.removeEventListener('keydown', escClose); opener && opener.isConnected && opener.focus(); }
+function escClose(e) { if (e.key === 'Escape') closeDialog(); }
+function openDialog({ title, target, impacts, extra = '', action, danger, wide, password = true, validate, delay = 900, onOk }) {
+  opener = document.activeElement;
+  const needPw = password && !reauthOk;
+  $('#dialog-root').innerHTML = `<div class="dialog-backdrop"><div class="dialog${wide ? ' wide' : ''}" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <div class="dialog-head"><h2 id="dlg-t">${title}</h2></div>
+    <div class="dialog-body">
+      ${target ? `<div class="field"><span class="field-label">대상</span><dl class="kv">${kv(target)}</dl></div>` : ''}
+      ${extra}
+      ${impacts ? `<div class="field"><span class="field-label">영향</span><ul class="impact">${impacts.map((i) => `<li${i.startsWith('!') ? ' class="strong"' : ''}>${i.replace(/^!/, '')}</li>`).join('')}</ul></div>` : ''}
+      ${needPw ? `<div class="field"><label class="field-label" for="pw">비밀번호 다시 입력</label><input class="input" id="pw" type="password" autocomplete="current-password" aria-describedby="pw-err"><span id="pw-err" class="field-error" hidden></span><span class="field-hint">시안: 4자 미만은 틀린 비밀번호로 처리합니다.</span></div>`
+        : password ? '<p class="field-hint" style="margin:0">최근에 비밀번호를 확인해 다시 묻지 않습니다.</p>' : ''}
+    </div>
+    <div class="dialog-foot"><button class="btn" id="dlg-cancel">취소</button><button class="btn ${danger ? 'danger' : 'primary'}" id="dlg-ok">${action}</button></div>
+  </div></div>`;
+  document.addEventListener('keydown', escClose);
+  $('#dlg-cancel').onclick = closeDialog;
+  $('.dialog-backdrop').onclick = (e) => { if (e.target.classList.contains('dialog-backdrop')) closeDialog(); };
+  ($('#pw') || $('.dialog-body input') || $('#dlg-ok')).focus();
+  $('#dlg-ok').onclick = () => {
+    if (validate && !validate()) return;
+    if (needPw) {
+      const pw = $('#pw'), err = $('#pw-err');
+      if (pw.value.length < 4) { pw.setAttribute('aria-invalid', 'true'); err.hidden = false; err.textContent = pw.value ? '비밀번호가 맞지 않습니다.' : '비밀번호를 입력하세요.'; pw.focus(); return; }
+      reauthOk = true;
+    }
+    const dlg = $('.dialog'), ok = $('#dlg-ok');
+    dlg.setAttribute('aria-busy', 'true'); ok.setAttribute('aria-busy', 'true'); ok.textContent = `${action} 중…`;
+    dlg.querySelectorAll('input, #dlg-cancel').forEach((el) => { el.disabled = true; });
+    document.removeEventListener('keydown', escClose); $('.dialog-backdrop').onclick = null;
+    setTimeout(() => { closeDialog(); onOk(); }, location.hash === '#busy' ? 600000 : delay);
+  };
+}
+function toast(kind, label, title, text) {
+  const el = document.createElement('div');
+  el.className = `toast ${kind}`;
+  el.innerHTML = `<div class="toast-text"><span class="toast-kind">${label}</span><strong>${title}</strong>${text ? `<p>${text}</p>` : ''}</div><button class="btn ghost sm icon-only" aria-label="닫기"><svg class="icon"><use href="#i-x"/></svg></button>`;
+  el.querySelector('button').onclick = () => el.remove();
+  $('#toasts').prepend(el);
+  if (kind === '' || kind === 'note') setTimeout(() => el.remove(), 6000);
+}
+
+const SVC_ACTS = {
+  /* 이름 변경: 재인증 없이 감사에 남기고 감사 장애 때 보류(WQ-52). 이름 규칙은 API 5.3절(WQ-51) */
+  rename: (name) => openDialog({
+    title: '서비스 이름 변경', action: '이름 변경', password: false, delay: 500,
+    target: [['지금 이름', esc(name)], ['연결', `${D.conn.filter((c) => c.svc === name && c.admin !== '보관').length}개`]],
+    extra: `<div class="field"><label class="field-label" for="nn">새 이름</label><input class="input" id="nn" value="${esc(name)} API" aria-describedby="nn-err nn-hint"><span class="field-error" id="nn-err" hidden></span>
+      <span class="field-hint" id="nn-hint">이름만 바뀝니다. 연결, 기존 로그, 저장 검색과 알림 규칙의 대상은 그대로이고 화면에는 새 이름으로 보입니다.</span></div>`,
+    validate: () => {
+      const v = $('#nn').value.trim(), err = $('#nn-err');
+      const taken = Object.keys(D.svc).find((n) => n !== name && n.toLowerCase() === v.toLowerCase());
+      const msg = !v ? '이름을 입력하세요.' : v === name ? '지금 이름과 같습니다.' : /[\u0000-\u001f]/.test(v) ? '제어 문자는 쓸 수 없습니다.'
+        : taken ? `같은 이름의 서비스가 있습니다(${D.svc[taken].archived ? '보관된 서비스 ' : ''}${taken}). 대소문자만 다른 이름도 쓸 수 없습니다.` : '';
+      err.hidden = !msg; err.textContent = msg; $('#nn').setAttribute('aria-invalid', String(!!msg));
+      if (msg) $('#nn').focus();
+      return !msg;
+    },
+    onOk: () => {
+      const v = (window.__nn || '').trim();
+      D.svc = Object.fromEntries(Object.entries(D.svc).map(([k, s]) => [k === name ? v : k, s]));
+      D.conn.forEach((c) => { if (c.svc === name) c.svc = v; });
+      REFS[v] = REFS[name];
+      renderList();
+      toast('', '성공', `서비스 이름을 ${esc(v)}(으)로 바꿨습니다.`, '연결·로그·저장 검색·알림 규칙의 대상은 그대로입니다.');
+    },
+  }),
+  /* 서비스 보관: 하위 연결의 수신 차단, 남은 대기, 이 서비스를 쓰는 저장 검색·알림 규칙을 먼저 보인다(UI-10 상태 7, WQ-53) */
+  archive: (name) => {
+    const kids = D.conn.filter((c) => c.svc === name && c.admin !== '보관');
+    const r = REFS[name] || { searches: [], rules: [] };
+    openDialog({
+      title: '서비스 보관', action: '서비스 보관', danger: true, wide: true,
+      target: [['서비스', `${esc(name)} · 연결 ${kids.length}개`]],
+      extra: `<div class="field"><span class="field-label">하위 연결과 남은 대기</span>
+        <table class="datatable"><colgroup><col><col style="width:84px"><col style="width:220px"></colgroup><thead><tr><th scope="col">수집 대상</th><th scope="col">서버</th><th scope="col">남은 대기</th></tr></thead>
+        <tbody>${kids.map((c) => `<tr><td title="${esc(c.target)}" style="max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.target)}</td><td>${c.server ?? '<span class="dim">미입력</span>'}</td><td>${c.queue == null ? unk : c.queueStale ? `${c.queue} ${stale(c.report)}` : c.queue}</td></tr>`).join('')}</tbody></table></div>
+        <div class="field"><span class="field-label">이 서비스를 쓰는 저장 검색과 알림 규칙</span>
+        <dl class="kv">${kv([['저장 검색', r.searches.length ? `${r.searches.length}개 · ${r.searches.join(', ')}` : '<span class="dim">없음</span>'], ['알림 규칙', r.rules.length ? `${r.rules.length}개 · ${r.rules.join(', ')}` : '<span class="dim">없음</span>']])}</dl>
+        <span class="field-hint">지우지 않습니다. 저장 검색은 실행 전에 보관된 대상을 쓴다고 알리고, 대상이 모두 보관된 알림 규칙은 대상 없음으로 보입니다.</span></div>`,
+      impacts: [`!하위 연결 ${kids.length}개의 중앙 새 수신을 막고 유효 키를 모두 무효로 합니다.`, '과거 로그는 보관 기간(6개월)까지 검색됩니다.', '남은 대기 로그는 에이전트에 그대로 남습니다. 서버에서 읽기를 멈추는 일은 서버 운영자가 따로 합니다.', '재활성하면 같은 등록으로 돌아오지만 옛 키는 살아나지 않습니다.'],
+      onOk: () => {
+        let firstSeen = false;
+        archiveFlow = { name, rows: kids.map((c) => {
+          const o = c.obs === '관측 오래됨/미확인' || !c.report ? 'unknown' : !firstSeen && c.obs !== '연결 대기' ? (firstSeen = true, 'seen') : 'wait';
+          return { c: { ...c }, obs: o };
+        }) };
+        kids.forEach((c) => { c.admin = '보관'; c.obs = '중단/보관'; c.sub = ''; c.action = false; c.withSvc = true; c.archivedAt = '2026-11-05 10:20:04'; c.queue = null; });
+        D.svc[name] = { archived: true, at: '2026-11-05 10:20:04' };
+        renderList();
+        toast('', '성공', `서비스 ${esc(name)}의 보관을 중앙에서 확정했습니다.`, '에이전트 관측은 진행 단계에서 확인하세요.');
+      },
+    });
+  },
+  /* 서비스 재활성: 서비스와 함께 보관된 연결만 되살리고 키는 연결마다 새로 받는다(WQ-55·56) */
+  reactivate: (name) => {
+    const kids = D.conn.filter((c) => c.svc === name && c.withSvc);
+    openDialog({
+      title: '서비스 재활성', action: '서비스 재활성',
+      target: [['서비스', `${esc(name)} · 함께 보관된 연결 ${kids.length}개`], ['보관', `${D.svc[name].at} (UTC+09:00)`]],
+      impacts: ['서비스와 함께 보관된 연결만 같은 등록으로 되살립니다. 그 전에 따로 보관한 연결은 그대로 둡니다.', '!옛 키는 살아나지 않습니다. 되살린 연결은 등록·연결 대기가 되고, 연결 상세에서 키 발급으로 새 키를 받아야 수집을 다시 합니다.', '이어 읽을 근거가 없으면 설정/복구 확인 필요로 읽기를 보류합니다.'],
+      onOk: () => {
+        kids.forEach((c) => { c.admin = '등록·연결 대기'; c.obs = '연결 대기'; c.sub = '유효 키 없음 · 연결 상세에서 키 발급'; c.report = c.report; c.withSvc = false; });
+        D.svc[name] = { archived: false };
+        scope = 'active'; renderList();
+        toast('', '성공', `서비스 ${esc(name)}을(를) 재활성했습니다.`, '연결마다 새 키를 발급해 서버에 적용해야 수집을 다시 합니다.');
+      },
+    });
+  },
+};
+
+/* ════ UI-11 등록 ═══════════════════════════════════════════ */
+const STEPS = ['서비스', '수집 대상', '형식', '선택 정보', '확인과 확정', '키와 설정 받기', '적용과 확인'];
+const LEAD = [
+  '로그를 나누는 이름입니다. 나중에 이름을 바꿔도 연결과 로그는 그대로입니다.',
+  '로그 서버 기준으로 넣습니다. 중앙은 로그 서버의 파일을 열어 보지 않습니다.',
+  '이벤트를 나누는 방법과 시각을 해석하는 방법입니다.',
+  '사람이 알아보기 위한 표시 정보입니다. 비워도 등록할 수 있습니다.',
+  '확정하면 연결을 등록하고 이 연결의 키를 발급합니다.',
+  '키 원문은 이 단계에서 한 번만 보여 줍니다.',
+  '받은 설정을 로그 서버의 에이전트에 적용하세요. 중앙은 원격으로 적용하지 않습니다.',
+];
+const R0 = () => ({ step: 1, svcMode: 'existing', svc: '주문', newSvc: '', kind: 'file_pattern', path: '/var/app/order/api-*.log', jdKind: 'container', jdName: '', format: 'text', startRule: '', tz: '', extract: '', env: '운영', server: 'app-01',
+  result: null, /* null | 'ok' | 'fail' | 'hold' | 'conflict' */ errors: {}, copied: false, apply: 'pending' });
+let R = R0();
+let regMode = 'normal'; /* 시안 상태: normal | dup | conflict | audit | fail */
+
+const svcName = () => (R.svcMode === 'existing' ? R.svc : R.newSvc.trim());
+const targetText = () => (R.kind === 'journald' ? `${R.jdKind === 'container' ? '컨테이너' : '단위'} ${R.jdName || '—'}` : R.path);
+const targetShort = () => (R.kind === 'journald' ? targetText() : R.path.split('/').pop());
+const FORMAT = { text: '일반 텍스트', json: 'JSON', multiline: '여러 줄' };
+
+function stepSummary(i) {
+  if (i === 1) return svcName() + (R.svcMode === 'new' ? ' (새 서비스)' : '');
+  if (i === 2) return targetShort();
+  if (i === 3) return FORMAT[R.format];
+  if (i === 4) return [R.env, R.server].filter(Boolean).join(' · ') || '비움';
+  if (i === 5) return { ok: '확정 09:40:00', fail: '확정 실패', hold: '보류', conflict: '다시 확인 필요' }[R.result] || '';
+  if (i === 6) return R.result === 'ok' ? '제공 09:40:00' : '';
+  return '';
+}
+function renderStepper() {
+  const locked = R.result === 'ok';
+  $('#stepper').innerHTML = STEPS.map((t, k) => {
+    const i = k + 1, cur = i === R.step;
+    let cls = i < R.step ? 'done' : '';
+    let s = i < R.step || (i === 5 && R.result) ? stepSummary(i) : cur ? (i === 7 || i === 5 ? '확인 중' : i === 6 ? '받는 중' : '입력 중') : '';
+    if (i === 7 && R.apply === 'done') { cls = 'done'; s = '확인 완료'; }
+    if (i === 5 && R.result === 'fail') cls = 'fail';
+    if (i === 5 && (R.result === 'hold' || R.result === 'conflict')) cls = 'hold';
+    const canGo = !locked && i < R.step;
+    const inner = `<span class="n">${i}</span><span class="t">${t}</span>${s ? `<span class="s">${esc(s)}</span>` : ''}`;
+    return `<li class="${cls}"${cur ? ' aria-current="step"' : ''}>${canGo ? `<button data-step="${i}" aria-label="${i}단계 ${t}로 돌아가기">${inner}</button>` : inner}</li>`;
+  }).join('');
+}
+
+function field(id, label, input, { hint = '', err = R.errors[id] } = {}) {
+  return `<div class="field"><label class="field-label" for="${id}">${label}</label>${input}<span class="field-error" id="${id}-err"${err ? '' : ' hidden'}>${err || ''}</span>${hint ? `<span class="field-hint" id="${id}-hint">${hint}</span>` : ''}</div>`;
+}
+const inv = (id) => (R.errors[id] ? ' aria-invalid="true"' : '');
+const seg = (name, val, opts) => `<div class="segmented" role="group" data-seg="${name}">${opts.map(([v, t]) => `<button type="button" data-val="${v}" aria-pressed="${v === val}">${t}</button>`).join('')}</div>`;
+
+function body1() {
+  const sv = Object.keys(D.svc).filter((n) => !D.svc[n].archived);
+  return `<div class="choices" role="radiogroup" aria-label="서비스 고르는 방법">
+    <label class="choice"><input type="radio" class="check radio" name="svcmode" value="existing"${R.svcMode === 'existing' ? ' checked' : ''}><span>기존 서비스 고르기</span>
+      ${R.svcMode === 'existing' ? `<div class="field"><select class="select-trigger" id="svc" aria-label="서비스" style="max-width:280px">${sv.map((n) => `<option${n === R.svc ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>
+      <span class="field-hint">사용 중인 서비스만 고를 수 있습니다. 보관된 서비스에 등록하려면 먼저 재활성하세요.</span></div>` : ''}</label>
+    <label class="choice"><input type="radio" class="check radio" name="svcmode" value="new"${R.svcMode === 'new' ? ' checked' : ''}><span>새 서비스 이름 입력</span>
+      ${R.svcMode === 'new' ? `<div style="grid-column:2;margin-top:var(--space-2);max-width:280px">${field('newSvc', '<span class="sr-only">새 서비스 이름</span>', `<input class="input" id="newSvc" value="${esc(R.newSvc)}" placeholder="예: 정산"${inv('newSvc')} aria-describedby="newSvc-err newSvc-hint">`, { hint: '확정할 때 연결과 함께 만듭니다. 확정이 실패하면 서비스도 만들지 않습니다.' })}</div>` : ''}</label>
+  </div>`;
+}
+function body2() {
+  const isJ = R.kind === 'journald';
+  return `<div class="field"><span class="field-label" id="kind-l">수집 대상 종류</span>${seg('kind', R.kind, [['file', '파일 하나'], ['file_pattern', '파일명 규칙'], ['journald', 'journald']])}</div>
+    ${isJ ? `<div class="grid2" style="grid-template-columns:200px 1fr">
+        <div class="field"><span class="field-label">journald 대상 종류</span>${seg('jdKind', R.jdKind, [['container', '컨테이너'], ['unit', '서비스 단위']])}</div>
+        ${field('jdName', R.jdKind === 'container' ? '컨테이너 이름' : 'systemd 단위 이름', `<input class="input" id="jdName" value="${esc(R.jdName)}" placeholder="${R.jdKind === 'container' ? '예: order-api' : '예: order-api.service'}"${inv('jdName')} aria-describedby="jdName-err jdName-hint">`, { hint: R.jdKind === 'container' ? '컨테이너를 다시 만들어도 이름이 같으면 같은 대상입니다.' : '서비스 단위 하나의 로그만 읽습니다.' })}
+      </div>
+      <div class="callout info">${badge('info', '안내')}<div>컨테이너 로그는 journald로 읽습니다. journald 접근과 대상 확인은 설정을 적용할 때 로그 서버의 에이전트가 합니다. <strong>같은 로그를 파일로도 등록하면 두 번 받을 수 있습니다.</strong> 한쪽만 등록하는 것을 권합니다.</div></div>`
+    : `${field('path', '로그 서버 기준 경로', `<input class="input code" id="path" value="${esc(R.path)}" spellcheck="false"${inv('path')} aria-describedby="path-err path-hint">`,
+        { hint: R.kind === 'file' ? '파일 하나의 절대 경로입니다. 예: /var/app/order/app.log' : '폴더는 고정 경로이고 파일 이름에만 * ?를 씁니다. 예: /var/app/order/app-*.log · 하위 폴더는 찾지 않으니 따로 등록하세요.' })}
+      <div class="callout">${badge('neutral', '안내')}<div>파일이 있는지와 읽기 권한은 설정을 적용할 때 로그 서버의 에이전트가 확인합니다. 폴더 안의 심볼릭 링크는 따라가지 않습니다.</div></div>`}`;
+}
+function body3() {
+  return `<div class="field"><span class="field-label">형식</span>${seg('format', R.format, [['text', '일반 텍스트'], ['json', 'JSON'], ['multiline', '여러 줄']])}</div>
+    ${R.format === 'multiline' ? field('startRule', '새 이벤트 시작 규칙', `<input class="input code" id="startRule" value="${esc(R.startRule)}" spellcheck="false" placeholder="한 줄의 시작에 맞추는 정규식"${inv('startRule')} aria-describedby="startRule-err startRule-hint">`,
+      { hint: '여러 줄 형식은 필수입니다. 예: 시각 표시로 시작하는 줄을 새 이벤트로 봅니다.' }) : ''}
+    <div class="grid2">
+      <div class="field"><span class="field-label">인코딩</span><input class="input" value="UTF-8" disabled aria-label="인코딩"><span class="field-hint">UTF-8로 읽습니다.</span></div>
+      <div class="field"><label class="field-label" for="tz">로그 시간대 <span class="tertiary" style="font-weight:400">· 선택</span></label>
+        <select class="select-trigger" id="tz"><option value=""${R.tz ? '' : ' selected'}>선택 안 함</option><option${R.tz === 'Asia/Seoul' ? ' selected' : ''}>Asia/Seoul</option><option${R.tz === 'UTC' ? ' selected' : ''}>UTC</option></select>
+        <span class="field-hint">비우면 에이전트 서버 시간대로 해석하고 로그에 <span class="quality">시간대 추정</span>을 표시합니다.</span></div>
+    </div>
+    ${field('extract', '추출 규칙 <span class="tertiary" style="font-weight:400">· 선택</span>', `<input class="input code" id="extract" value="${esc(R.extract)}" spellcheck="false" placeholder="비워 두면 내장 형식으로 읽습니다"${inv('extract')} aria-describedby="extract-err extract-hint">`,
+      { hint: '내장 형식이 맞지 않을 때만 넣습니다. 이름 붙은 묶음 time·level을 쓰고, 이후 로그에만 적용됩니다.' })}`;
+}
+function body4() {
+  return `<div class="grid2">
+    ${field('env', '환경 태그 <span class="tertiary" style="font-weight:400">· 선택</span>', `<input class="input" id="env" value="${esc(R.env)}" placeholder="예: 운영, 개발" aria-describedby="env-hint">`, { hint: '비우면 미입력으로 표시합니다.' })}
+    ${field('server', '서버 표시명 <span class="tertiary" style="font-weight:400">· 선택</span>', `<input class="input" id="server" value="${esc(R.server)}" list="servers" placeholder="예: app-01" aria-describedby="server-hint"><datalist id="servers"><option>app-01</option><option>app-02</option><option>app-03</option></datalist>`,
+      { hint: '같은 이름을 넣으면 같은 서버로 묶여 필터에 하나로 보입니다. 실제 서버를 확인하는 데는 쓰지 않습니다.' })}
+  </div>`;
+}
+function summaryRows() {
+  return [
+    ['서비스', `${esc(svcName())} ${R.svcMode === 'new' ? '<span class="dim">(새 서비스)</span>' : '<span class="dim">(기존 서비스)</span>'}`],
+    ['수집 대상', `${KIND[R.kind]} <span class="mono">${esc(targetText())}</span>`],
+    ['형식', `${FORMAT[R.format]} · UTF-8${R.format === 'multiline' ? ` · 시작 규칙 <span class="mono">${esc(R.startRule)}</span>` : ''}`],
+    ['로그 시간대', R.tz || '미입력 · 에이전트 서버 시간대로 해석 <span class="quality">시간대 추정</span>'],
+    ['추출 규칙', R.extract ? `<span class="mono">${esc(R.extract)}</span>` : '<span class="dim">없음 · 내장 형식</span>'],
+    ['환경 태그', R.env ? esc(R.env) : '<span class="dim">미입력</span>'],
+    ['서버 표시명', R.server ? esc(R.server) : '<span class="dim">미입력</span>'],
+  ];
+}
+function body5() {
+  const dup = regMode === 'dup';
+  let out = `<dl class="kv summary">${kv(summaryRows())}</dl>`;
+  if (dup) {
+    out += `<div class="callout danger">${badge('danger', '등록할 수 없음')}<div><strong>이 서버의 같은 로그가 이미 등록돼 있습니다.</strong> 서비스 이름이 달라도 같은 서버의 같은 로그는 다시 등록하지 않습니다. 기존 연결을 쓰세요.
+      <div style="margin-top:var(--space-2)">기존 연결 <strong>주문 · app-02 · /var/app/order/app.log</strong> · 등록 2026-09-18 14:02:10 (UTC+09:00)</div>
+      <div style="margin-top:var(--space-1)"><a href="sample-ui12-connection-detail.html?state=hold">기존 연결 열기</a></div></div></div>`;
+  } else if (R.result === 'conflict') {
+    out += `<div class="callout warning">${badge('warning', '다시 확인 필요')}<div><strong>확인하는 동안 다른 사람이 고른 서비스를 바꿨습니다.</strong> 연결을 등록하지 않았고 키도 발급하지 않았습니다. 바뀐 내용을 보고 다시 확정하세요.</div></div>
+      <table class="datatable compare"><colgroup><col style="width:140px"><col><col></colgroup><thead><tr><th scope="col">항목</th><th scope="col">확인한 내용</th><th scope="col">지금 내용</th></tr></thead>
+      <tbody><tr><td>서비스 이름</td><td>주문</td><td><strong>주문 API</strong> <span class="dim">09:39:41에 바뀜</span></td></tr></tbody></table>`;
+  } else if (R.result === 'hold') {
+    out += `<div class="callout warning">${badge('warning', '보류')}<div><strong>감사 기록을 저장할 수 없어 등록을 확정하지 않았습니다.</strong> 키를 발급하지 않았습니다. 복구돼도 자동으로 확정하지 않으니 복구된 뒤 다시 확정하세요. <a href="#">감사 이력 보기</a></div></div>
+      <ol class="steps apply-steps"><li class="step done"><span class="step-mark"></span><div class="step-title">요청 접수<span class="t">완료 10:40:12</span></div></li>
+      <li class="step hold"><span class="step-mark"></span><div class="step-title">적용<span class="t">보류</span></div><div class="step-desc">감사 기록 장애로 적용하지 않음</div></li></ol>`;
+  } else if (R.result === 'fail') {
+    out += `<div class="callout danger">${badge('danger', '확정 실패')}<div><strong>확정하지 못했습니다.</strong> 연결을 등록하지 않았고 키도 발급하지 않았습니다. 입력한 내용은 남아 있으니 다시 확정하세요. 요청 참조 <span class="mono">req_5c1e</span></div></div>`;
+  } else {
+    out += `<div class="callout info">${badge('info', '확정 전')}<div>확정하면 연결을 등록하고 이 연결의 키를 발급합니다. <strong>확정 전에 그만두면 아무것도 등록하지 않습니다.</strong></div></div>`;
+  }
+  if (R.kind === 'journald' && !dup) out += `<div class="callout warning">${badge('warning', '겹침 주의')}<div>같은 서버에서 같은 로그를 파일로도 받고 있다면 두 번 받을 수 있습니다. 한쪽만 등록하는 것을 권합니다. 막지는 않습니다.</div></div>`;
+  return out;
+}
+
+const CONFIG_TOML = () => `<span class="c"># 중앙이 만든 연결 설정. 키는 같은 폴더의 c_7h2m9.key에 따로 둔다</span>
+connection_id = "c_7h2m9"
+config_version = 1
+ingest_url = "https://logdock.example.com:8443/ingest/v1"
+
+[target]
+type = "${R.kind}"
+${R.kind === 'journald' ? `${R.jdKind} = "${esc(R.jdName)}"` : `path = "${esc(R.path)}"`}
+
+[format]
+type = "${R.format === 'text' ? 'text' : R.format}"${R.format === 'multiline' ? `\nevent_start = '${esc(R.startRule)}'` : ''}${R.tz ? `\nlog_timezone = "${R.tz}"` : '\n<span class="c"># log_timezone 비움: 에이전트 서버 시간대로 해석</span>'}`;
+
+function body6() {
+  return `<div class="callout warning">${badge('warning', '한 번만 표시')}<div><strong>키 원문은 지금 이 화면에서 한 번만 보여 줍니다.</strong> 이 단계를 지나면 다시 볼 수 없습니다. 복사하지 못했으면 연결 상세에서 이 키를 폐기하고 새로 받아야 합니다.</div></div>
+    <div class="keyfile"><div class="head"><span class="field-label">키 파일 · <span class="mono">c_7h2m9.key</span></span></div>
+      <div class="secret-box"><code>ldk_SAMPLE-not-a-real-key-9b1e07d3</code><button class="btn sm" data-copy><svg class="icon"><use href="#i-copy"/></svg>키 복사</button></div>
+      <span class="field-hint">에이전트 실행 계정만 읽을 수 있게 둡니다(chmod 600).</span></div>
+    <div class="keyfile"><div class="head"><span class="field-label">연결 설정 파일 · <span class="mono">c_7h2m9.toml</span></span><span class="end"><button class="btn sm" data-copy><svg class="icon"><use href="#i-copy"/></svg>설정 복사</button><button class="btn sm" id="dl6"><svg class="icon"><use href="#i-dl"/></svg>내려받기</button></span></div>
+      <pre class="codebox">${CONFIG_TOML()}</pre>
+      <span class="field-hint">로그 서버의 에이전트 설정 폴더에 두 파일을 둡니다. 나중에 연결 상세에서 내려받는 설정에는 키 원문이 없습니다. 중앙 주소는 합성 예시입니다.</span></div>
+    <p class="field-hint" style="margin:0">등록이 확정돼 취소할 수 없습니다. 화면을 닫아도 등록은 남고 목록에 등록·연결 대기로 보입니다.</p>`;
+}
+
+/* 7단계 연결 확인 단계. 앞 단계가 됐다고 뒤 단계를 짐작해 채우지 않는다. 관리 상태는 적용 보고 때 `사용`(WQ-61 기본안) */
+const APPLY = {
+  pending: { admin: '등록·연결 대기', obs: '연결 대기', report: ['없음', '등록 2026-11-05 09:40:00'],
+    steps: [['done', '등록 완료', '09:40:00'], ['done', '설정 제공', '09:40:00', '설정 버전 1'], ['unknown', '에이전트 적용 확인', '미확인', '에이전트 보고 없음'], ['wait', '읽기', '대기'], ['wait', '중앙 수신 확인', '대기'], ['wait', '검색 가능 확인', '대기']],
+    callout: ['info', '적용 확인 대기', '<strong>등록은 끝났지만 에이전트가 이 설정을 적용했다는 보고가 아직 없습니다.</strong> 로그 서버의 에이전트에 설정을 적용했는지 확인하세요. 이 화면을 닫아도 등록은 남고 수집 연결 목록과 연결 상세에서 이어서 확인할 수 있습니다.'] },
+  nolog: { admin: '사용', obs: '관측됨·무로그', report: ['2026-11-05 10:44:10', '에이전트 대기 0MB'],
+    steps: [['done', '등록 완료', '09:40:00'], ['done', '설정 제공', '09:40:00', '설정 버전 1'], ['done', '에이전트 적용 확인', '10:41:05', '설정 버전 1'], ['unknown', '읽기', '확인 안 됨', '받은 이벤트 없음'], ['wait', '중앙 수신 확인', '대기'], ['wait', '검색 가능 확인', '대기']],
+    callout: ['', '받은 이벤트 없음', '<strong>에이전트 상태 보고는 있지만 받은 이벤트가 없습니다.</strong> 아직 새 로그가 없을 수도 있고 읽기에 문제가 있을 수도 있어 읽기와 중앙 수신을 성공으로 보지 않습니다. 연결 전에 기록된 로그는 가져오지 않습니다.'] },
+  done: { admin: '사용', obs: '수집/전송 진행', report: ['2026-11-05 10:41:52', '에이전트 대기 0.1MB'],
+    steps: [['done', '등록 완료', '09:40:00'], ['done', '설정 제공', '09:40:00', '설정 버전 1'], ['done', '에이전트 적용 확인', '10:41:05', '설정 버전 1'], ['done', '읽기', '10:41:10'], ['done', '중앙 수신 확인', '10:41:12'], ['done', '검색 가능 확인', '10:41:20', '<a href="sample-ui02-log-search.html">로그 탐색에서 보기</a>']] },
+  nosearch: { admin: '사용', obs: '수집/전송 진행', report: ['2026-11-05 10:41:52', '에이전트 대기 0.1MB'],
+    steps: [['done', '등록 완료', '09:40:00'], ['done', '설정 제공', '09:40:00', '설정 버전 1'], ['done', '에이전트 적용 확인', '10:41:05', '설정 버전 1'], ['done', '읽기', '10:41:10'], ['done', '중앙 수신 확인', '10:41:12'], ['unknown', '검색 가능 확인', '미확인', '수신 확인까지만 표시합니다']] },
+};
+function body7() {
+  const a = APPLY[R.apply];
+  const label = { done: '완료', wait: '대기', unknown: '미확인', hold: '보류', fail: '실패' };
+  const boundary = R.kind !== 'journald' && (R.apply === 'done' || R.apply === 'nosearch');
+  return `<section class="stat-grid" aria-label="연결 상태">${[
+      ['관리 상태', badge(TONE[a.admin], a.admin), a.admin === '사용' ? '에이전트가 설정 버전 1을 적용함' : '에이전트 적용 보고를 기다림'],
+      ['관측 상태', badge(TONE[a.obs], a.obs), a.obs === '연결 대기' ? '보고를 받은 적 없음' : '마지막 보고 기준'],
+      ['마지막 보고', `${a.report[0]}${a.report[0] !== '없음' ? ' <span class="tertiary" style="font-weight:400;font-size:var(--text-sm)">(UTC+09:00)</span>' : ''}`, a.report[1]],
+    ].map(([l, v, s]) => `<div class="card stat" style="box-shadow:inset 0 0 0 1px var(--color-border)"><span class="stat-label">${l}</span><span class="stat-value">${v}</span><span class="stat-sub">${s}</span></div>`).join('')}</section>
+    ${a.callout ? `<div class="callout ${a.callout[0]}">${badge(a.callout[0] || 'neutral', a.callout[1])}<div>${a.callout[2]}</div></div>` : ''}
+    <div class="field"><span class="field-label">연결 확인 단계</span><ol class="steps apply-steps">${a.steps.map(([k, t, time, desc]) => `<li class="step ${k}"><span class="step-mark" aria-hidden="true"></span><div class="step-title">${t}<span class="sr-only">${label[k]}</span><span class="t">${time}</span></div>${desc ? `<div class="step-desc">${desc}</div>` : ''}</li>`).join('')}</ol></div>
+    ${boundary ? `<div class="field"><span class="field-label">파일별 시작 경계</span><span class="field-hint">최초 연결은 새 로그부터 읽습니다. 시작 경계 전에 기록된 로그는 가져오지 않습니다. 연결 뒤 새로 생긴 파일은 처음부터 읽습니다.</span>
+      <table class="datatable"><colgroup><col><col style="width:96px"><col style="width:190px"><col style="width:260px"></colgroup>
+      <thead><tr><th scope="col">파일</th><th scope="col">경계 확정</th><th scope="col">시작 위치</th><th scope="col">경계 처리</th></tr></thead>
+      <tbody><tr><td>${esc(R.path.replace('*', '2026-11-04'))}</td><td>10:41:05</td><td>8,402,113 byte (파일 끝)</td><td class="dim">연결 당시 있던 파일 · 끝 위치부터</td></tr>
+      ${R.kind === 'file_pattern' ? `<tr><td>${esc(R.path.replace('*', '2026-11-05'))}</td><td>10:41:05</td><td>1,204,882 byte</td><td class="dim">연결 당시 있던 파일 · 쓰던 줄의 나머지 제외</td></tr>` : ''}</tbody></table></div>` : ''}`;
+}
+
+function renderReg() {
+  renderMenu();
+  if (regMode === 'dup' && R.step === 5) { R.kind = 'file'; R.path = '/var/app/order/app.log'; R.server = 'app-02'; }
+  renderStepper();
+  const i = R.step;
+  $('#reg-h').textContent = `${i} ${STEPS[i - 1]}`;
+  $('#reg-lead').textContent = LEAD[i - 1];
+  $('#reg-body').innerHTML = [body1, body2, body3, body4, body5, body6, body7][i - 1]();
+  /* 아래 버튼. 확정 뒤(6·7단계)에는 취소가 없다 */
+  let foot = '';
+  if (i <= 5) {
+    foot = `<button class="btn ghost" data-reg="cancel">취소</button><span class="grow">${i > 1 ? '<button class="btn" data-reg="prev">이전</button>' : ''}`;
+    if (i < 5) foot += '<button class="btn primary" data-reg="next">다음</button>';
+    else if (regMode === 'dup') foot += '<span class="disabled-reason" id="why-confirm">같은 로그가 이미 등록돼 있어 확정할 수 없습니다</span><button class="btn primary" disabled aria-describedby="why-confirm">확정</button>';
+    else if (R.result === 'conflict') foot += '<button class="btn primary" data-reg="reload">바뀐 내용으로 다시 확인</button>';
+    else foot += `<button class="btn primary" data-reg="confirm">${R.result === 'fail' || R.result === 'hold' ? '다시 확정' : '확정'}</button>`;
+    foot += '</span>';
+  } else if (i === 6) {
+    foot = `<span class="grow"><label class="check-row" id="copied-l"><input type="checkbox" class="check" id="copied"${R.copied ? ' checked' : ''}>키를 복사해 안전한 곳에 두었습니다</label><button class="btn primary" data-reg="next"${R.copied ? '' : ' disabled aria-describedby="copied-l"'}>다음: 적용과 확인</button></span>`;
+  } else {
+    foot = '<span class="grow"><button class="btn" data-go="list">목록으로</button><a class="btn primary" style="text-decoration:none" href="sample-ui12-connection-detail.html">연결 상세 열기</a></span>';
+  }
+  $('#reg-foot').innerHTML = foot;
+  $('#banner-slot').innerHTML = R.result === 'hold' || (regMode === 'audit' && view === 'reg')
+    ? '<div class="banner" role="status"><strong>감사 기록 장애</strong><span>2026-11-05 10:31:00 (UTC+09:00)부터 감사 기록을 저장하지 못하고 있습니다. 로그인·검색·수집은 계속되고 키 발급, 등록·설정 변경은 보류됩니다.</span><a href="#">감사 이력 보기</a></div>' : '';
+}
+
+/* 입력 검사. API 2.8절 입력 규칙(설계 2026-11-06)을 화면에서 먼저 알린다. 서버도 같은 규칙으로 `validation_failed`를 돌려준다 */
+function pathError(kind, p) {
+  if (!p.trim()) return '로그 서버 기준 경로를 입력하세요.';
+  if (!p.startsWith('/')) return '/로 시작하는 절대 경로를 넣으세요.';
+  if (/[[\]\\]/.test(p)) return '[ ] \\ 글자는 쓸 수 없습니다.';
+  if (/\/\.\.(\/|$)|\/\/|\/$/.test(p)) return '경로에 .. 이나 //를 쓸 수 없고 /로 끝날 수 없습니다.';
+  const cut = p.lastIndexOf('/'), dir = p.slice(0, cut), name = p.slice(cut + 1);
+  if (/\*\*/.test(p)) return '하위 폴더는 찾지 않습니다. ** 대신 폴더마다 따로 등록하세요.';
+  if (/[*?]/.test(dir)) return '* ?는 파일 이름 부분에만 쓸 수 있습니다. 폴더는 고정 경로로 넣으세요.';
+  if (kind === 'file' && /[*?]/.test(name)) return '파일 하나에는 * ?를 쓸 수 없습니다. 파일명 규칙을 고르세요.';
+  if (kind === 'file_pattern' && !/[*?]/.test(name)) return '이름에 * ?가 없습니다. 파일 하나를 고르세요.';
+  return '';
+}
+function regexError(v, required) {
+  if (!v.trim()) return required ? '여러 줄 형식은 새 이벤트 시작 규칙이 필요합니다.' : '';
+  if (/\(\?<?[=!]|\\[1-9]/.test(v)) return '앞뒤 살피기와 역참조는 쓸 수 없습니다. 입력 길이에 비례해 끝나는 규칙만 받습니다.';
+  try { new RegExp(v); } catch { return '규칙을 해석할 수 없습니다. 괄호나 특수 문자를 확인하거나 비우세요.'; }
+  return '';
+}
+function readInputs() {
+  const v = (id) => ($('#' + id) ? $('#' + id).value : undefined);
+  if (R.step === 1) { if (v('svc') !== undefined) R.svc = v('svc'); if (v('newSvc') !== undefined) R.newSvc = v('newSvc'); }
+  if (R.step === 2) { if (v('path') !== undefined) R.path = v('path'); if (v('jdName') !== undefined) R.jdName = v('jdName'); }
+  if (R.step === 3) { if (v('startRule') !== undefined) R.startRule = v('startRule'); R.tz = v('tz'); R.extract = v('extract'); }
+  if (R.step === 4) { R.env = v('env').trim(); R.server = v('server').trim(); }
+}
+function validateStep() {
+  const e = {};
+  if (R.step === 1 && R.svcMode === 'new') {
+    const n = R.newSvc.trim();
+    const taken = Object.keys(D.svc).find((k) => k.toLowerCase() === n.toLowerCase());
+    if (!n) e.newSvc = '새 서비스 이름을 입력하세요.';
+    else if (taken) e.newSvc = `같은 이름의 서비스가 있습니다(${D.svc[taken].archived ? '보관된 서비스 ' : ''}${taken}). ${D.svc[taken].archived ? '재활성하거나 ' : '기존 서비스를 고르거나 '}다른 이름을 쓰세요.`;
+  }
+  if (R.step === 2) {
+    if (R.kind === 'journald') { if (!R.jdName.trim()) e.jdName = '대상 이름을 입력하세요. 호스트 전체는 받지 않습니다.'; }
+    else { const m = pathError(R.kind, R.path); if (m) e.path = m; }
+  }
+  if (R.step === 3) {
+    if (R.format === 'multiline') { const m = regexError(R.startRule, true); if (m) e.startRule = m; }
+    const x = regexError(R.extract, false); if (x) e.extract = x;
+  }
+  R.errors = e;
+  return Object.keys(e)[0];
+}
+function goStep(n) { R.step = n; R.errors = {}; renderReg(); $('#reg-h').focus?.(); window.scrollTo({ top: 0 }); }
+
+function confirmReg() {
+  openDialog({
+    title: '등록 확정과 키 발급', action: '확정',
+    target: summaryRows().slice(0, 3),
+    impacts: ['확정하면 이 연결을 등록하고 키를 발급합니다.', '키 원문은 다음 단계에서 한 번만 보여 줍니다.', '취소하면 키를 발급하지 않고 이 단계로 돌아갑니다.'],
+    onOk: () => {
+      if (regMode === 'audit') { R.result = 'hold'; renderReg(); toast('hold', '보류', '감사 기록을 저장할 수 없어 등록을 확정하지 않았습니다.', '키를 발급하지 않았습니다. 감사 기록이 복구된 뒤 다시 확정하세요. <a href="#">감사 이력 보기</a>'); return; }
+      if (regMode === 'fail') { R.result = 'fail'; regMode = 'normal'; syncDemo(); renderReg(); toast('fail', '실패', '확정하지 못했습니다.', '연결을 등록하지 않았고 키도 발급하지 않았습니다. 다시 확정하세요.'); return; }
+      if (regMode === 'conflict') { R.result = 'conflict'; renderReg(); return; }
+      R.result = 'ok'; R.step = 6; R.errors = {}; renderReg();
+      toast('', '성공', '연결을 등록하고 키를 발급했습니다.', '키와 설정을 복사해 로그 서버의 에이전트에 적용하세요.');
+    },
+  });
+}
+
+/* ════ 공통: 화면 전환, 시안 상태 ═══════════════════════════ */
+let view = 'list';
+const DEMO = {
+  list: [['base', '기본'], ['action', '조치 필요 필터'], ['archived', '보관됨 보기'], ['empty', '연결 없음']],
+  reg: [['normal', '정상 흐름'], ['dup', '5단계 · 같은 로그 있음'], ['conflict', '5단계 · 동시 수정 충돌'], ['audit', '5단계 · 감사 장애 보류'], ['fail', '5단계 · 확정 실패'],
+    ['a-pending', '7단계 · 적용 미확인'], ['a-nolog', '7단계 · 무로그'], ['a-done', '7단계 · 모두 확인'], ['a-nosearch', '7단계 · 검색 가능 미확인']],
+};
+let demoState = 'base';
+function syncDemo() {
+  $$('#demo-view button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === view)));
+  $('#demo-state').innerHTML = DEMO[view].map(([v, t]) => `<option value="${v}"${v === demoState ? ' selected' : ''}>${t}</option>`).join('');
+}
+function applyDemo(s) {
+  demoState = s; closeDialog();
+  if (view === 'list') {
+    D = SEED(); archiveFlow = null; filters = new Set(); scope = 'active';
+    if (s === 'action') filters.add('q:action');
+    if (s === 'archived') scope = 'archived';
+    if (s === 'empty') { D.conn = []; D.svc = {}; }
+    $('#filter-pop').hidden = true;
+    renderList();
+  } else {
+    R = R0();
+    if (s.startsWith('a-')) { regMode = 'normal'; R.result = 'ok'; R.step = 7; R.copied = true; R.apply = s.slice(2); }
+    else { regMode = s; if (s !== 'normal') R.step = 5; }
+    renderReg();
+  }
+  syncDemo();
+}
+function setView(v, state) {
+  view = v;
+  $('#view-list').hidden = v !== 'list'; $('#view-reg').hidden = v !== 'reg';
+  $('#banner-slot').innerHTML = '';
+  document.title = `LogDock 시안 — ${v === 'list' ? '수집 연결 목록' : '새 연결 등록'}`;
+  applyDemo(state || DEMO[v][0][0]);
+  window.scrollTo({ top: 0 });
+}
+
+/* ── 이벤트 ── */
+document.addEventListener('click', (e) => {
+  const t = e.target;
+  if (!$('#filter-pop').hidden && !t.closest('#filter-pop') && !t.closest('#filter-btn')) toggleFilterPop(false);
+  const c = t.closest('[data-copy]');
+  if (c) { const h = c.innerHTML; c.textContent = '복사함'; setTimeout(() => { c.innerHTML = h; }, 1500); return; }
+  const go = t.closest('[data-go]');
+  if (go) {
+    e.preventDefault();
+    if (go.dataset.go === 'list' && view === 'reg' && R.step <= 5) { setView('list'); toast('note', '안내', '등록을 그만뒀습니다.', '연결을 등록하지 않았고 키도 발급하지 않았습니다.'); return; }
+    setView(go.dataset.go); return;
+  }
+  const sv = t.closest('[data-svc-act]');
+  if (sv) { if (sv.dataset.svcAct === 'rename') window.__nnFor = sv.dataset.svc; SVC_ACTS[sv.dataset.svcAct](sv.dataset.svc); return; }
+  const sc = t.closest('[data-scope]');
+  if (sc) { scope = sc.dataset.scope; filters = new Set([...filters].filter((f) => !(scope === 'archived' && f.startsWith('a:')))); renderList(); return; }
+  const sg = t.closest('[data-scope-go]');
+  if (sg) { e.preventDefault(); scope = sg.dataset.scopeGo; renderList(); return; }
+  if (t.closest('[data-close-flow]')) { archiveFlow = null; renderArchiveFlow(); return; }
+  const uf = t.closest('[data-unfilter]');
+  if (uf) { if (uf.dataset.unfilter === '*') filters.clear(); else filters.delete(uf.dataset.unfilter); renderList(); return; }
+  if (t.closest('#filter-btn')) { toggleFilterPop(); return; }
+  if (t.closest('#filter-close')) { toggleFilterPop(false); return; }
+  const row = t.closest('.conn tbody tr');
+  if (row && !t.closest('a')) { location.href = row.dataset.href; return; }
+  const st = t.closest('[data-step]');
+  if (st) { readInputs(); goStep(+st.dataset.step); return; }
+  const sb = t.closest('[data-seg] button');
+  if (sb) { readInputs(); const k = sb.parentElement.dataset.seg; R[k] = sb.dataset.val; R.errors = {}; if (k === 'kind' && sb.dataset.val === 'file' && /[*?]/.test(R.path)) R.path = R.path.replace(/[*?]/g, ''); renderReg(); $(`[data-seg="${k}"] [aria-pressed="true"]`).focus(); return; }
+  if (t.id === 'dl6' || t.closest('#dl6')) { toast('note', '안내', '설정 파일을 내려받았습니다.', '키 파일은 따로 복사해 두세요.'); return; }
+  const rb = t.closest('[data-reg]');
+  if (rb) {
+    const a = rb.dataset.reg;
+    if (a === 'cancel') { setView('list'); toast('note', '안내', '등록을 그만뒀습니다.', '연결을 등록하지 않았고 키도 발급하지 않았습니다.'); return; }
+    readInputs();
+    if (a === 'prev') { goStep(R.step - 1); return; }
+    if (a === 'next') { const bad = validateStep(); if (bad) { renderReg(); $('#' + bad).focus(); return; } goStep(R.step + 1); return; }
+    if (a === 'confirm') { confirmReg(); return; }
+    if (a === 'reload') { R.svc = '주문 API'; D.svc = { 결제: D.svc.결제, '주문 API': D.svc.주문, 배송: D.svc.배송 }; R.result = null; regMode = 'normal'; syncDemo(); renderReg(); toast('note', '안내', '바뀐 내용을 불러왔습니다.', '서비스 이름이 주문 API로 바뀌었습니다. 확인한 뒤 확정하세요.'); return; }
+  }
+});
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.matches('[data-f]')) { t.checked ? filters.add(t.dataset.f) : filters.delete(t.dataset.f); renderList(); return; }
+  if (t.name === 'svcmode') { readInputs(); R.svcMode = t.value; R.errors = {}; renderReg(); $(R.svcMode === 'new' ? '#newSvc' : '#svc').focus(); return; }
+  if (t.id === 'copied') { R.copied = t.checked; renderReg(); $('#copied').focus(); return; }
+});
+document.addEventListener('input', (e) => { if (e.target.id === 'nn') window.__nn = e.target.value; });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#filter-pop').hidden) toggleFilterPop(false); });
+$$('#demo-view button').forEach((b) => b.onclick = () => setView(b.dataset.v));
+$('#demo-state').onchange = (e) => applyDemo(e.target.value);
+
+/* 이름 변경 창의 입력값을 onOk에서 읽기 위해 창을 열 때 기본값을 넣어 둔다 */
+const _rename = SVC_ACTS.rename;
+SVC_ACTS.rename = (name) => { window.__nn = `${name} API`; _rename(name); };
+
+const themeBtn = document.getElementById('theme');
+function setTheme(t) { document.documentElement.dataset.theme = t; themeBtn.textContent = t === 'dark' ? '밝은 테마 보기' : '어두운 테마 보기'; }
+themeBtn.addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+const q = new URLSearchParams(location.search);
+if (q.get('theme') === 'dark') setTheme('dark');
+const qv = q.get('view') === 'reg' ? 'reg' : 'list';
+const qs = DEMO[qv].some(([v]) => v === q.get('state')) ? q.get('state') : undefined;
+setView(qv, qs);
+if (qv === 'reg' && q.get('step') && !qs) { R.step = Math.min(5, Math.max(1, +q.get('step'))); if (q.get('format')) R.format = q.get('format'); renderReg(); }
+if (location.hash === '#archive') SVC_ACTS.archive('주문');
+if (location.hash === '#rename') SVC_ACTS.rename('결제');
+if (location.hash === '#reactivate') { scope = 'archived'; renderList(); SVC_ACTS.reactivate('배송'); }
+if (location.hash === '#filter') toggleFilterPop(true);
+if (location.hash === '#confirm' && view === 'reg') confirmReg();
+</script>
+<script src="menu.js"></script>
+</body>
+</html>
