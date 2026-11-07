@@ -288,12 +288,12 @@ CREATE TABLE logs
                              'WARN' = 4, 'ERROR' = 5, 'FATAL' = 6),
     level_raw          String,
 
-    body               String,
-    body_unescaped     String,
+    body               String CODEC(ZSTD(3)),
+    body_unescaped     String CODEC(ZSTD(3)),
     body_is_base64     Bool,
     parse_status       Enum8('none' = 0, 'ok' = 1, 'partial' = 2, 'failed' = 3),
     parse_rule_version UInt32,
-    fields             JSON,
+    fields             JSON CODEC(ZSTD(3)),
     field_paths        Array(String),
     fields_truncated   Bool,
 
@@ -308,7 +308,7 @@ CREATE TABLE logs
 )
 ENGINE = MergeTree
 PARTITION BY toDate(received_at)
-ORDER BY (ref_time, connection_id, generation, seq)
+ORDER BY (service_id, ref_time, connection_id, generation, seq)
 TTL toDateTime(received_at) + INTERVAL 6 MONTH DELETE
 SETTINGS ttl_only_drop_parts = 1;
 ```
@@ -330,7 +330,7 @@ SETTINGS ttl_only_drop_parts = 1;
 | `fields`·`fields_truncated` | 해석한 필드. 숫자·문자열·참거짓 타입을 지키고 2^53을 넘는 정수도 손실 없이 둔다. 상한을 넘은 부분은 빼고 `필드 일부 생략` 표시 | SD-19~SD-21, SD-24 |
 | `field_paths` | 값이 null인 키까지 포함한 필드 경로 목록. `JSON` 타입은 null 값을 따로 남기지 않을 수 있어 항목 존재(null도 존재)를 이 열로 판정한다 | SD-21, AT-01, IT-06 |
 
-- 정렬 키는 시간 범위 검색에 맞춘 후보다. 서비스 필터가 많은 사용 형태면 `(service_id, ref_time, ...)` 후보를 측정해 비교한다(D17 6절).
+- 정렬 키는 시간 범위 검색에 맞춘 후보다. 서비스 필터가 많은 사용 형태면 `(service_id, ref_time, ...)` 후보를 측정해 비교한다(D17 6절). 2026-11-07 측정 D1에서 서비스 우선 정렬이 서비스 필터 검색을 약 8배 빠르게 해, 본문·필드 `ZSTD`와 함께 규모 확인 구성으로 골랐다([결정 기록](../decisions.md), [측정 결과](../research/measurement-m1-m4-results-2026-11.md)). D10·D50 규모 확인에서도 저장량 비율이 낮아지고(35~37%) 검색 시간이 본문 양에 비례해, 위 DDL을 이 구성(측정 V6)으로 고쳤다. 감수한 영향은 캐시에 올라온 뒤 다시 하는 본문 검색이 약 1.5배 느려지는 것이다. 필드는 `JSON`이 타입별 `Map`보다 필드 조건이 빨랐고, 본문 n-gram 색인은 대소문자 미구분 부분 일치에 쓰이지 않아 넣지 않는다.
 - 필드는 ClickHouse `JSON` 타입이 타입 보존(SD-20·SD-21)을 만족하는 후보다. 타입별 `Map` 열과 비용을 측정해 정한다. `JSON` 타입은 25.3부터 운영용이라 고정한 26.8 LTS에서 쓸 수 있다([D17 근거 R45](../research/d17-tech-evidence-2026-11-03.md#8-버전-고정)).
 - 본문 부분 일치는 스캔이 기본이다(Q08-01). n-gram 색인을 붙일지, 대소문자·NFC 비교(SD-17)를 미리 계산한 열을 둘지는 측정으로 정한다. n-gram 색인 후보에는 26.2부터 정식 기능인 text 색인의 `ngrams` 토크나이저가 들어간다. 실험 옵션은 쓰지 않는다(R46). 본문의 앞부분만 색인해 뒤를 놓치는 방식은 쓰지 않는다(SD-14).
 - 주변 로그는 선택한 로그의 검색 기준 시각 앞뒤 구간에서 같은 흐름을 찾아 세대·순번으로 정렬한다. 시각이 크게 어긋난 흐름에서 느리면 순번 정렬 projection을 측정한다. projection을 붙이면 구간 삭제(3.3절)의 경량 삭제가 기본으로 막히므로 `lightweight_mutation_projection_mode`를 함께 정한다(R47).
