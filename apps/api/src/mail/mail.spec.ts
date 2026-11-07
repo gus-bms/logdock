@@ -27,7 +27,7 @@ describe('메일', () => {
     pg = await startPostgres();
     fake = await new FakeSmtp().start();
     api = await startApi(pg, {
-      mail: { host: '127.0.0.1', port: fake.port, security: 'plain_relay', from: FROM, user: null, password: null, ca: null },
+      mail: { host: '127.0.0.1', port: fake.port, security: 'plain_relay', from: FROM, user: null, password: null, ca: null, redirectTo: null },
       mailRatePerMinute: 3,
       mailTimeoutSeconds: 1,
     });
@@ -58,6 +58,7 @@ describe('메일', () => {
       configured: true,
       server: { host: '127.0.0.1', port: fake.port, security: 'plain_relay', from: FROM },
       plain_relay: true,
+      redirect_to: null,
       connection: 'unknown',
       last_attempt_at: null,
       last_success_at: null,
@@ -123,6 +124,24 @@ describe('메일', () => {
     assert.match(body, /알림 규칙 "결제 오류 급증"의 수신 주소/);
     assert.deepEqual(reasons(await post('/api/v1/alert-rules/test-mail', { addresses: ['a@example.test', 'A@example.test'] })), ['addresses.1:duplicate']);
     assert.deepEqual(reasons(await post('/api/v1/alert-rules/test-mail', { addresses: [] })), ['addresses:too_small']);
+  });
+
+  it('수신처 고정이 있으면 테스트 메일도 요청한 주소 대신 그 주소로만 보내고 결과에 알린다', async () => {
+    const fixed = await startApi(pg, {
+      mail: { host: '127.0.0.1', port: fake.port, security: 'plain_relay', from: FROM, user: null, password: null, ca: null, redirectTo: 'me@example.test' },
+    });
+    try {
+      const c2 = new Client(fixed.base);
+      assert.equal((await c2.login(NAME, PASSWORD)).status, 200);
+      assert.equal((await c2.call('GET', '/api/v1/mail')).body.redirect_to, 'me@example.test');
+      const r = await post('/api/v1/mail/test', { address: 'someone@example.test' }, randomUUID(), c2);
+      assert.deepEqual(r.body, { address: 'someone@example.test', delivered_to: 'me@example.test', result: 'accepted', reason: null, problem: null });
+      assert.deepEqual(fake.received.map((m) => m.to), ['me@example.test']);
+      const body = Buffer.from(fake.received[0].data.split('\r\n\r\n')[1].replace(/\r\n/g, ''), 'base64').toString('utf8');
+      assert.match(body, /요청한 주소\(someone@example\.test\) 대신 이 주소로 보냈습니다/);
+    } finally {
+      await fixed.close();
+    }
   });
 
   it('메일 설정이 없으면 상태에 설정 없음을 주고 테스트 발송은 409 mail_not_configured다', async () => {

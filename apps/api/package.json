@@ -9,7 +9,8 @@
     "build": "npm run build:wasm && nest build",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "npm run build:wasm && rm -rf dist-test && tsc -p tsconfig.test.json && node --test \"dist-test/**/*.spec.js\""
+    "test": "npm run build:wasm && rm -rf dist-test && tsc -p tsconfig.test.json && node --test \"dist-test/**/*.spec.js\"",
+    "start:worker": "node dist/worker.js"
   },
   "dependencies": {
     "@nestjs/common": "11.2.8",

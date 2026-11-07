@@ -130,9 +130,10 @@ export class SystemService {
     ).rows[0];
     if (failed.n > 0) add('mail_final_failures', failed.since, failed.n);
 
-    // 운영 수신 주소가 하나도 없다(WQ-83). 주소가 하나 이상 생기면 내려간다.
+    // 운영 수신 주소가 하나도 없다(WQ-83). 주소가 하나 이상 생기면 내려간다. 수신처 고정이 있으면 운영 메일은 그 주소로 가므로
+    // 띄우지 않는다.
     const ops = (await c.query<{ n: number }>('SELECT count(*)::int AS n FROM ops_recipients')).rows[0];
-    if (ops.n === 0) add('ops_recipients_missing', null, null);
+    if (ops.n === 0 && !this.config.mail?.redirectTo) add('ops_recipients_missing', null, null);
     return out;
   }
 

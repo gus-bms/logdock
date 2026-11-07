@@ -14,6 +14,7 @@ import type { FieldProblem } from '../connections/connection-input.js';
 import { Database, lockCount, type Queryable, utc } from '../db/database.js';
 import { buildMessage, newMessageId } from './message.js';
 import { APP_CONFIG } from '../tokens.js';
+import { deliveryRecipients, recordMailStatus } from './outcome.js';
 import { type MailReason, problemOf, sendMail } from './smtp.js';
 
 export const TestMailBody = z.object({ address: z.string() });
@@ -32,11 +33,15 @@ interface JobRow {
   last_error: MailReason | null;
 }
 
+/** 수신처 고정이 있으면 테스트 메일 결과에 실제로 보낸 주소를 함께 준다. */
+type Delivered = string | null;
+
 /** 테스트 메일 한 통의 결과. `sending`은 같은 Idempotency-Key로 다시 물었을 때 아직 보내는 중인 경우다. */
-function resultOf(j: JobRow) {
+function resultOf(j: JobRow, delivered: Delivered) {
   const result = j.state === 'accepted' ? 'accepted' : j.state === 'failed' ? 'failed' : 'sending';
   return {
     address: j.recipient,
+    ...(delivered ? { delivered_to: delivered } : {}),
     result,
     reason: result === 'failed' ? j.last_error : null,
     problem: result === 'failed' && j.last_error ? problemOf(j.last_error) : null,
@@ -66,6 +71,8 @@ export class MailService {
       configured: m !== null,
       server: m ? { host: m.host, port: m.port, security: m.security, from: m.from } : null,
       plain_relay: m?.security === 'plain_relay',
+      /** 수신처 고정. 값이 있으면 모든 메일이 이 주소로만 간다. */
+      redirect_to: m?.redirectTo ?? null,
       connection: !s?.last_attempt_at ? 'unknown' : s.last_error ? 'error' : 'connected',
       last_attempt_at: s?.last_attempt_at ?? null,
       last_success_at: s?.last_success_at ?? null,
@@ -123,42 +130,37 @@ export class MailService {
       await completeIdempotency(c, accountId, idemKey, 202, { mail_job_ids: jobs.map((j) => j.id) });
       return { replay: false as const, jobs };
     });
+    const delivered = mail.redirectTo;
     if (prepared.replay) {
       const rows = await this.jobs(prepared.ids);
-      return { status: rows.some((r) => r.state === 'sending') ? 202 : 200, body: { results: rows.map(resultOf) } };
+      return { status: rows.some((r) => r.state === 'sending') ? 202 : 200, body: { results: rows.map((r) => resultOf(r, delivered)) } };
     }
     const now = new Date();
     for (const job of prepared.jobs) {
+      // 수신처 고정이 있으면 요청한 주소 대신 그 주소로 보낸다. 작업에는 요청한 주소를 남겨 무엇을 시험했는지 알 수 있게 한다.
+      const [to] = deliveryRecipients(mail, [job.to]);
       const outcome = await sendMail(
         { ...mail, timeoutMs: this.config.mailTimeoutSeconds * 1000 },
         {
           from: mail.from,
-          to: job.to,
-          data: buildMessage({ from: mail.from, to: job.to, subject: '[LogDock] 테스트 메일', text: testText(ruleName, now), messageId: job.messageId, date: now }),
+          to,
+          data: buildMessage({ from: mail.from, to, subject: '[LogDock] 테스트 메일', text: testText(ruleName, now, to === job.to ? null : job.to), messageId: job.messageId, date: now }),
         },
       );
       await this.finish(job.id, outcome.ok ? null : outcome.reason);
     }
     await this.db.tx((c) => completeIdempotency(c, accountId, idemKey, 200, { mail_job_ids: prepared.jobs.map((j) => j.id) }));
-    return { status: 200, body: { results: (await this.jobs(prepared.jobs.map((j) => j.id))).map(resultOf) } };
+    return { status: 200, body: { results: (await this.jobs(prepared.jobs.map((j) => j.id))).map((r) => resultOf(r, delivered)) } };
   }
 
-  /** 발송 결과를 메일 작업과 메일 상태에 적는다. 주소 문제는 연결이 된 것이라 연결 오류로 남기지 않는다. */
+  /** 발송 결과를 메일 작업과 메일 상태에 적는다. */
   private async finish(jobId: string, reason: MailReason | null): Promise<void> {
     await this.db.tx(async (c) => {
       await c.query(
         `UPDATE mail_jobs SET state = $2, last_error = $3, accepted_at = CASE WHEN $2 = 'accepted' THEN now() END WHERE id = $1`,
         [jobId, reason ? 'failed' : 'accepted', reason],
       );
-      const connectionError = reason && problemOf(reason) !== 'address' ? reason : null;
-      await c.query(
-        `INSERT INTO mail_status (id, last_attempt_at, last_success_at, last_error, updated_at)
-         VALUES (1, now(), CASE WHEN $1 THEN now() END, $2, now())
-         ON CONFLICT (id) DO UPDATE SET last_attempt_at = now(),
-           last_success_at = CASE WHEN $1 THEN now() ELSE mail_status.last_success_at END,
-           last_error = $2, updated_at = now()`,
-        [reason === null, connectionError],
-      );
+      await recordMailStatus(c, reason);
     });
   }
 
@@ -256,7 +258,7 @@ export class MailService {
 }
 
 /** 테스트 메일 본문. 규칙 이름은 사람이 넣은 값이라 제어 문자를 이미 뺐다. */
-function testText(ruleName: string | null, at: Date): string {
+function testText(ruleName: string | null, at: Date, requested: string | null): string {
   return [
     'LogDock 테스트 메일입니다.',
     '',
@@ -264,6 +266,7 @@ function testText(ruleName: string | null, at: Date): string {
     '받았다면 LogDock 화면에서 "받았음"을 눌러 주세요.',
     '',
     `보낸 시각(UTC): ${at.toISOString()}`,
+    ...(requested ? ['', `수신처 고정 설정 때문에 요청한 주소(${requested}) 대신 이 주소로 보냈습니다.`] : []),
   ].join('\n');
 }
 

@@ -23,7 +23,7 @@ describe('설정값·배너·조건 값 목록·감사 이력', () => {
     pg = await startPostgres();
     api = await startApi(pg, {
       displayTimezone: 'Asia/Seoul',
-      mail: { host: 'smtp.example.test', port: 465, security: 'tls', from: 'logdock@example.test', user: null, password: null, ca: null },
+      mail: { host: 'smtp.example.test', port: 465, security: 'tls', from: 'logdock@example.test', user: null, password: null, ca: null, redirectTo: null },
     });
     await api.db.query('INSERT INTO accounts (name, password_hash) VALUES ($1, $2)', [NAME, await hashPassword(PASSWORD)]);
     c = new Client(api.base);

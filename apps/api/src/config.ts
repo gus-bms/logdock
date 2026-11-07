@@ -26,6 +26,11 @@ export interface MailConfig {
   password: string | null;
   /** 사내 메일 서버가 사설 CA를 쓰면 그 CA(PEM). 시스템 신뢰 목록에 더한다. 인증서 검증은 끄지 않는다(TD-08). */
   ca: string | null;
+  /**
+   * 수신처 고정(2026-11-07 사용자 합의). 값이 있으면 알림·운영·테스트 메일을 규칙과 운영 수신 주소 대신 이 주소로만 보낸다.
+   * 실제 주소는 서버 설정에만 두고 저장소에 넣지 않는다.
+   */
+  redirectTo: string | null;
 }
 
 export interface AppConfig {
@@ -88,6 +93,17 @@ export interface AppConfig {
   mailRatePerMinute: number;
   /** 메일 서버와 주고받을 때 한 단계의 대기 상한(초). 본문을 보낸 뒤에는 두 배를 기다린다. 시제품 값이다. */
   mailTimeoutSeconds: number;
+  /** 메일 링크의 기준 주소(계약 8.1절 링크, TD-16). 요청의 Host 헤더로 링크를 만들지 않는다. 없으면 메일에 링크를 넣지 않는다. */
+  publicBaseUrl: string | null;
+  /** 발송 작업이 보낼 메일을 찾는 주기(초). 시제품 값이다. */
+  mailPollSeconds: number;
+  /** 운영 메일 확인 주기(초)와, 일이 이만큼 이어져야 운영 메일에 싣는 유예(초, Q12-06의 10분). */
+  opsCheckSeconds: number;
+  opsGraceSeconds: number;
+  /** 사건이 열린 뒤 이보다 늦게 나가는 알림 메일은 제목 앞에 `[지연 N분]`을 붙인다(Q12-11). 시제품 값이다. */
+  mailDelayNoticeSeconds: number;
+  /** 메일 재시도(Q12-09 설계값): 시도 사이 간격(분), 최대 시도 수, 첫 시도부터의 최대 시간. 간격에는 ±10% 흔들림을 준다. */
+  mailRetry: { intervalsMinutes: number[]; maxAttempts: number; maxHours: number };
   /** 표시 시간대(IANA 이름, SD-07). 코어에 특정 시간대를 고정하지 않고 서버 설정으로 받는다. 없으면 이 서버의 시간대를 쓴다. */
   displayTimezone: string;
   /** 로그 보관 기간(달, Q13 합의값 6개월). 서버 설정으로만 바꾼다(Q13-02). */
@@ -124,6 +140,12 @@ export const DEFAULTS: Omit<AppConfig, 'db'> = {
   alertRecipientLimit: 10,
   mailRatePerMinute: 30,
   mailTimeoutSeconds: 30,
+  publicBaseUrl: null,
+  mailPollSeconds: 5,
+  opsCheckSeconds: 60,
+  opsGraceSeconds: 10 * 60,
+  mailDelayNoticeSeconds: 2 * 60,
+  mailRetry: { intervalsMinutes: [1, 2, 5, 10, 20, 30, 30, 30, 30, 30, 30], maxAttempts: 12, maxHours: 4 },
   displayTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
   logRetentionMonths: 6,
   alertEvalStaleSeconds: 10 * 60,
@@ -173,6 +195,26 @@ function readSecretFile(path: string): string {
   return readFileSync(path, 'utf8').replace(/\r?\n$/, '');
 }
 
+function checkRedirect(raw: string | undefined): string | null {
+  if (!raw) return null;
+  if (!MAIL_ADDRESS.test(raw)) throw new Error('LOGDOCK_MAIL_REDIRECT_TO must be a mail address');
+  return raw;
+}
+
+/** 메일 링크의 기준 주소. HTTPS이고 경로·쿼리·조각이 없어야 한다. 끝의 `/`는 뗀다. */
+export function checkPublicBaseUrl(raw: string): string {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    throw new Error('LOGDOCK_PUBLIC_BASE_URL must be an https URL');
+  }
+  if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash || (u.pathname !== '/' && u.pathname !== '')) {
+    throw new Error('LOGDOCK_PUBLIC_BASE_URL must be an https origin without path, query or fragment');
+  }
+  return u.origin;
+}
+
 /**
  * 메일 서버 설정을 읽는다. 호스트가 없으면 메일 설정 없음(null)이다. 있으면 발신 주소가 꼴에 맞아야 한다. 비밀번호는
  * `LOGDOCK_MAIL_PASSWORD_FILE`의 파일에서 읽는다.
@@ -194,6 +236,7 @@ export function loadMailConfig(env: NodeJS.ProcessEnv): MailConfig | null {
     user: env.LOGDOCK_MAIL_USER || null,
     password: env.LOGDOCK_MAIL_PASSWORD_FILE ? readSecretFile(env.LOGDOCK_MAIL_PASSWORD_FILE) : null,
     ca: env.LOGDOCK_MAIL_CA_FILE ? readFileSync(env.LOGDOCK_MAIL_CA_FILE, 'utf8') : null,
+    redirectTo: checkRedirect(env.LOGDOCK_MAIL_REDIRECT_TO),
   };
 }
 
@@ -203,6 +246,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     ...DEFAULTS,
     ingestUrl: env.LOGDOCK_INGEST_URL ? checkIngestUrl(env.LOGDOCK_INGEST_URL) : null,
     mail: loadMailConfig(env),
+    publicBaseUrl: env.LOGDOCK_PUBLIC_BASE_URL ? checkPublicBaseUrl(env.LOGDOCK_PUBLIC_BASE_URL) : null,
     displayTimezone: env.LOGDOCK_DISPLAY_TIMEZONE ? checkTimezone(env.LOGDOCK_DISPLAY_TIMEZONE) : DEFAULTS.displayTimezone,
     logRetentionMonths: intEnv(env, 'LOGDOCK_LOG_RETENTION_MONTHS', DEFAULTS.logRetentionMonths),
     db: {
