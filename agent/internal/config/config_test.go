@@ -91,6 +91,32 @@ func TestLoadConnection(t *testing.T) {
 	}
 }
 
+// testdata의 두 파일은 조회·관리 API가 등록 때 만든 설정 파일과 글자까지 같다(apps/api의 connections-register.spec이
+// 같은 파일과 비교한다). 중앙이 만든 파일을 에이전트가 그대로 읽는지 확인한다.
+func TestCentralConfigFile(t *testing.T) {
+	cases := []struct {
+		file   string
+		target Target
+		start  string
+		tz     string
+		max    int
+	}{
+		{"c_i905t9.toml", Target{Type: "file_pattern", Path: "/var/app/order/app-*.log"}, `^\d{4}-\d{2}-\d{2} `, "Asia/Seoul", 65536},
+		{"c_zgamy.toml", Target{Type: "journald", Kind: "unit", Name: "order-worker.service"}, `^\d+ it's`, "", 1048576},
+	}
+	for _, tc := range cases {
+		c, err := LoadConnection(filepath.Join("testdata", tc.file))
+		if err != nil {
+			t.Fatalf("%s: %v", tc.file, err)
+		}
+		if c.ID+".toml" != tc.file || c.ConfigVersion != 1 || c.IngestURL != "https://ingest.logdock.example:8443/ingest/v1" ||
+			c.Target != tc.target || c.Format.Type != "multiline" || c.Format.EventStart.String() != tc.start ||
+			c.Format.LogTimezone != tc.tz || c.Format.MaxEventBytes != tc.max {
+			t.Errorf("%s: got %+v", tc.file, c)
+		}
+	}
+}
+
 func TestLoadConnectionReportsEveryProblem(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "c_test1.toml")

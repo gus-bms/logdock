@@ -1,0 +1,14 @@
+# LogDock 수집 연결 설정. 중앙이 만든 파일이다. 키는 같은 폴더의 c_zgamy.key에 따로 둔다.
+connection_id = 'c_zgamy'
+config_version = 1
+ingest_url = 'https://ingest.logdock.example:8443/ingest/v1'
+
+[target]
+type = 'journald'
+kind = 'unit'
+name = 'order-worker.service'
+
+[format]
+type = 'multiline'
+event_start = "^\\d+ it's"
+max_event_bytes = 1048576

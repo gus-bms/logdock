@@ -1,0 +1,14 @@
+# LogDock 수집 연결 설정. 중앙이 만든 파일이다. 키는 같은 폴더의 c_i905t9.key에 따로 둔다.
+connection_id = 'c_i905t9'
+config_version = 1
+ingest_url = 'https://ingest.logdock.example:8443/ingest/v1'
+
+[target]
+type = 'file_pattern'
+path = '/var/app/order/app-*.log'
+
+[format]
+type = 'multiline'
+event_start = '^\d{4}-\d{2}-\d{2} '
+log_timezone = 'Asia/Seoul'
+max_event_bytes = 65536

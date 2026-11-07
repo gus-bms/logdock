@@ -17,6 +17,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/gus-bms/logdock/agent/internal/rules"
 )
 
 // Agent는 에이전트 전체 설정이다. 기본값은 시제품용이다.
@@ -41,7 +43,7 @@ type Connection struct {
 	Format        Format
 }
 
-// Target은 수집 대상이다.
+// Target은 수집 대상이다. 규칙은 internal/rules가 기준이다(등록 API와 같은 코드).
 type Target struct {
 	Type string // file | file_pattern | journald
 	Path string
@@ -49,17 +51,6 @@ type Target struct {
 	Kind string
 	Name string
 }
-
-var (
-	// containerName은 받는 컨테이너 이름이다. 영문자·숫자로 시작하고 영문자·숫자·_ . -만 쓴다.
-	// 와일드카드와 빈 이름을 막아 호스트 전체를 고르지 못하게 한다(계약 2.8절).
-	containerName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`)
-	// unitName은 받는 unit 이름이다. 영문자·숫자와 : - _ . \ @만 쓴다(와일드카드 불가).
-	unitName = regexp.MustCompile(`^[a-zA-Z0-9:_.\\@-]+$`)
-	// unitSuffixes는 systemd unit 종류 접미사다. 없으면 .service로 본다.
-	unitSuffixes = []string{".service", ".socket", ".device", ".mount", ".automount", ".swap", ".target",
-		".path", ".timer", ".slice", ".scope"}
-)
 
 // Format은 이벤트를 나누는 방식이다. 시각·레벨·필드 해석은 수신 서버가 한다(D17-03).
 type Format struct {
@@ -140,7 +131,8 @@ func LoadConnection(path string) (Connection, error) {
 
 	t := newReader(path, doc, "target")
 	c.Target.Type = t.str("type", true)
-	c.Target.Path = t.path("path", false)
+	// 절대 경로인지는 rules.CheckTarget이 본다(등록 API와 같은 문장·사유).
+	c.Target.Path = t.str("path", false)
 	c.Target.Kind = t.str("kind", false)
 	c.Target.Name = t.str("name", false)
 
@@ -188,62 +180,13 @@ func (c *Connection) validate(start string) []error {
 	if u, err := url.Parse(c.IngestURL); c.IngestURL != "" && (err != nil || u.Scheme != "https" || u.Host == "") {
 		bad("ingest_url must be an https URL (Q10-02)")
 	}
-	if c.Target.Type != "journald" && (c.Target.Kind != "" || c.Target.Name != "") {
-		bad("target.kind and target.name are only for journald")
-	}
-	switch c.Target.Type {
-	case "file":
-		if c.Target.Path == "" || strings.ContainsAny(c.Target.Path, "*?[") {
-			bad("target.path must be one absolute file path")
-		}
-	case "file_pattern":
-		if msg := checkPattern(c.Target.Path); msg != "" {
-			bad("target.path %s", msg)
-		}
-	case "journald":
-		if c.Target.Path != "" {
-			bad("target.path is not used for journald; use target.kind and target.name")
-		}
-		switch c.Target.Kind {
-		case "container":
-			if !containerName.MatchString(c.Target.Name) {
-				bad("target.name %q must be one container name (letters, digits, _ . -)", c.Target.Name)
-			}
-		case "unit":
-			if !unitName.MatchString(c.Target.Name) {
-				bad("target.name %q must be one systemd unit name (no wildcards)", c.Target.Name)
-				break
-			}
-			if !hasUnitSuffix(c.Target.Name) {
-				c.Target.Name += ".service"
-			}
-		default:
-			bad("target.kind %q must be container or unit", c.Target.Kind)
-		}
-	case "":
-	default:
-		bad("target.type %q must be file, file_pattern or journald", c.Target.Type)
-	}
-	switch c.Format.Type {
-	case "text", "json":
-		if start != "" {
-			bad("format.event_start is only for multiline")
-		}
-	case "multiline":
-		if start == "" {
-			bad("format.event_start is required for multiline")
-			break
-		}
-		// Go regexp는 RE2 문법이라 입력 길이에 선형 시간으로 돈다. 규칙 하나가 읽기를 붙잡지 않는다.
-		re, err := regexp.Compile(start)
-		if err != nil {
-			bad("format.event_start: %v", err)
-			break
-		}
-		c.Format.EventStart = re
-	case "":
-	default:
-		bad("format.type %q must be text, json or multiline", c.Format.Type)
+	// 수집 대상과 형식은 등록 API와 같은 함수로 검사한다(internal/rules).
+	target, problems := rules.CheckTarget(rules.Target(c.Target))
+	c.Target = Target(target)
+	re, formatProblems := rules.CheckFormat(c.Format.Type, start)
+	c.Format.EventStart = re
+	for _, p := range append(problems, formatProblems...) {
+		errs = append(errs, fmt.Errorf("%s: %s", c.File, p.Message))
 	}
 	if c.Format.LogTimezone != "" {
 		if _, err := time.LoadLocation(c.Format.LogTimezone); err != nil {
@@ -264,40 +207,6 @@ func (c Connection) CheckAgainst(a Agent) error {
 		return fmt.Errorf("%s: target.path must not be inside state_dir; the agent would read its own queue", c.File)
 	}
 	return nil
-}
-
-// checkPattern은 파일명 규칙을 검사한다(계약 2.8절 file_pattern, Q02-06). 폴더는 고정 경로이고
-// 이름 부분에만 *와 ?를 쓴다. [ ]와 \는 받지 않는다. 문자 묶음과 escape까지 열면 규칙을 읽고
-// 검사하기 어려워지고, 요구된 예(app-*.log)는 *와 ?로 충분하기 때문이다.
-func checkPattern(p string) string {
-	switch {
-	case p == "":
-		return "is required"
-	case filepath.Clean(p) != p:
-		return "must be a clean absolute path (no .., // or trailing /)"
-	}
-	dir, name := filepath.Dir(p), filepath.Base(p)
-	switch {
-	case strings.ContainsAny(dir, `*?[]\`):
-		return "may use * and ? only in the file name, not in the folder (Q02-06)"
-	case strings.ContainsAny(name, `[]\`):
-		return "may use only * and ? as wildcards"
-	case !strings.ContainsAny(name, "*?"):
-		return "has no * or ?; use target.type file for one file"
-	}
-	if _, err := filepath.Match(name, ""); err != nil {
-		return err.Error()
-	}
-	return ""
-}
-
-func hasUnitSuffix(name string) bool {
-	for _, s := range unitSuffixes {
-		if strings.HasSuffix(name, s) && len(name) > len(s) {
-			return true
-		}
-	}
-	return false
 }
 
 // CheckKeyFile은 키 파일이 있고 실행 계정만 읽을 수 있는지 본다(SC-03). 키 내용은 오류에 넣지 않는다.
