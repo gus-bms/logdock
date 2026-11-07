@@ -14,6 +14,7 @@ import { checkConnectionInput, type ConnectionBody, type ConnectionInput, type S
 import { newIngestKey } from './keys.js';
 import { decodeConnectionId, encodeConnectionId } from './public-id.js';
 import { loadRules } from './rules.js';
+import { findOrCreateServer } from './servers.js';
 
 export interface ValidatedConnection {
   valid: true;
@@ -115,7 +116,7 @@ export class ConnectionsService implements OnModuleInit {
           return { status: claim.status, body: await this.registrationView(c, id, String(claim.result.key_id), null) };
         }
         const service = await this.lockOrCreateService(c, input.service);
-        const serverId = input.serverDisplayName ? await this.findOrCreateServer(c, input.serverDisplayName) : null;
+        const serverId = input.serverDisplayName ? await findOrCreateServer(c, input.serverDisplayName) : null;
         await this.checkDuplicate(c, input);
         const t = input.target;
         const journald = t.type === 'journald';
@@ -247,12 +248,6 @@ export class ConnectionsService implements OnModuleInit {
     if (checked.id !== null) return { id: checked.id, name: checked.name };
     const created = (await c.query<{ id: number }>('INSERT INTO services (name) VALUES ($1) RETURNING id', [checked.name])).rows[0];
     return { id: created.id, name: checked.name };
-  }
-
-  /** 서버 표시명은 이름 목록의 한 항목이다. 같은 이름이면 같은 서버로 묶는다(SD-11). */
-  private async findOrCreateServer(c: Queryable, displayName: string): Promise<number> {
-    await c.query('INSERT INTO servers (display_name) VALUES ($1) ON CONFLICT ((lower(display_name))) DO NOTHING', [displayName]);
-    return (await c.query<{ id: number }>('SELECT id FROM servers WHERE lower(display_name) = lower($1)', [displayName])).rows[0].id;
   }
 
   /**

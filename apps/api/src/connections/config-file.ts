@@ -11,7 +11,12 @@ export interface ConfigContent {
   format: { type: string; event_start?: string; log_timezone?: string; max_event_bytes: number };
 }
 
-export function configContent(connectionId: string, version: number, ingestUrl: string, input: ConnectionInput): ConfigContent {
+export function configContent(
+  connectionId: string,
+  version: number,
+  ingestUrl: string,
+  input: Pick<ConnectionInput, 'target' | 'format'>,
+): ConfigContent {
   const t = input.target;
   const target = t.type === 'journald' ? { type: t.type, kind: t.kind, name: t.name } : { type: t.type, path: t.path };
   const format: ConfigContent['format'] = { type: input.format.type, max_event_bytes: input.format.maxEventBytes };

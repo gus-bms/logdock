@@ -543,6 +543,7 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
 | `POST /api/v1/connections` | 등록 확정. 서비스(기존 ID 또는 새 이름)·대상·형식·선택 정보. 응답에 키 원문(한 번)과 설정 파일 | ○ | ○ |
 | `GET /api/v1/connections/{id}` | 상세: 상태, 마지막 보고, 마지막 ACK, 대기, 거부·해석 실패 건수, 누락 의심, 시계·시간대 경고, 설정 버전, 등록 단계, 복구 보류, 키 메타데이터, 진단 이력과 진단 공백. 항목은 아래 목록 | | |
 | `PATCH /api/v1/connections/{id}` | 설정 수정. 새 설정 버전 | ○ | ○ |
+| `PATCH /api/v1/connections/{id}/placement` | 환경 태그·서버 바꾸기. 설정 버전을 만들지 않음(WQ-63, 2026-11-07 설계로 더함) | | ○ |
 | `GET /api/v1/connections/{id}/config` | 설정 내려받기. 키 없음(WQ-64) | | |
 | `POST /api/v1/connections/{id}/keys` | 유효 키가 없으면 발급, 있으면 교체. 유효 키는 둘까지. 응답에 키 원문(한 번) | ○ | ○ |
 | `POST /api/v1/keys/{key_id}/revoke` | 키 폐기. 요청 접수·중앙 확정을 따로 돌려줌 | ○ | 긴급 예외 |
@@ -576,7 +577,7 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
   - 대소문자까지 같은 이름이면 바꾸지 않고 감사도 남기지 않는다. `version_conflict`는 `params.current`에 지금 값을 주고, 바뀐 항목은 화면이 가진 값과 비교해 보인다. 경로의 ID가 양의 정수가 아니면 `404 not_found`다.
   - 감사에는 대상 ID와 바뀐 항목 이름(`changed_fields`)만 남긴다.
   - 서비스 보관·재활성과 보관 전 영향은 하위 수집 연결과 키 상태를 함께 바꾸므로 수집 연결과 같이 만들었다(아래 `보관·재활성 구현`).
-- **수집 연결 사전 검사 구현(2026-11-07):** 설정 수정(새 설정 버전)·환경 태그와 서버 바꾸기·구간 로그 삭제는 다음 단계다.
+- **수집 연결 사전 검사 구현(2026-11-07):** 구간 로그 삭제는 ClickHouse 연동 때 한다.
   - 본문은 등록과 같다: `service`(기존 `{id, version}` 또는 새 `{name}`), `server_display_name`·`environment`(선택, 비우면 `null`), `target`(`type`·`path` 또는 `kind`·`name`), `format`(`type`·`event_start`·`log_timezone`·`max_event_bytes`), `extraction_rule`(지금은 비워 둠).
   - 통과하면 `200`과 저장할 형태로 맞춘 값(`valid: true`, 새 서비스 여부, unit 이름의 `.service` 붙임, 기본 이벤트 크기)을 주고 아무것도 만들지 않는다. `max_event_bytes`를 주지 않으면 1MiB, 최대 64MiB다(D03의 `N`이 정해지기 전의 시제품 설정값, 64MiB는 에이전트가 받는 상한).
   - 입력 오류는 모든 칸을 한 번에 `422 validation_failed`로 준다. 사유: 수집 대상 `required`·`path_not_absolute`·`wildcard_not_allowed`·`control_characters`·`path_not_clean`·`wildcard_in_folder`·`wildcard_not_supported`·`pattern_without_wildcard`·`pattern_invalid`·`path_not_for_journald`·`name_invalid`·`kind_invalid`·`only_for_journald`·`type_invalid`, 형식 `required`·`only_for_multiline`·`pattern_invalid`(오류가 난 부분 `expr`)·`type_invalid`, 서비스 `required`·`id_or_name`·`not_found`, 이름 칸 `too_small`·`too_big`·`control_characters`, `timezone_invalid`, 이벤트 크기 `too_small`·`too_big`, 추출 규칙 `not_supported`.
@@ -598,6 +599,9 @@ DB 역할은 프로그램마다 나눠 최소 권한을 준다(T05).
   - `GET /api/v1/connections`는 서비스 이름(대소문자 무시)·서비스 ID·연결 ID 순이고, `archived`(기본 보관 안 됨)·`observation`·`needs_action`·`service_id`로 거른다. `limit`(기본 50, 최대 200)과 불투명한 `cursor`로 나눠 받는다. 항목은 연결·서비스·서버·환경 태그·대상·관리 상태·관측 상태와 마지막 보고 시각·보고의 대기량(없으면 `null`)·유효 키 수·조치 필요다.
   - `GET /api/v1/connections/{id}`는 여기에 형식, 지금·적용된 설정 버전, 보관 정보, 상태 보고의 에이전트·읽기·전송·누락 의심·자원 값, 중앙 ACK(`ingest_progress`의 마지막 세대와 확인 순번), 등록 단계 시각, 모든 키의 상태, 최근 진단 이력 20건을 더한다. 로그 저장소에서 세는 최근 거부·해석 실패 수는 ClickHouse 연동 때 채우며 그전에는 `null`이다.
 - **보관·재활성 구현(2026-11-07):** 모두 최근 재확인이 필요하고, 감사를 쓸 수 없으면 아무것도 바꾸지 않고 보류한다.
+- **수집 연결 수정 구현(2026-11-07):** 설정 수정과 환경 태그·서버 바꾸기는 재확인 여부가 달라 경로를 나눴다. 계약 표에 `PATCH /api/v1/connections/{id}/placement`를 더했다. 둘 다 연결 행을 잠그고 읽을 때 받은 `version`을 본다(`409 version_conflict`, 지금 `version`·`config_version`). 보관된 연결은 `409 target_archived`이고, 감사를 쓸 수 없으면 보류한다.
+  - `PATCH /api/v1/connections/{id}`(최근 재확인 필요)는 `format`을 주면 형식 전체(`type`·`event_start`·`log_timezone`, `max_event_bytes`를 빼면 지금 값)를 바꾸고, `target.path`는 파일명 규칙 연결의 같은 폴더 안에서만 바꾼다. 다른 폴더·파일, 파일과 journald 사이, journald 대상 변경은 `422`(사유 `new_connection_required`)로 새 연결 등록을 안내한다. 고친 값은 등록과 같은 입력 규칙(WebAssembly)으로 본다. 바뀐 것이 있으면 `config_version`을 올리고 새 설정 버전과 설정 파일을 돌려준다. 에이전트에 다시 적용해야 하고 키는 바뀌지 않는다. 바뀐 것이 없으면 새 버전을 만들지 않고 감사도 남기지 않는다. 감사 `connection.update`에는 바뀐 항목 이름(`target.path`·`format.type` 등)만 남긴다. 파일명 규칙을 고쳐 같은 서버의 다른 연결과 겹치면 `409 duplicate_connection`이다.
+  - `PATCH /api/v1/connections/{id}/placement`(재확인 없음)는 준 칸만 바꾸고 `null`은 비운다. 서버 표시명은 같은 이름(대소문자 무시)이면 같은 서버로 묶고 없으면 만든다. 설정 버전을 만들지 않고 감사 `connection.move`(`server`·`environment`)를 남긴다. 옮길 서버에 같은 대상의 연결이 있으면 `409 duplicate_connection`이다.
   - `POST /api/v1/connections/{id}/archive`는 연결을 `보관`으로 바꾸고 유효 키를 모두 `보관으로 무효`로 한다. 폐기 요청 중인 키는 수신 서버가 확정하게 둔다. 요청 접수와 중앙 확정이 한 트랜잭션에서 일어나 응답의 `stages`는 두 시각이 같고 `에이전트 관측`은 `null`이며, 감사 `connection.archive`를 단계 `confirmed`로 남긴다. 이미 보관됐으면 `409 target_archived`다.
   - `POST /api/v1/connections/{id}/reactivate`는 보관된 연결만 `등록·연결 대기`로 되돌린다(아니면 `409 invalid_state`). 옛 키는 살아나지 않아 키 발급으로 새 키를 받는다. 서비스가 보관돼 있으면 `409 target_archived`이고, 그 사이 같은 서버·같은 대상의 다른 연결이 등록됐으면 `409 duplicate_connection`(그 연결의 외부 ID)이다.
   - `GET /api/v1/services/{id}/archive-impact`는 보관되지 않은 하위 연결과 보고된 대기(보고가 없으면 `null`), 이 서비스나 그 연결을 조건 출처로 쓰는 저장 검색과 지우지 않은 알림 규칙을 준다.

@@ -13,6 +13,7 @@ import { CatalogService } from './catalog/catalog.service.js';
 import { type AppConfig } from './config.js';
 import { ConnectionsController, KeysController } from './connections/connections.controller.js';
 import { ArchiveService } from './connections/archive.service.js';
+import { ConnectionEditService } from './connections/connection-edit.service.js';
 import { ConnectionViewsService } from './connections/connection-views.service.js';
 import { ConnectionsService } from './connections/connections.service.js';
 import { KeysService } from './connections/keys.service.js';
@@ -38,6 +39,7 @@ export class AppModule {
         ConnectionViewsService,
         KeysService,
         ArchiveService,
+        ConnectionEditService,
         // 모든 경로를 한 검사 지점에서 확인한다(계약 4.1절). 세션 없이 부르는 경로는 @Public으로 연다.
         { provide: APP_GUARD, useClass: AuthGuard },
       ],

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, Req, Res } from '@nestjs/common';
 import { z } from 'zod';
 
 import { RequireReauth } from '../auth/auth.guard.js';
@@ -6,6 +6,7 @@ import { type ApiRequest, type ApiResponse, header } from '../common/http.js';
 import { idempotencyKey } from '../common/idempotency.js';
 import { parse } from '../common/validate.js';
 import { ArchiveService } from './archive.service.js';
+import { ConnectionEditService, PlacementBody, SettingsBody } from './connection-edit.service.js';
 import { ConnectionBody } from './connection-input.js';
 import { ConnectionViewsService, OBSERVATION_STATES } from './connection-views.service.js';
 import { ConnectionsService } from './connections.service.js';
@@ -29,6 +30,7 @@ export class ConnectionsController {
     private readonly views: ConnectionViewsService,
     private readonly keys: KeysService,
     private readonly archives: ArchiveService,
+    private readonly edits: ConnectionEditService,
   ) {}
 
   /** 서비스별 연결 목록(UI-10). 기본은 보관되지 않은 연결이고 `archived=true`면 보관된 연결이다. */
@@ -55,6 +57,22 @@ export class ConnectionsController {
   @Get(':id')
   async detail(@Param('id') id: string) {
     return this.views.detail(id);
+  }
+
+  /**
+   * 설정 수정(WQ-62). 형식·새 이벤트 시작 규칙·로그 시간대·이벤트 크기 상한·같은 폴더 안의 파일명 규칙을 고친다.
+   * 새 설정 버전과 설정 파일을 돌려주며 에이전트에 다시 적용해야 한다. 최근 재확인이 필요하다.
+   */
+  @Patch(':id')
+  @RequireReauth()
+  async updateSettings(@Param('id') id: string, @Body() body: unknown, @Req() req: ApiRequest) {
+    return this.edits.updateSettings(id, parse(SettingsBody, body), req.session!.accountId);
+  }
+
+  /** 환경 태그·서버 바꾸기(WQ-63). 중앙 표시 정보라 설정 버전을 만들지 않고 재확인 없이 감사에 남긴다. */
+  @Patch(':id/placement')
+  async updatePlacement(@Param('id') id: string, @Body() body: unknown, @Req() req: ApiRequest) {
+    return this.edits.updatePlacement(id, parse(PlacementBody, body), req.session!.accountId);
   }
 
   /** 등록 전 사전 검사(중복·형식). 아무것도 만들지 않는다. 통과하면 저장할 형태로 맞춘 값을 돌려준다. */
